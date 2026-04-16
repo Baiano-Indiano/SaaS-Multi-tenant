@@ -1,4 +1,4 @@
-import * as React from "react"
+import * as React from 'react';
 import {
   Sidebar,
   SidebarContent,
@@ -9,44 +9,42 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
-import { LayoutDashboard, Users, Settings, CreditCard } from "lucide-react"
+} from '@/components/ui/sidebar';
+import { LayoutDashboard, Users, Settings, CreditCard } from 'lucide-react';
+import { OrgSwitcher } from '@/components/org-switcher';
 
-// Menu items
+interface Organization {
+  id: string;
+  name: string;
+  slug: string | null;
+  logo?: string | null;
+}
+
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  organizations: Organization[];
+  activeOrgId: string | null;
+}
+
 const items = [
-  {
-    title: "Overview",
-    url: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "Members",
-    url: "/dashboard/members",
-    icon: Users,
-  },
-  {
-    title: "Billing",
-    url: "/dashboard/billing",
-    icon: CreditCard,
-  },
-  {
-    title: "Settings",
-    url: "/dashboard/settings",
-    icon: Settings,
-  },
-]
+  { title: 'Overview', url: '#', icon: LayoutDashboard },
+  { title: 'Members', url: '#', icon: Users },
+  { title: 'Billing', url: '#', icon: CreditCard },
+  { title: 'Settings', url: '#', icon: Settings },
+];
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+  organizations,
+  activeOrgId,
+  ...props
+}: AppSidebarProps) {
   return (
     <Sidebar {...props}>
-      <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
-        {/* Placeholder for the Organization Switcher (Tenant Context) */}
-        <div className="flex items-center gap-2 font-semibold">
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <span className="text-xs">AC</span>
-          </div>
-          <span className="truncate">Acme Corp [Tenant Switcher]</span>
-        </div>
+      <SidebarHeader className="border-b border-sidebar-border">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <OrgSwitcher organizations={organizations} activeOrgId={activeOrgId} />
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -55,12 +53,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton render={
-                    <a href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </a>
-                  } />
+                  <SidebarMenuButton
+                    render={
+                      <a href={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </a>
+                    }
+                  />
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -68,5 +68,5 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
-  )
+  );
 }

@@ -52,7 +52,8 @@ export const organizations = pgTable("organization", {
 	slug: text("slug").unique(),
 	logo: text("logo"),
 	createdAt: timestamp("createdAt").notNull(),
-	metadata: text("metadata")
+	metadata: text("metadata"),
+	tenantSchemaName: text("tenantSchemaName").notNull().default("")
 });
 
 export const members = pgTable("member", {
