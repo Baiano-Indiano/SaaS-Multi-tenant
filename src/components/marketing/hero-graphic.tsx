@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef } from "react";
-import * as anime from "animejs";
+import { animate, stagger, remove } from "animejs";
 
 export function HeroGraphic() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -9,34 +9,30 @@ export function HeroGraphic() {
   useLayoutEffect(() => {
     if (!containerRef.current) return;
 
-    // Isolate the animation targets to elements inside this component
     const targets = containerRef.current.querySelectorAll(".stagger-item");
-    
-    // Create the anime timeline
-    const tl = anime.timeline({
-      easing: "easeOutExpo",
-      duration: 1000,
-    });
+    const pulseTargets = containerRef.current.querySelectorAll(".pulse-item");
 
-    tl.add({
-      targets,
+    // Stagger reveal for sidebar + content blocks
+    animate(targets, {
       opacity: [0, 1],
       translateY: [20, 0],
-      delay: anime.stagger(150),
-    }).add(
-      {
-        targets: ".pulse-item",
-        opacity: [0, 1],
-        scale: [0.95, 1],
-        duration: 800,
-      },
-      "-=600"
-    );
+      ease: 'outExpo',
+      duration: 1000,
+      delay: stagger(150),
+    });
 
-    // Cleanup to prevent React VDOM/hydration clashes with animejs
+    // Pulse items fade in after a delay
+    animate(pulseTargets, {
+      opacity: [0, 1],
+      scale: [0.95, 1],
+      ease: 'outExpo',
+      duration: 800,
+      delay: stagger(100, { start: 400 }),
+    });
+
     return () => {
-      anime.remove(targets);
-      anime.remove(".pulse-item");
+      remove(targets);
+      remove(pulseTargets);
     };
   }, []);
 
