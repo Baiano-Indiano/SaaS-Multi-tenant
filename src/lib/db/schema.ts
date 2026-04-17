@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, primaryKey } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 
 export const users = pgTable("user", {
 	id: text("id").primaryKey(),
@@ -61,8 +62,42 @@ export const members = pgTable("member", {
 	organizationId: text("organizationId").notNull().references(() => organizations.id),
 	userId: text("userId").notNull().references(() => users.id),
 	role: text("role").notNull(),
+	roleId: text("roleId"), // Reference to role in tenant schema (logical)
 	createdAt: timestamp("createdAt").notNull()
 });
+
+export const membersRelations = relations(members, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [members.organizationId],
+		references: [organizations.id],
+	}),
+	user: one(users, {
+		fields: [members.userId],
+		references: [users.id],
+	}),
+}));
+
+export const organizationsRelations = relations(organizations, ({ many }) => ({
+	members: many(members),
+}));
+
+/**
+ * RBAC Tables (These will be dynamically created in tenant schemas)
+ */
+export const roles = pgTable("role", {
+	id: text("id").primaryKey(),
+	name: text("name").notNull(),
+	slug: text("slug").notNull(),
+	description: text("description"),
+	createdAt: timestamp("createdAt").notNull().defaultNow()
+});
+
+export const rolePermissions = pgTable("role_permission", {
+	roleId: text("roleId").notNull().references(() => roles.id, { onDelete: 'cascade' }),
+	permissionKey: text("permissionKey").notNull(),
+}, (t) => ({
+	pk: primaryKey({ columns: [t.roleId, t.permissionKey] }),
+}));
 
 export const invitations = pgTable("invitation", {
 	id: text("id").primaryKey(),
@@ -71,5 +106,18 @@ export const invitations = pgTable("invitation", {
 	role: text("role"),
 	status: text("status").notNull(),
 	expiresAt: timestamp("expiresAt").notNull(),
-	inviterId: text("inviterId").notNull().references(() => users.id)
+	inviterId: text("inviterId").notNull().references(() => users.id),
+	roleId: text("roleId"), // Custom dynamic role ID
+	metadata: text("metadata"), // For extra flexibility
 });
+
+export const invitationsRelations = relations(invitations, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [invitations.organizationId],
+		references: [organizations.id],
+	}),
+	inviter: one(users, {
+		fields: [invitations.inviterId],
+		references: [users.id],
+	}),
+}));
