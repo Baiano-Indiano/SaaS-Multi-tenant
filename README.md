@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Gravity SaaS - Boilerplate Multi-Tenant
 
-## Getting Started
+**Gravity SaaS** é um boilerplate *enterprise-ready* desenhado para acelerar a construção de aplicações SaaS modernas com foco em multilocação B2B (Multi-tenant).
 
-First, run the development server:
+Seu objetivo é ser robusto, seguro e com isolamento profundo de dados, mantendo um design minimalista e premium. O projeto chegou na sua versão **v1.0** com a base estrutural de autenticação, organização de *tenants* e controle de acesso concluídos.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## 🚀 Funcionalidades da v1.0
+
+- **Autenticação com Better-Auth**: Gestão de sessão fluida (E-mail/Senha). 
+- **Suporte Multi-Tenant 1:1**: Isolamento estrutural de dados com abordagens *schema-per-tenant* através do Drizzle ORM.
+- **Engine Dinâmico de RBAC**: Controle rígido e performático de Acesso Baseado em Cargos e Permissões. (Admin/Member).
+- **Gestão de Convites**: Sistema end-to-end seguro para envio, aceitação ou cancelamento de membros em Organizações.
+- **Integrações Assíncronas**: Ganchos de mock/integração preparados nativamente para **Resend** (Disparo de E-mails).
+- **Hardening de UI (Next.js 15)**: Implementação de Boundaries para falhas visuais (`error.tsx`) e interatividade reativa otimizada (`loading.tsx`), prevenindo bloqueios do Client-side.
+- **Playwright Estabilizado**: Ambiente pré-configurado contendo suítes automáticas *End-To-End* protegendo as rotas de acesso e garantindo ausência de regressões críticas.
+
+---
+
+## 🛠️ Stack Tecnológico
+
+| Camada | Tecnologia | Propósito |
+| :--- | :--- | :--- |
+| **Framework** | [Next.js 15 (App Router)](https://nextjs.org/) | Core, SSR (Server-Side Rendering) e Server Actions. |
+| **Linguagem** | [TypeScript](https://www.typescriptlang.org/) | Tipagem forte e prevenção contra vazamentos (strict bounds). |
+| **Estilização** | [Tailwind CSS v4](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) | Design UI minimalista, CSS Variables e Acessibilidade Radix. |
+| **Animações** | [Framer Motion](https://www.framer.com/motion/) + [Anime.js](https://animejs.com/) | Micro-interações otimizadas a nível VDOM e Hero animations. |
+| **Database** | [PostgreSQL](https://www.postgresql.org/) + [Drizzle ORM](https://orm.drizzle.team/) | Persistência, TypeSafety de DB e Native Tenant Schemas. |
+| **Auth** | [Better-Auth](https://better-auth.com/) | Extensibilidade, Session & Org Management. |
+| **Testes (E2E)** | [Playwright](https://playwright.dev/) | Chromium / Webkit Automation & Smoke Testing. |
+
+---
+
+## 📦 Como rodar localmente
+
+### 1. Requisitos
+- Node.js (v20+ Recomendado)
+- PostgreSQL (Local instanciado)
+
+### 2. Configurações (`.env.local`)
+Clone este repositório, instale dependências (`npm install`) e declare as chaves mínimas do ambiente:
+
+```env
+# URL do App
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+
+# Drizzle & DB Auth Config
+DATABASE_URL="postgresql://user:password@localhost:5432/gravitysaas"
+
+# Disparos de E-mail (Opcional - Falha de fallback vai para o console.log local)
+RESEND_API_KEY="re_..."
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Rodando Scripts e Migrações
+Após o BD conectado e criado na máquina, rode os pacotes core:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Push Inicial de Schemas & Seed 
+npm run db:push
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Inicializar Servidor de Desenvolvimento
+npm run dev
 
-## Learn More
+# (Opcional) Build & Start Server
+npm run build && npm run start
 
-To learn more about Next.js, take a look at the following resources:
+# (Opcional) Realizar a Automação e Smoke tests do Playwright E2E
+npx playwright test
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🛤️ Roadmap - v2.0 (Em Desenvolvimento na Branch `dev`)
+Nosso próximo marco foca no coração da monetização e engajamento B2B:
+- [ ] Billing Module e Integração Multi-Tenant com **Stripe** (BILL-01).
+- [ ] Módulos Websocket para alertas instantâneos ou limitações em Tempo Real (Limites Atuais de Planos). 
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> Criado em parceria com a Infra de Multi-Tenant Assistants. Equipe de Produto.
