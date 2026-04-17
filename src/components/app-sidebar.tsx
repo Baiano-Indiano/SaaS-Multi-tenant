@@ -25,21 +25,20 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   activeOrgId: string | null;
 }
 
-const items = [
-  { title: 'Overview', url: '#', icon: LayoutDashboard },
-  { title: 'Members', url: '#', icon: Users },
-  { title: 'Billing', url: '#', icon: CreditCard },
-  { title: 'Settings', url: '#', icon: Settings },
-];
+export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarProps) {
+  const activeOrg = organizations.find((o) => o.id === activeOrgId);
+  const activeSlug = activeOrg?.slug || "";
 
-export function AppSidebar({
-  organizations,
-  activeOrgId,
-  ...props
-}: AppSidebarProps) {
+  const menuItems = [
+    { title: "Overview", url: `/org/${activeSlug}/dashboard`, icon: LayoutDashboard },
+    { title: "Members", url: `/org/${activeSlug}/settings/members`, icon: Users },
+    { title: "Billing", url: `/org/${activeSlug}/settings/billing`, icon: CreditCard },
+    { title: "Settings", url: `/org/${activeSlug}/settings/roles`, icon: Settings },
+  ];
+
   return (
     <Sidebar {...props}>
-      <SidebarHeader className="border-b border-sidebar-border">
+      <SidebarHeader className="border-b border-sidebar-border/50">
         <SidebarMenu>
           <SidebarMenuItem>
             <OrgSwitcher organizations={organizations} activeOrgId={activeOrgId} />
@@ -48,19 +47,20 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-4 mb-2">
+            Organization
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => (
+            <SidebarMenu className="px-2">
+              {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
-                    render={
-                      <a href={item.url}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </a>
-                    }
-                  />
+                    render={<a href={item.url} />}
+                    className="hover:bg-zinc-900 transition-colors"
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span className="text-sm font-medium">{item.title}</span>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>

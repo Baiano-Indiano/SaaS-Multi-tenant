@@ -2,9 +2,9 @@
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { organizations } from '@/lib/db/schema';
+import { organizations, members } from '@/lib/db/schema';
 import { createTenantSchema } from '@/lib/db/tenant';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
@@ -53,7 +53,21 @@ export async function createOrganizationAction(
     .where(eq(organizations.id, org.id));
 
   // Synchronously create the Postgres schema for this tenant (D-05)
-  await createTenantSchema(tenantSchemaName);
+  // and seed it with default roles.
+  const tenantResult = await createTenantSchema(tenantSchemaName);
+
+  if (tenantResult && tenantResult.adminRoleId) {
+    // Link the creator to the Administrator role (T-03)
+    await db
+      .update(members)
+      .set({ roleId: tenantResult.adminRoleId })
+      .where(
+        and(
+          eq(members.organizationId, org.id),
+          eq(members.userId, session.user.id)
+        )
+      );
+  }
 
   // Set the new org as the active organization and redirect to its dashboard
   await auth.api.setActiveOrganization({
@@ -63,3 +77,4 @@ export async function createOrganizationAction(
 
   redirect(`/org/${slug}/dashboard`);
 }
+
