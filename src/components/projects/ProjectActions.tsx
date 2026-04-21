@@ -51,12 +51,14 @@ export function ProjectActions({ projectId, orgId, orgSlug }: ProjectActionsProp
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger>
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted">
-            <MoreHorizontal className="h-4 w-4" />
-            <span className="sr-only">Actions</span>
-          </Button>
-        </DropdownMenuTrigger>
+        <DropdownMenuTrigger
+          render={
+            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted">
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">Actions</span>
+            </Button>
+          }
+        />
         <DropdownMenuContent align="end" className="w-[160px]">
           <DropdownMenuItem className="cursor-pointer">
             <ExternalLink className="mr-2 h-4 w-4" />

@@ -30,6 +30,7 @@ function AvatarImage({
   if (!src || hasError) return null
 
   return (
+    /* eslint-disable-next-line @next/next/no-img-element */
     <img
       data-slot="avatar-image"
       src={src}

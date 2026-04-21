@@ -45,7 +45,8 @@ export default async function MembersPage({ params }: PageProps) {
   });
 
   // Fetch all roles available in this tenant
-  const availableRoles = await getRoles(org.tenantSchemaName);
+  // Fetch all roles available in this tenant
+  const availableRoles = await getRoles(org.id);
 
   // Fetch pending invitations
   const pendingInvitations = await getPendingInvitationsAction(org.id);

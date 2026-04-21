@@ -30,7 +30,7 @@ type ProjectFormValues = z.infer<typeof projectSchema>;
 interface CreateProjectDialogProps {
   orgId: string;
   orgSlug: string;
-  trigger?: React.ReactNode;
+  trigger?: React.ReactElement;
 }
 
 export function CreateProjectDialog({ orgId, orgSlug, trigger }: CreateProjectDialogProps) {
@@ -73,14 +73,16 @@ export function CreateProjectDialog({ orgId, orgSlug, trigger }: CreateProjectDi
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
-        {trigger || (
-          <Button className="font-semibold shadow-sm transition-all hover:shadow-md">
-            <Plus className="mr-2 h-4 w-4" />
-            New Project
-          </Button>
-        )}
-      </DialogTrigger>
+      <DialogTrigger
+        render={
+          trigger || (
+            <Button className="font-semibold shadow-sm transition-all hover:shadow-md">
+              <Plus className="mr-2 h-4 w-4" />
+              New Project
+            </Button>
+          )
+        }
+      />
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold tracking-tight">Create New Project</DialogTitle>

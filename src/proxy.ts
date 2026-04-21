@@ -1,17 +1,10 @@
-import { betterFetch } from '@better-fetch/fetch';
-import type { Session } from 'better-auth/types';
+import { auth } from '@/lib/auth';
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
-  const { data: session } = await betterFetch<Session>(
-    '/api/auth/get-session',
-    {
-      baseURL: request.nextUrl.origin,
-      headers: {
-        cookie: request.headers.get('cookie') || '',
-      },
-    }
-  );
+export async function proxy(request: NextRequest) {
+  const session = await auth.api.getSession({
+    headers: request.headers,
+  });
 
   // Auth gate: unauthenticated users go to /login
   if (!session) {
@@ -21,8 +14,8 @@ export async function middleware(request: NextRequest) {
   // Tenant boundary enforcement (D-04)
   // The Server layout at /org/[orgSlug]/layout.tsx performs the full DB membership
   // check — it redirects to /selecionar-org for non-members (T-02, T-05).
-  // Middleware stays lightweight (Edge-compatible): auth check only.
-  // This is the recommended Next.js App Router pattern for tenant isolation.
+  // Proxy stays lightweight: auth check only via direct server client.
+  // This is the optimized Next.js App Router pattern for tenant isolation.
   return NextResponse.next();
 }
 
