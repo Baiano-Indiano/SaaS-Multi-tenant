@@ -57,7 +57,10 @@ export const organizations = pgTable("organization", {
 	tenantSchemaName: text("tenantSchemaName").notNull().default(""),
 	plan: text("plan").notNull().default("free"),
 	stripeCustomerId: text("stripeCustomerId"),
-	stripeSubscriptionId: text("stripeSubscriptionId")
+	stripeSubscriptionId: text("stripeSubscriptionId"),
+	customDomain: text("customDomain").unique(),
+	domainVerified: boolean("domainVerified").notNull().default(false),
+	verificationToken: text("verificationToken")
 });
 
 export const members = pgTable("member", {

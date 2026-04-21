@@ -6,6 +6,7 @@ export const PLANS = {
 		maxMembers: 2,
 		maxProjects: 3,
 		customRoles: false,
+		customDomains: false,
 		price: "R$ 0",
 		priceId: null,
 		features: [
@@ -21,6 +22,7 @@ export const PLANS = {
 		maxMembers: 10,
 		maxProjects: 10,
 		customRoles: true,
+		customDomains: false,
 		price: "R$ 19,90",
 		priceId: "price_1TOSU9Kgmt5iTW4YF8ea1wPQ",
 		features: [
@@ -38,11 +40,13 @@ export const PLANS = {
 		maxMembers: 999,
 		maxProjects: 999,
 		customRoles: true,
+		customDomains: true,
 		price: "R$ 49,90",
 		priceId: "price_1TOSUAKgmt5iTW4YAkDAJSxn",
 		features: [
 			"Membros ilimitados",
 			"Roles customizadas ilimitadas",
+			"Domínios customizados",
 			"Suporte 24/7 dedicado",
 			"Analytics avançado",
 			"Audit logs",

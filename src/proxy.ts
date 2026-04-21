@@ -1,29 +1,73 @@
-import { auth } from '@/lib/auth';
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { Redis } from '@upstash/redis';
+
+// Initialize Redis for Edge resolution
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL || '',
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
+});
 
 export async function proxy(request: NextRequest) {
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  });
+  const url = request.nextUrl;
+  const hostname = request.headers.get('host') || '';
+  
+  // 1. Local Testing Overrides (D-04)
+  // Use x-mock-hostname to simulate custom domain behavior locally
+  const mockHostname = request.headers.get('x-mock-hostname');
+  const targetHostname = mockHostname || hostname;
 
-  // Auth gate: unauthenticated users go to /login
-  if (!session) {
-    return NextResponse.redirect(new URL('/login', request.url));
+  // 2. Define App Domains to exclude from rewrite
+  // Replace with your actual production domain
+  const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN || 'localhost:3000';
+  
+  // If it's the main app domain, skip custom domain logic
+  if (targetHostname === appDomain) {
+    return NextResponse.next();
   }
 
-  // Tenant boundary enforcement (D-04)
-  // The Server layout at /org/[orgSlug]/layout.tsx performs the full DB membership
-  // check — it redirects to /selecionar-org for non-members (T-02, T-05).
-  // Proxy stays lightweight: auth check only via direct server client.
-  // This is the optimized Next.js App Router pattern for tenant isolation.
+  // 3. Custom Domain Resolution (DOM-03)
+  const path = url.pathname;
+  
+  // Exclude internal Next.js paths and API routes
+  if (
+    path.startsWith('/_next') || 
+    path.startsWith('/api') || 
+    path.startsWith('/favicon.ico') ||
+    path.includes('.')
+  ) {
+    return NextResponse.next();
+  }
+
+  try {
+    // Check Redis for cached domain mapping
+    // key: domain:acme.com -> value: { slug: "acme", id: "org_123" }
+    const domainData = await redis.get<{ slug: string; id: string }>(`domain:${targetHostname}`);
+
+    if (domainData) {
+      // Internal rewrite to the organization route
+      // The user sees acme.com/projects but internally it's /org/acme/projects
+      console.log(`[Middleware] Rewriting ${targetHostname}${path} -> /org/${domainData.slug}${path}`);
+      return NextResponse.rewrite(
+        new URL(`/org/${domainData.slug}${path}`, request.url)
+      );
+    }
+  } catch (error) {
+    console.error('[Middleware] Domain resolution error:', error);
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/admin/:path*',
-    '/org/:path*',
-    '/selecionar-org',
+    /*
+     * Match all paths except for:
+     * 1. /api routes
+     * 2. /_next (Next.js internals)
+     * 3. /_static (inside /public)
+     * 4. all root files inside /public (e.g. /favicon.ico)
+     */
+    '/((?!api/|_next/|_static/|_vercel|[\\w-]+\\.\\w+).*)',
   ],
 };
