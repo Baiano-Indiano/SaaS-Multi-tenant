@@ -13,6 +13,7 @@
     "@base-ui/react": "^1.4.0",
     "@better-fetch/fetch": "^1.1.21",
     "@hookform/resolvers": "^5.2.2",
+    "@radix-ui/react-progress": "^1.1.8",
     "@radix-ui/react-toast": "^1.2.15",
     "@upstash/redis": "^1.37.0",
     "animejs": "^4.3.6",

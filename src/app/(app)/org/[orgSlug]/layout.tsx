@@ -5,6 +5,9 @@ import { eq, and } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { NotificationBell } from '@/components/notifications/notification-bell';
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
+import { PaywallProvider } from "@/components/billing/PaywallProvider";
 
 export default async function OrgLayout({
   children,

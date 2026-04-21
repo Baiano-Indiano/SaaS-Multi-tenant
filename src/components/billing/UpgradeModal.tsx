@@ -15,7 +15,7 @@ import { PlanId } from "@/lib/billing/plans";
 
 interface UpgradeModalProps {
   isOpen: boolean;
-  setIsOpen: (open: boolean) => void;
+  onOpenChange: (open: boolean) => void;
   title?: string;
   reason?: string;
   requiredPlan?: PlanId;
@@ -23,7 +23,7 @@ interface UpgradeModalProps {
 
 export function UpgradeModal({
   isOpen,
-  setIsOpen,
+  onOpenChange,
   title = "Limite de Plano Atingido",
   reason = "Você atingiu o limite do seu plano atual. Faça o upgrade agora para continuar escalando sem barreiras.",
 }: UpgradeModalProps) {
@@ -32,7 +32,7 @@ export function UpgradeModal({
   const orgSlug = params.orgSlug as string;
 
   const handleUpgrade = () => {
-    setIsOpen(false);
+    onOpenChange(false);
     if (orgSlug) {
       router.push(`/org/${orgSlug}/billing`);
     } else {
@@ -41,7 +41,7 @@ export function UpgradeModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden border-none bg-white dark:bg-zinc-950">
         <div className="relative p-6 pt-12">
           {/* Animated Background Element */}
@@ -97,7 +97,7 @@ export function UpgradeModal({
               </Button>
               <Button 
                 variant="ghost" 
-                onClick={() => setIsOpen(false)}
+                onClick={() => onOpenChange(false)}
                 className="w-full text-zinc-500 hover:text-zinc-900"
               >
                 Talvez mais tarde

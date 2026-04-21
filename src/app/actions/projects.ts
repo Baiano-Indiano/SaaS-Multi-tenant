@@ -70,7 +70,7 @@ export async function createProjectAction(data: {
     });
 
     revalidatePath(`/org/${data.orgSlug}/projects`);
-    return { success: true, project: result[0] };
+    return result;
   } catch (error) {
     console.error("Failed to create project:", error);
     throw error;

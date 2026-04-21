@@ -65,7 +65,7 @@ export function CreateProjectDialog({ orgId, orgSlug, trigger }: CreateProjectDi
         toast.success("Projeto criado com sucesso!");
         setOpen(false);
         reset();
-      } else if (result.error === "QUOTA_EXCEEDED") {
+      } else if ('error' in result && result.error === "QUOTA_EXCEEDED") {
         setOpen(false);
         openPaywall({
           title: "Limite de Projetos Atingido",

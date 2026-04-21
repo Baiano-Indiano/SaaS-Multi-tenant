@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 	}
 
 	const userId = session.user.id;
-	const activeOrgId = (session.session as any).activeOrganizationId;
+	const activeOrgId = (session.session as { activeOrganizationId?: string }).activeOrganizationId;
 
 	// 1. Create a stream for the client
 	const stream = new ReadableStream({
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 			const encoder = new TextEncoder();
 
 			// Function to write SSE formatted data
-			const sendEvent = (data: { type?: string; userId?: string; channel?: string; payload?: any }) => {
+			const sendEvent = (data: { type?: string; userId?: string; channel?: string; payload?: unknown }) => {
 				const message = `data: ${JSON.stringify(data)}\n\n`;
 				controller.enqueue(encoder.encode(message));
 			};

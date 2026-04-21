@@ -12,15 +12,16 @@ import {
   LayoutGrid, 
   Users, 
   Shield, 
-  TrendingUp,
   Activity,
-  ArrowUpRight,
   Database
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 interface AnalyticsWidgetsProps {
   stats: {
+    totalProjects: number;
+    totalMembers: number;
+    pendingInvites: number;
     totalRoles: number;
     quotas: {
       maxMembers: number;

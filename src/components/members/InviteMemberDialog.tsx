@@ -24,8 +24,7 @@ import {
 } from "@/components/ui/select";
 import { inviteMemberAction } from "@/app/actions/member";
 import { toast } from "sonner";
-import { Loader2, UserPlus, Mail } from "lucide-react";
-import { UpgradeModal } from "@/components/billing/UpgradeModal";
+import { Loader2, UserPlus } from "lucide-react";
 import { usePaywall } from "@/components/billing/PaywallProvider";
 
 /**

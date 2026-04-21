@@ -2,12 +2,11 @@
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { members, invitations, projects, roles } from "@/lib/db/schema";
+import { members, invitations, projects, roles, organizations } from "@/lib/db/schema";
 import { eq, and, count } from "drizzle-orm";
 import { headers } from "next/headers";
 import { getTenantDb } from "@/lib/db/tenant-db";
 import { PLANS } from "@/lib/billing/plans";
-import { count as dbCount } from "drizzle-orm";
 
 export async function getDashboardStatsAction(orgId: string) {
   const session = await auth.api.getSession({ headers: await headers() });

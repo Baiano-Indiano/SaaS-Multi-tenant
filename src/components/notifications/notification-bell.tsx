@@ -38,23 +38,25 @@ export function NotificationBell() {
 
 	return (
 		<Popover open={isOpen} onOpenChange={setIsOpen}>
-			<PopoverTrigger asChild>
-				<Button
-					variant="ghost"
-					size="icon"
-					className="relative hover:bg-zinc-900 transition-colors"
-				>
-					<Bell className="h-5 w-5 text-zinc-400" />
-					{unreadCount > 0 && (
-						<Badge
-							variant="destructive"
-							className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px] border-2 border-zinc-950 animate-in zoom-in"
-						>
-							{unreadCount}
-						</Badge>
-					)}
-				</Button>
-			</PopoverTrigger>
+			<PopoverTrigger
+				render={
+					<Button
+						variant="ghost"
+						size="icon"
+						className="relative hover:bg-zinc-900 transition-colors"
+					>
+						<Bell className="h-5 w-5 text-zinc-400" />
+						{unreadCount > 0 && (
+							<Badge
+								variant="destructive"
+								className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px] border-2 border-zinc-950 animate-in zoom-in"
+							>
+								{unreadCount}
+							</Badge>
+						)}
+					</Button>
+				}
+			/>
 			<PopoverContent className="w-80 p-0 bg-zinc-900 border-zinc-800 shadow-2xl" align="end">
 				<div className="flex items-center justify-between p-4 border-b border-zinc-800">
 					<h3 className="font-semibold text-sm text-zinc-100">Notifications</h3>
