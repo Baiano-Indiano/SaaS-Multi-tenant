@@ -70,6 +70,27 @@ npm run db:push
 # Utilize caso adicione colunas novas no Tenant Schema após a criação de algumas orgs
 npx tsx --env-file=.env.local src/scripts/fix-tenant-schemas.ts
 
+## 💳 Faturamento (Stripe)
+
+A integração com o Stripe já está configurada com produtos reais (em modo de teste). O sistema utiliza o fluxo de Checkout Session + Webhooks para sincronização de planos.
+
+### Configuração
+Certifique-se de que as seguintes variáveis estão no seu `.env.local`:
+```env
+STRIPE_SECRET_KEY=sk_test_...
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+### Testando Webhooks Localmente
+Como os eventos do Stripe (ex: assinatura completada) ocorrem fora do seu computador, você precisa redirecioná-los para o seu localhost usando o [Stripe CLI](https://docs.stripe.com/stripe-cli):
+
+1. Autentique o CLI: `stripe login`
+2. Inicie o redirecionamento: `stripe listen --forward-to localhost:3000/api/webhooks/stripe`
+3. Copie o `whsec_...` gerado no console e coloque no seu `.env.local`.
+
+### Manutenção de Planos
+Os planos estão definidos em `src/lib/billing/plans.ts`. Ao adicionar novos planos no Stripe, atualize os `priceId` correspondentes neste arquivo.
 # Inicializar Servidor de Desenvolvimento
 npm run dev
 ```

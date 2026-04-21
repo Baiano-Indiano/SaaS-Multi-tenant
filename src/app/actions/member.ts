@@ -4,12 +4,13 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { can } from "@/lib/auth/rbac-utils";
+import { getTenantDb } from "@/lib/db/tenant-db";
 import { db } from "@/lib/db";
-import { members, organizations, invitations } from "@/lib/db/schema";
+import { roles as rolesTable, members, organizations, invitations } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import postgres from "postgres";
 import { PLANS, PlanType } from "@/lib/billing/plans";
+import { can } from "@/lib/auth/rbac-utils";
+import postgres from "postgres";
 
 const connectionString = process.env.DATABASE_URL!;
 
@@ -22,51 +23,35 @@ export async function updateMemberRoleAction(formData: {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) throw new Error("Unauthorized");
 
-  // 1. Security Check: Actor must have roles:assign permission
-  const allowed = await can(session.user.id, formData.orgId, "roles:assign");
-  if (!allowed) throw new Error("Forbidden: Missing roles:assign permission");
-
-  // 2. Validate Target Role exists in Tenant Schema
-  const org = await db.query.organizations.findFirst({
-    where: eq(organizations.id, formData.orgId),
-  });
-  if (!org?.tenantSchemaName) throw new Error("Organization schema not found");
-
-  const schema = org.tenantSchemaName;
-  const client = postgres(connectionString, { prepare: false });
-
   try {
-    const roleExists = await client`
-      SELECT slug FROM ${client(schema)}.role WHERE id = ${formData.roleId}
-    `.then(res => res.length > 0);
+    // getTenantDb performs the Membership check (Rule 1)
+    await getTenantDb(session.user.id, formData.orgId, async (tx) => {
+      // 1. Verify Target Role exists in Tenant Schema
+      const targetRole = await tx.query.roles.findFirst({
+        where: eq(rolesTable.id, formData.roleId),
+      });
+      
+      if (!targetRole) throw new Error("Target role does not exist in this organization");
 
-    if (!roleExists) throw new Error("Target role does not exist in this organization");
-
-    // Get the slug of the new role for Better-Auth sync (optional but good)
-    const newRole = await client`
-      SELECT slug FROM ${client(schema)}.role WHERE id = ${formData.roleId}
-    `.then(res => res[0]);
-
-    // 3. Update Member in Public Schema
-    await db.update(members)
-      .set({ 
-        roleId: formData.roleId,
-        role: newRole.slug // Keep Better-Auth 'role' field in sync
-      })
-      .where(
-        and(
-          eq(members.id, formData.memberId),
-          eq(members.organizationId, formData.orgId)
-        )
-      );
+      // 2. Update Member in Public Schema (available via the 'public' fallback in search_path)
+      await tx.update(members)
+        .set({ 
+          roleId: formData.roleId,
+          role: targetRole.slug 
+        })
+        .where(
+          and(
+            eq(members.id, formData.memberId),
+            eq(members.organizationId, formData.orgId)
+          )
+        );
+    });
 
     revalidatePath(`/org/${formData.orgSlug}/members`);
     return { success: true };
   } catch (error) {
     console.error("Failed to update member role:", error);
-    throw new Error("Failed to update member role");
-  } finally {
-    await client.end();
+    throw error;
   }
 }
 
@@ -106,60 +91,55 @@ export async function inviteMemberAction(data: {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) throw new Error("Unauthorized");
 
-  const allowed = await can(session.user.id, data.orgId, "members:invite");
-  if (!allowed) throw new Error("Forbidden");
-
-  // Validate Role in Tenant Schema
-  const org = await db.query.organizations.findFirst({
-    where: eq(organizations.id, data.orgId),
-  });
-  if (!org?.tenantSchemaName) throw new Error("Organization schema not found");
-
-  const planId = (org.plan?.toUpperCase() || "FREE") as PlanType;
-  const currentPlan = PLANS[planId] || PLANS.FREE;
-
-  const currentMembers = await db.query.members.findMany({
-    where: eq(members.organizationId, data.orgId),
-  });
-
-  if (currentMembers.length >= currentPlan.maxMembers) {
-    throw new Error(`Your ${currentPlan.name} plan only allows up to ${currentPlan.maxMembers} members.`);
-  }
-
-  const schema = org.tenantSchemaName;
-  const client = postgres(connectionString, { prepare: false });
-
   try {
-    const roleRes = await client`
-      SELECT slug FROM ${client(schema)}.role WHERE id = ${data.roleId}
-    `;
-    if (roleRes.length === 0) throw new Error("Role not found");
-    const roleSlug = roleRes[0].slug;
+    const result = await getTenantDb(session.user.id, data.orgId, async (tx) => {
+      // 1. Plan validation
+      const org = await tx.query.organizations.findFirst({
+        where: eq(organizations.id, data.orgId),
+      });
+      
+      const planId = (org?.plan?.toUpperCase() || "FREE") as PlanType;
+      const currentPlan = PLANS[planId] || PLANS.FREE;
 
-    // 1. Create invitation via Better-Auth
-    const res = await auth.api.createInvitation({
-      body: {
-        email: data.email,
-        role: roleSlug,
-        organizationId: data.orgId,
-      },
-      headers: await headers(),
+      const currentMembers = await tx.query.members.findMany({
+        where: eq(members.organizationId, data.orgId),
+      });
+
+      if (currentMembers.length >= currentPlan.maxMembers) {
+        throw new Error(`Your ${currentPlan.name} plan only allows up to ${currentPlan.maxMembers} members.`);
+      }
+
+      // 2. Validate Role
+      const targetRole = await tx.query.roles.findFirst({
+        where: eq(rolesTable.id, data.roleId),
+      });
+      if (!targetRole) throw new Error("Role not found");
+
+      // 3. Create invitation via Better-Auth
+      const res = await auth.api.createInvitation({
+        body: {
+          email: data.email,
+          role: targetRole.slug as "member" | "admin" | "owner",
+          organizationId: data.orgId,
+        },
+        headers: await headers(),
+      }) as { id: string };
+
+      // 4. Add roleId to the record for RBAC synchronization
+      if (res && res.id) {
+        await tx.update(invitations)
+          .set({ roleId: data.roleId })
+          .where(eq(invitations.id, res.id));
+      }
+
+      return { success: true };
     });
 
-    // 2. Add roleId to the record for RBAC synchronization
-    if (res && res.id) {
-      await db.update(invitations)
-        .set({ roleId: data.roleId })
-        .where(eq(invitations.id, res.id));
-    }
-
     revalidatePath(`/org/${data.orgSlug}/members`);
-    return { success: true };
+    return result;
   } catch (error) {
     console.error("Failed to invite member:", error);
-    throw new Error("Failed to invite member");
-  } finally {
-    await client.end();
+    throw error;
   }
 }
 

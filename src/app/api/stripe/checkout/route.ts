@@ -5,9 +5,10 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { PLANS } from "@/lib/billing/plans";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    // @ts-ignore - Stripe type definitions mismatches in this specific version
+    // @ts-expect-error - Stripe type definitions mismatches in this specific version
     apiVersion: "2025-02-24.acacia",
 });
 
@@ -46,13 +47,17 @@ export async function POST(req: Request) {
             payment_method_types: ["card"],
             line_items: [
                 {
-                    price: priceId, // e.g. "price_1234..."
+                    price: priceId, 
                     quantity: 1,
                 },
             ],
-            success_url: `${origin}/org/${orgId}/billing?success=true`,
-            cancel_url: `${origin}/org/${orgId}/billing?canceled=true`,
-            client_reference_id: orgId, // We use this in the webhook to map back to the DB 
+            success_url: `${origin}/org/${orgSlug}/settings/billing?success=true`,
+            cancel_url: `${origin}/org/${orgSlug}/settings/billing?canceled=true`,
+            client_reference_id: orgId,
+            metadata: {
+                orgId,
+                planId: Object.values(PLANS).find((p: { priceId: string | null }) => p.priceId === priceId)?.id || "pro"
+            }
         });
 
         return NextResponse.json({ url: stripeSession.url });

@@ -4,9 +4,10 @@ import Stripe from "stripe";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { organizations } from "@/lib/db/schema";
+import { PLANS } from "@/lib/billing/plans";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-	// @ts-ignore - Stripe type definitions mismatches in this specific version
+	// @ts-expect-error - Stripe type definitions mismatches in this specific version
 	apiVersion: "2025-02-24.acacia", 
 });
 
@@ -32,21 +33,21 @@ export async function POST(req: Request) {
 
 	switch (event.type) {
 		case "checkout.session.completed":
-			// Retrieve the subscription details from Stripe
 			const subscriptionId = session.subscription as string;
 			const customerId = session.customer as string;
-            
-            // The client_reference_id should be the organization ID
             const orgId = session.client_reference_id;
+            const planId = session.metadata?.planId || "pro";
 
 			if (orgId) {
 				await db.update(organizations)
 					.set({
-						plan: "pro", // Determine based on session/priceId in a real app, here we assume all upgrades are to 'pro' for simplicity or read metadata
+						plan: planId,
 						stripeCustomerId: customerId,
 						stripeSubscriptionId: subscriptionId
 					})
 					.where(eq(organizations.id, orgId));
+                
+                console.log(`✅ Organization ${orgId} upgraded to ${planId}`);
 			}
 			break;
 
@@ -54,12 +55,28 @@ export async function POST(req: Request) {
 		case "customer.subscription.updated":
 			const subscription = event.data.object as Stripe.Subscription;
             
-            if (event.type === "customer.subscription.deleted" || subscription.status !== 'active') {
+            // If the subscription is no longer active (past_due, canceled, etc)
+            if (event.type === "customer.subscription.deleted" || 
+               ['canceled', 'unpaid', 'incomplete_expired'].includes(subscription.status)) {
                 await db.update(organizations)
 					.set({
 						plan: "free",
 					})
 					.where(eq(organizations.stripeSubscriptionId, subscription.id));
+                
+                console.log(`❌ Subscription ${subscription.id} downgraded to free`);
+            } else if (subscription.status === 'active') {
+                // Handle upgrades/downgrades that happen inside Stripe customer portal
+                const priceId = subscription.items.data[0].price.id;
+                const newPlanId = Object.values(PLANS).find(p => p.priceId === priceId)?.id || "pro";
+
+                await db.update(organizations)
+                    .set({
+                        plan: newPlanId,
+                    })
+                    .where(eq(organizations.stripeSubscriptionId, subscription.id));
+                
+                console.log(`🔄 Subscription ${subscription.id} updated to ${newPlanId}`);
             }
 			break;
             

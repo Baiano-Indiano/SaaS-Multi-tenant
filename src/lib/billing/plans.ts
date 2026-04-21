@@ -1,24 +1,49 @@
 export const PLANS = {
 	FREE: {
-		id: "free",
-		name: "Free Tier",
+		id: "free" as const,
+		name: "Gratuito",
+		description: "Ideal para começar e testar a plataforma.",
 		maxMembers: 2,
 		customRoles: false,
-		price: "$0",
+		price: "R$ 0",
+		priceId: null,
+		features: [
+			"Até 2 membros",
+			"Acesso básico",
+			"Suporte via comunidade",
+		],
 	},
 	STARTER: {
-		id: "starter",
+		id: "starter" as const,
 		name: "Starter",
-		maxMembers: 5,
+		description: "Para pequenos times que precisam de mais poder.",
+		maxMembers: 10,
 		customRoles: true,
-		price: "$19",
+		price: "R$ 19,90",
+		priceId: "price_1TOSU9Kgmt5iTW4YF8ea1wPQ",
+		features: [
+			"Até 10 membros",
+			"Roles customizadas",
+			"Suporte prioritário",
+			"Analytics básico",
+		],
+		popular: true,
 	},
 	PRO: {
-		id: "pro",
+		id: "pro" as const,
 		name: "Pro",
-		maxMembers: 20,
+		description: "Escalabilidade e controle total para sua empresa.",
+		maxMembers: 999,
 		customRoles: true,
-		price: "$49",
+		price: "R$ 49,90",
+		priceId: "price_1TOSUAKgmt5iTW4YAkDAJSxn",
+		features: [
+			"Membros ilimitados",
+			"Roles customizadas ilimitadas",
+			"Suporte 24/7 dedicado",
+			"Analytics avançado",
+			"Audit logs",
+		],
 	}
 } as const;
 

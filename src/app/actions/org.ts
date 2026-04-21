@@ -36,32 +36,39 @@ export async function createOrganizationAction(name: string, slug: string) {
       .set({ tenantSchemaName: tenantSchema })
       .where(eq(organizations.id, org.id));
 
-    // 3. Create Schema and Seed Roles
+    // 3. Create Schema and Initial Tables
     const client = postgres(connectionString, { prepare: false });
     try {
       await client`CREATE SCHEMA IF NOT EXISTS ${client(tenantSchema)}`;
       
-      // Basic RBAC tables in tenant schema (if not already there)
-      // Note: In a real app, you'd run migrations here.
-      // For this starter, we'll assume the tables 'role' and 'role_permission' exist or should be created.
-      
-      await client`
-        CREATE TABLE IF NOT EXISTS ${client(tenantSchema)}.role (
-          id UUID PRIMARY KEY,
+      // I'll define the exact DDL to ensure consistency with Rule 2 & 3
+      const ddl = [
+        `CREATE TABLE IF NOT EXISTS ${tenantSchema}.role (
+          id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
           slug TEXT NOT NULL UNIQUE,
           description TEXT,
           "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
-        )
-      `;
+        )`,
+        `CREATE TABLE IF NOT EXISTS ${tenantSchema}.role_permission (
+          "roleId" TEXT NOT NULL REFERENCES ${tenantSchema}.role(id) ON DELETE CASCADE,
+          "permissionKey" TEXT NOT NULL,
+          PRIMARY KEY ("roleId", "permissionKey")
+        )`,
+        `CREATE TABLE IF NOT EXISTS ${tenantSchema}.project (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          description TEXT,
+          status TEXT NOT NULL DEFAULT 'active',
+          "userId" TEXT NOT NULL,
+          "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+          "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
+        )`
+      ];
 
-      await client`
-        CREATE TABLE IF NOT EXISTS ${client(tenantSchema)}.role_permission (
-          id SERIAL PRIMARY KEY,
-          "roleId" UUID NOT NULL REFERENCES ${client(tenantSchema)}.role(id) ON DELETE CASCADE,
-          "permissionKey" TEXT NOT NULL
-        )
-      `;
+      for (const query of ddl) {
+        await client.unsafe(query);
+      }
 
       // 4. Seed Default Roles (Admin, Member, Viewer)
       const adminId = randomUUID();
@@ -80,10 +87,11 @@ export async function createOrganizationAction(name: string, slug: string) {
       // 5. Seed Permissions for Default Roles
       const adminPermissions = [
         "org:update", "org:delete", "members:read", "members:invite", 
-        "members:remove", "roles:manage", "roles:assign", "billing:read", "billing:manage"
+        "members:remove", "roles:manage", "roles:assign", "billing:read", "billing:manage",
+        "projects:create", "projects:delete", "projects:view"
       ];
-      const memberPermissions = ["members:read", "members:invite", "billing:read"];
-      const viewerPermissions = ["members:read", "billing:read"];
+      const memberPermissions = ["members:read", "members:invite", "billing:read", "projects:create", "projects:view"];
+      const viewerPermissions = ["members:read", "billing:read", "projects:view"];
 
       const permissionInserts = [
         ...adminPermissions.map(p => ({ roleId: adminId, permissionKey: p })),

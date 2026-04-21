@@ -102,6 +102,20 @@ export const rolePermissions = pgTable("role_permission", {
 	pk: primaryKey({ columns: [t.roleId, t.permissionKey] }),
 }));
 
+/**
+ * Business Tables (Tenant-Side)
+ * Strictly decoupled from 'public' (Rule 3)
+ */
+export const projects = pgTable("project", {
+	id: text("id").primaryKey(),
+	name: text("name").notNull(),
+	description: text("description"),
+	status: text("status").notNull().default("active"),
+	userId: text("userId").notNull(), // Logical reference to public.user id (Rule 3)
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+	updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
 export const invitations = pgTable("invitation", {
 	id: text("id").primaryKey(),
 	organizationId: text("organizationId").notNull().references(() => organizations.id),

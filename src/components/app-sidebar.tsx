@@ -10,7 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Users, Settings, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Users, Settings, CreditCard, FolderKanban } from 'lucide-react';
 import { OrgSwitcher } from '@/components/org-switcher';
 
 interface Organization {
@@ -31,6 +31,7 @@ export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarP
 
   const menuItems = [
     { title: "Overview", url: `/org/${activeSlug}/dashboard`, icon: LayoutDashboard },
+    { title: "Projects", url: `/org/${activeSlug}/projects`, icon: FolderKanban },
     { title: "Members", url: `/org/${activeSlug}/settings/members`, icon: Users },
     { title: "Billing", url: `/org/${activeSlug}/settings/billing`, icon: CreditCard },
     { title: "Settings", url: `/org/${activeSlug}/settings/roles`, icon: Settings },
