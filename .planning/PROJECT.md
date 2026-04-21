@@ -4,9 +4,14 @@
 
 A B2B SaaS starter boilerplate focusing on deep organization isolation and premium user experience.
 
-**Current State (2026-04-21):**
-- **v1.0 (Foundation)**: SHIPPED. Core architecture (Next.js 15, Drizzle schema-per-tenant, Better-Auth, Dynamic RBAC, Stripe, Projects) is fully operational.
-- **Next Goal**: v2.0 (Productivity & Scale).
+## Current Milestone: v2.0 (Productivity & Scale)
+
+**Goal:** Transform the foundation into a high-engagement, re-active platform with usage transparency and enterprise-ready routing.
+
+**Target features:**
+- **In-App Real-time Notifications**: Upstash Redis + WebSocket/Polling for re-active UI.
+- **Tenant Usage Analytics**: Dashboard widgets showcasing project/member quotas.
+- **Custom Domains**: Vercel Platforms API integration for Enterprise tenants.
 
 ## Requirements
 
