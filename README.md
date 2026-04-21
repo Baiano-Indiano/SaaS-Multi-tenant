@@ -16,6 +16,8 @@ Seu objetivo é ser robusto, seguro e com isolamento profundo de dados, mantendo
 - **Gestão de Convites**: Sistema end-to-end seguro para envio, aceitação ou cancelamento de membros em Organizações.
 - **Integrações Assíncronas**: Ganchos de mock/integração preparados nativamente para **Resend** (Disparo de E-mails).
 - **Hardening de UI (Next.js 15)**: Implementação de Boundaries para falhas visuais (`error.tsx`) e interatividade reativa otimizada (`loading.tsx`), prevenindo bloqueios do Client-side.
+- **Real-time Notification Engine (SSE)**: Sistema de notificações persistente e performático utilizando Server-Sent Events e Upstash Redis como message broker. Garante atualizações instantâneas entre abas sem o overhead de WebSockets.
+- **Tenant Analytics & Quota Enforcement**: Dashboards com indicadores de uso em tempo real (Projetos, Membros) e bloqueio preventivo (Soft-Block) baseado no plano contratado.
 - **Playwright Estabilizado**: Ambiente pré-configurado contendo suítes automáticas *End-To-End* protegendo as rotas de acesso e garantindo ausência de regressões críticas.
 
 ---
@@ -96,7 +98,7 @@ npm run dev
 ```
 
 ## 🛤️ Roadmap - Futuras Versões
-- [ ] Módulos Websocket para alertas e features instantâneas em Real Time.
-- [ ] Analytics Admin-facing. Dashboard master para você supervisionar a rentabilidade total dos locatários do SaaS (MRR, Churn).
+- [ ] Enterprise Domains (Vercel Platforms): Mapeamento de domínios customizados para clientes.
+- [ ] Analytics Admin-facing: Dashboard master para supervisionar a rentabilidade total (MRR, Churn).
 
 > Criado em parceria com a Infra de Multi-Tenant Assistants. Equipe de Produto.

@@ -49,3 +49,20 @@ The platform follows a multi-layered security architecture to prevent data leaka
 3.  **L3 - Data Access Layer (`getTenantDb`)**: The final and most secure layer. It enforces physical database isolation using `SET search_path` and re-validates organization membership before every transaction.
 
 This model ensures that even if one layer is bypassed or misconfigured, data remain strictly isolated within its respective tenant schema.
+
+## 6. Real-time Notification Engine
+
+The platform uses persistent **Server-Sent Events (SSE)** for real-time updates without the overhead of WebSockets.
+
+- **Reliability**: Integrated with **Upstash Redis** as a message broker.
+- **Fan-out Architecture**: When an action (e.g. project creation) happens, the system publishes a message to a Redis channel corresponding to the organization.
+- **Streaming**: The `src/app/api/notifications/stream/route.ts` endpoint listens to these channels and streams them to the client.
+- **Scalability**: Stateless SSE allows the app to scale horizontally while Redis maintains data consistency across nodes.
+
+## 7. PLG Layer & Quota Enforcement
+
+Product-Led Growth (PLG) logic is enforced via a **Soft-Block** strategy.
+
+- **Real-time Quotas**: Statistics are fetched in real-time using SQL `count()` on the isolated tenant schema, ensuring 100% accuracy for billing.
+- **Premium Intercepts**: Instead of disabling UI features, the system allows the action attempt but intercepts it with an `UpgradeModal` (via `PaywallProvider`) when limits are hit.
+- **Plan Scope**: Quota definitions are centralized in `src/lib/billing/plans.ts` and evaluated at both the Server Action level (for security) and the UI level (for UX).

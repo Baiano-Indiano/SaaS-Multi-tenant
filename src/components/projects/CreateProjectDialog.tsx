@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { createProjectAction } from "@/app/actions/projects";
 import { toast } from "sonner";
 import { Loader2, Plus } from "lucide-react";
+import { usePaywall } from "@/components/billing/PaywallProvider";
 
 const projectSchema = z.object({
   name: z.string().min(3, "O nome deve ter pelo menos 3 caracteres"),
@@ -36,6 +37,7 @@ interface CreateProjectDialogProps {
 export function CreateProjectDialog({ orgId, orgSlug, trigger }: CreateProjectDialogProps) {
   const [open, setOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
+  const { openPaywall } = usePaywall();
 
   const {
     register,
@@ -63,6 +65,12 @@ export function CreateProjectDialog({ orgId, orgSlug, trigger }: CreateProjectDi
         toast.success("Projeto criado com sucesso!");
         setOpen(false);
         reset();
+      } else if (result.error === "QUOTA_EXCEEDED") {
+        setOpen(false);
+        openPaywall({
+          title: "Limite de Projetos Atingido",
+          reason: "Seu plano atual atingiu o limite de projetos. Faça o upgrade para continuar criando novos espaços de trabalho.",
+        });
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Falha ao criar projeto.");

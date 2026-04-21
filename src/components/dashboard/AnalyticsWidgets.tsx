@@ -14,16 +14,18 @@ import {
   Shield, 
   TrendingUp,
   Activity,
-  ArrowUpRight
+  ArrowUpRight,
+  Database
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 interface AnalyticsWidgetsProps {
   stats: {
-    totalMembers: number;
-    pendingInvites: number;
-    totalProjects: number;
-    projectBreakdown: { val: number; status: string }[];
     totalRoles: number;
+    quotas: {
+      maxMembers: number;
+      maxProjects: number;
+    };
   };
 }
 
@@ -63,14 +65,19 @@ export function AnalyticsWidgets({ stats }: AnalyticsWidgetsProps) {
             <LayoutGrid className="h-4 w-4 text-zinc-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black text-white">{stats.totalProjects}</div>
-            <p className="text-xs text-zinc-500 mt-1 flex items-center gap-1">
-              <span className="text-emerald-500 flex items-center font-bold">
-                <ArrowUpRight className="h-3 w-3" />
-                Live
-              </span>
-              Isolated tenant instances
-            </p>
+            <div className="flex items-baseline justify-between">
+              <div className="text-3xl font-black text-white">{stats.totalProjects}</div>
+              <div className="text-xs text-zinc-500 font-medium">/{stats.quotas.maxProjects}</div>
+            </div>
+            <div className="mt-4 space-y-2">
+              <Progress 
+                value={(stats.totalProjects / stats.quotas.maxProjects) * 100} 
+                className="h-1"
+              />
+              <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">
+                {Math.round((stats.totalProjects / stats.quotas.maxProjects) * 100)}% Capacity used
+              </p>
+            </div>
           </CardContent>
         </Card>
       </motion.div>
@@ -88,14 +95,24 @@ export function AnalyticsWidgets({ stats }: AnalyticsWidgetsProps) {
             <Users className="h-4 w-4 text-zinc-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black text-white">{stats.totalMembers}</div>
-            <p className="text-xs text-zinc-500 mt-1">
-              {stats.pendingInvites > 0 ? (
-                <span className="text-blue-400 font-medium">+{stats.pendingInvites} pending invites</span>
-              ) : (
-                "Verified team members"
-              )}
-            </p>
+            <div className="flex items-baseline justify-between">
+              <div className="text-3xl font-black text-white">{stats.totalMembers}</div>
+              <div className="text-xs text-zinc-500 font-medium">/{stats.quotas.maxMembers}</div>
+            </div>
+            <div className="mt-4 space-y-2">
+              <Progress 
+                value={(stats.totalMembers / stats.quotas.maxMembers) * 100} 
+                className="h-1 bg-zinc-800"
+              />
+              <div className="flex justify-between items-center">
+                <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">
+                  {stats.pendingInvites > 0 ? `+${stats.pendingInvites} Pending` : 'Plan limit'}
+                </p>
+                <p className="text-[10px] text-zinc-400 font-bold">
+                  {Math.round((stats.totalMembers / stats.quotas.maxMembers) * 100)}%
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </motion.div>
@@ -129,21 +146,22 @@ export function AnalyticsWidgets({ stats }: AnalyticsWidgetsProps) {
           </div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">
-              System Health
+              Database Instances
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-emerald-500" />
+            <Database className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black text-white">99.9%</div>
-            <div className="flex items-center gap-1 mt-1">
-              <div className="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
+            <div className="text-3xl font-black text-white">Active</div>
+            <div className="flex items-center gap-2 mt-4">
+              <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
                 <motion.div 
                   initial={{ width: 0 }}
-                  animate={{ width: "99.9%" }}
-                  transition={{ duration: 2, delay: 0.5 }}
-                  className="h-full bg-emerald-500" 
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 1.5, delay: 0.5 }}
+                  className="h-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" 
                 />
               </div>
+              <span className="text-[10px] text-zinc-500 font-bold">STABLE</span>
             </div>
           </CardContent>
         </Card>

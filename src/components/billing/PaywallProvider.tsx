@@ -25,7 +25,7 @@ export function PaywallProvider({ children }: { children: ReactNode }) {
             {paywallData && (
                 <UpgradeModal
                     isOpen={isOpen}
-                    setIsOpen={setIsOpen}
+                    onOpenChange={setIsOpen}
                     title={paywallData.title}
                     reason={paywallData.reason}
                     requiredPlan={paywallData.requiredPlan}

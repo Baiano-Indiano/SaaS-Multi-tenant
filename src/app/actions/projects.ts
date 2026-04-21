@@ -4,8 +4,11 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { getTenantDb } from "@/lib/db/tenant-db";
 import { projects } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, count } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { PLANS } from "@/lib/billing/plans";
+import { db } from "@/lib/db";
+import { organizations } from "@/lib/db/schema";
 
 import { sendNotification } from "@/lib/notifications";
 
@@ -26,14 +29,35 @@ export async function createProjectAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
-    const result = await getTenantDb(session.user.id, data.orgId, async (db) => {
-      return await db.insert(projects).values({
+    // 1. Check Quota
+    const org = await db.query.organizations.findFirst({
+      where: eq(organizations.id, data.orgId),
+    });
+
+    if (!org) throw new Error("Organization not found");
+    const currentPlan = PLANS[org.plan.toUpperCase() as keyof typeof PLANS] || PLANS.FREE;
+
+    const result = await getTenantDb(session.user.id, data.orgId, async (tenantDb) => {
+      // Direct count in tenant schema
+      const currentCount = await tenantDb.select({ val: count() }).from(projects);
+      
+      if (currentCount[0].val >= currentPlan.maxProjects) {
+        return { error: "QUOTA_EXCEEDED" };
+      }
+
+      const newProject = await tenantDb.insert(projects).values({
         id: crypto.randomUUID(),
         name: data.name,
         description: data.description,
-        userId: session.user.id, // Logical reference (Rule 3)
+        userId: session.user.id,
       }).returning();
+
+      return { success: true, project: newProject[0] };
     });
+
+    if ("error" in result) {
+      return result;
+    }
 
     // Real-time notification (Collaborative fan-out)
     await sendNotification({

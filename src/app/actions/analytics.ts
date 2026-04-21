@@ -6,13 +6,24 @@ import { members, invitations, projects, roles } from "@/lib/db/schema";
 import { eq, and, count } from "drizzle-orm";
 import { headers } from "next/headers";
 import { getTenantDb } from "@/lib/db/tenant-db";
+import { PLANS } from "@/lib/billing/plans";
+import { count as dbCount } from "drizzle-orm";
 
 export async function getDashboardStatsAction(orgId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
-    // 1. Fetch data from PUBLIC schema
+    // 1. Fetch Organization Plan
+    const org = await db.query.organizations.findFirst({
+      where: eq(organizations.id, orgId),
+    });
+
+    if (!org) throw new Error("Organization not found");
+
+    const currentPlan = PLANS[org.plan.toUpperCase() as keyof typeof PLANS] || PLANS.FREE;
+
+    // 2. Fetch data from PUBLIC schema
     const memberCountResult = await db
       .select({ val: count() })
       .from(members)
@@ -55,6 +66,10 @@ export async function getDashboardStatsAction(orgId: string) {
         totalProjects,
         projectBreakdown: tenantStats.projects,
         totalRoles: tenantStats.rolesCount,
+        quotas: {
+          maxMembers: currentPlan.maxMembers,
+          maxProjects: currentPlan.maxProjects,
+        }
       }
     };
   } catch (error) {

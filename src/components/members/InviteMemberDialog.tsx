@@ -24,7 +24,8 @@ import {
 } from "@/components/ui/select";
 import { inviteMemberAction } from "@/app/actions/member";
 import { toast } from "sonner";
-import { Loader2, UserPlus } from "lucide-react";
+import { Loader2, UserPlus, Mail } from "lucide-react";
+import { UpgradeModal } from "@/components/billing/UpgradeModal";
 import { usePaywall } from "@/components/billing/PaywallProvider";
 
 /**
@@ -78,9 +79,15 @@ export function InviteMemberDialog({ roles, orgId, orgSlug }: InviteMemberDialog
       });
 
       if (result.success) {
-        toast.success("Convite enviado com sucesso!");
+        toast.success(`Convite enviado para ${data.email}`);
         setOpen(false);
         reset();
+      } else if (result.error === "QUOTA_EXCEEDED") {
+        setOpen(false);
+        openPaywall({
+          title: "Limite de Membros Atingido",
+          reason: "Você atingiu o limite de membros do seu plano atual. Faça o upgrade para convidar mais pessoas para o seu time.",
+        });
       }
     } catch (error) {
        const message = error instanceof Error ? error.message : "Falha ao enviar convite.";

@@ -106,7 +106,7 @@ export async function inviteMemberAction(data: {
       });
 
       if (currentMembers.length >= currentPlan.maxMembers) {
-        throw new Error(`Your ${currentPlan.name} plan only allows up to ${currentPlan.maxMembers} members.`);
+        return { error: "QUOTA_EXCEEDED" };
       }
 
       // 2. Validate Role
