@@ -9,6 +9,7 @@ import { addDomainToProject, removeDomainFromProject, getDomainConfig } from "@/
 import { Redis } from "@upstash/redis";
 import { revalidatePath } from "next/cache";
 import { PLANS, PlanType } from "@/lib/billing/plans";
+import { recordAuditLog } from "@/lib/audit";
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || '',
@@ -54,6 +55,15 @@ export async function addDomainAction(orgId: string, domain: string) {
   await redis.set(`domain:${domain}`, { slug: org.slug, id: org.id });
 
   revalidatePath(`/org/${org.slug}/settings/domains`);
+
+  // Record Audit Log (Phase 11)
+  await recordAuditLog({
+    organizationId: orgId,
+    action: "DOMAIN_ADDED",
+    entityType: "DOMAIN",
+    details: `Adicionou o domínio customizado: ${domain}`
+  });
+
   return { success: true };
 }
 
@@ -89,6 +99,15 @@ export async function removeDomainAction(orgId: string) {
   await redis.del(`domain:${domainToRemove}`);
 
   revalidatePath(`/org/${org.slug}/settings/domains`);
+
+  // Record Audit Log (Phase 11)
+  await recordAuditLog({
+    organizationId: orgId,
+    action: "DOMAIN_REMOVED",
+    entityType: "DOMAIN",
+    details: `Removeu o domínio customizado: ${domainToRemove}`
+  });
+
   return { success: true };
 }
 

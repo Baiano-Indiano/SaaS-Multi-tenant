@@ -1,7 +1,7 @@
 import postgres from 'postgres';
 import { DEFAULT_ADMIN_PERMISSIONS, DEFAULT_MEMBER_PERMISSIONS } from '../auth/permissions';
 
-const connectionString = process.env.DATABASE_URL!;
+const connectionString = process.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/saas_db";
 
 /**
  * Creates a dedicated PostgreSQL schema for a tenant synchronously.

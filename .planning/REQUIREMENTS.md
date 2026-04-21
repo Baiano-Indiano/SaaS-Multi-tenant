@@ -26,5 +26,14 @@ High-level functional requirements for **Milestone v2.0 (Productivity & Scale)**
 - [ ] **DOM-03**: Domain Verification Workflow.
   - *Description:* Display DNS records (TXT/CNAME) for ownership verification.
 
+## Team Activity & Audit Logs (Security)
+
+- [ ] **AUD-01**: Activity Log Database Table.
+  - *Description:* Schema to store user actions (userId, action, entityId, metadata).
+- [ ] **AUD-02**: Organization Activity Feed UI.
+  - *Description:* A "Recent Activity" view in the organization settings dashboard.
+- [ ] **AUD-03**: Automated Event Hooks.
+  - *Description:* Server-side logic to trigger logs on project creation, member invites, and domain changes.
+
 ---
 *Archive: [v1.0 Requirements](file:///c:/Users/Bernardo/Desktop/SaaS-Multi-tenant/.planning/milestones/v1.0-REQUIREMENTS.md)*

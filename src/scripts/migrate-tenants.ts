@@ -35,6 +35,21 @@ const GET_TENANT_DDL = (schemaName: string) => [
     "userId" TEXT NOT NULL,
     "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
     "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
+  )`,
+
+  // 4. Audit Log Table
+  `CREATE TABLE IF NOT EXISTS ${schemaName}.audit_log (
+    id TEXT PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "userName" TEXT NOT NULL,
+    "userEmail" TEXT NOT NULL,
+    action TEXT NOT NULL,
+    "entityType" TEXT NOT NULL,
+    "entityId" TEXT,
+    details TEXT,
+    "ipAddress" TEXT,
+    "userAgent" TEXT,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
   )`
 ];
 

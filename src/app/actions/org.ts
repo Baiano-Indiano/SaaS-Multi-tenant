@@ -9,7 +9,9 @@ import postgres from "postgres";
 
 import { randomUUID } from "crypto";
 
-const connectionString = process.env.DATABASE_URL!;
+import { recordAuditLog } from "@/lib/audit";
+
+const connectionString = process.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/saas_db";
 
 export async function createOrganizationAction(name: string, slug: string) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -63,6 +65,19 @@ export async function createOrganizationAction(name: string, slug: string) {
           "userId" TEXT NOT NULL,
           "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
           "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
+        )`,
+        `CREATE TABLE IF NOT EXISTS ${tenantSchema}.audit_log (
+          id TEXT PRIMARY KEY,
+          "userId" TEXT NOT NULL,
+          "userName" TEXT NOT NULL,
+          "userEmail" TEXT NOT NULL,
+          action TEXT NOT NULL,
+          "entityType" TEXT NOT NULL,
+          "entityId" TEXT,
+          details TEXT,
+          "ipAddress" TEXT,
+          "userAgent" TEXT,
+          "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
         )`
       ];
 
@@ -88,7 +103,7 @@ export async function createOrganizationAction(name: string, slug: string) {
       const adminPermissions = [
         "org:update", "org:delete", "members:read", "members:invite", 
         "members:remove", "roles:manage", "roles:assign", "billing:read", "billing:manage",
-        "projects:create", "projects:delete", "projects:view"
+        "projects:create", "projects:delete", "projects:view", "audit_logs:read"
       ];
       const memberPermissions = ["members:read", "members:invite", "billing:read", "projects:create", "projects:view"];
       const viewerPermissions = ["members:read", "billing:read", "projects:view"];
@@ -120,6 +135,15 @@ export async function createOrganizationAction(name: string, slug: string) {
     } finally {
       await client.end();
     }
+
+    // Record Audit Log (Phase 11) - AFTER provisioning
+    await recordAuditLog({
+      organizationId: org.id,
+      action: "ORG_CREATED",
+      entityType: "ORGANIZATION",
+      entityId: org.id,
+      details: `Criou a organização ${name} (${slug})`
+    });
 
     return { 
       success: true, 

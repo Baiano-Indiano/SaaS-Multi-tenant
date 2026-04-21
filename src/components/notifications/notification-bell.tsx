@@ -24,7 +24,7 @@ interface Notification {
 
 export function NotificationBell() {
 	const { unreadCount, setUnreadCount } = useNotifications();
-	const [notifications, setNotifications] = useState<Notification[]>([]);
+	const [notifications] = useState<Notification[]>([]);
 	const [isOpen, setIsOpen] = useState(false);
 
 	// In a real app, we would fetch notifications from an API or Server Action

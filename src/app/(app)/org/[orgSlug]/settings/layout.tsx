@@ -23,6 +23,10 @@ const sidebarNavItems = [
     title: "Billing",
     href: "settings/billing",
   },
+  {
+    title: "Activity Log",
+    href: "settings/activity",
+  },
 ];
 
 export default async function SettingsLayout({

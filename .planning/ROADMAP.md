@@ -26,7 +26,7 @@ This project follows a phased implementation approach.
 
 ---
 
-### Phase 10: Enterprise Domains (Vercel Platforms)
+### [x] Phase 10: Enterprise Domains (Vercel Platforms)
 **Goal:** Enable custom domain mapping for organizations.
 **Requirements:** DOM-01, DOM-02, DOM-03
 
@@ -34,6 +34,17 @@ This project follows a phased implementation approach.
 1. Admins can add/remove custom domains in Organization Settings.
 2. Domain ownership verification workflow (DNS TXT) is functional.
 3. Vercel Platforms API correctly provisions SSL and routes requests to the corresponding tenant slug.
+
+---
+
+### Phase 11: Team Activity & Audit Logs
+**Goal:** Track administrative actions for transparency and compliance.
+**Requirements:** AUD-01, AUD-02, AUD-03
+
+**Success Criteria:**
+1. Activity logs are captured for all key organization events.
+2. Admins can view a filterable activity feed in Organization Settings.
+3. Logs include user details, action type, and timestamp.
 
 ---
 

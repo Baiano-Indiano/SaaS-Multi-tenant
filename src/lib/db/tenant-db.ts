@@ -6,7 +6,7 @@ import type { PgTransaction } from "drizzle-orm/pg-core";
 import type { PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
 import * as schema from "./schema";
 
-type TenantTransaction = PgTransaction<
+export type TenantTransaction = PgTransaction<
   PostgresJsQueryResultHKT, 
   typeof schema, 
   ExtractTablesWithRelations<typeof schema>

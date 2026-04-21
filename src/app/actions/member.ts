@@ -11,6 +11,7 @@ import { eq, and } from "drizzle-orm";
 import { PLANS, PlanType } from "@/lib/billing/plans";
 import { can } from "@/lib/auth/rbac-utils";
 import postgres from "postgres";
+import { recordAuditLog } from "@/lib/audit";
 
 const connectionString = process.env.DATABASE_URL!;
 
@@ -48,6 +49,16 @@ export async function updateMemberRoleAction(formData: {
     });
 
     revalidatePath(`/org/${formData.orgSlug}/members`);
+
+    // Record Audit Log (Phase 11)
+    await recordAuditLog({
+      organizationId: formData.orgId,
+      action: "MEMBER_ROLE_UPDATED",
+      entityType: "MEMBER",
+      entityId: formData.memberId,
+      details: `Alterou a role do membro para o ID ${formData.roleId}`
+    });
+
     return { success: true };
   } catch (error) {
     console.error("Failed to update member role:", error);
@@ -75,6 +86,16 @@ export async function removeMemberAction(memberId: string, orgId: string, orgSlu
       );
 
     revalidatePath(`/org/${orgSlug}/members`);
+
+    // Record Audit Log (Phase 11)
+    await recordAuditLog({
+      organizationId: orgId,
+      action: "MEMBER_REMOVED",
+      entityType: "MEMBER",
+      entityId: memberId,
+      details: `Removeu o membro da organização`
+    });
+
     return { success: true };
   } catch (error) {
     console.error("Failed to remove member:", error);
@@ -136,6 +157,15 @@ export async function inviteMemberAction(data: {
     });
 
     revalidatePath(`/org/${data.orgSlug}/members`);
+
+    // Record Audit Log (Phase 11)
+    await recordAuditLog({
+      organizationId: data.orgId,
+      action: "MEMBER_INVITED",
+      entityType: "INVITATION",
+      details: `Convidou o usuário ${data.email} para a organização`
+    });
+
     return result;
   } catch (error) {
     console.error("Failed to invite member:", error);
@@ -159,6 +189,16 @@ export async function cancelInvitationAction(id: string, orgId: string, orgSlug:
     });
 
     revalidatePath(`/org/${orgSlug}/members`);
+
+    // Record Audit Log (Phase 11)
+    await recordAuditLog({
+      organizationId: orgId,
+      action: "INVITATION_CANCELLED",
+      entityType: "INVITATION",
+      entityId: id,
+      details: `Cancelou o convite pendente`
+    });
+
     return { success: true };
   } catch (error) {
     console.error("Failed to cancel invitation:", error);
@@ -238,6 +278,15 @@ export async function acceptInvitationAction(invitationId: string) {
 
     // Redirect to Org Dashboard
     // We don't return here because redirect throws a special error in Next.js
+    // Record Audit Log (Phase 11)
+    await recordAuditLog({
+      organizationId: org.id,
+      action: "INVITATION_ACCEPTED",
+      entityType: "MEMBER",
+      entityId: session.user.id,
+      details: `Aceitou o convite para entrar na organização`
+    });
+
   } catch (error) {
     console.error("Failed to accept invitation:", error);
     if (error instanceof Error) throw error;

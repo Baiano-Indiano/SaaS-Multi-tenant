@@ -9,6 +9,7 @@ import { roles, rolePermissions } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { PermissionKey } from "@/lib/auth/permissions";
+import { recordAuditLog } from "@/lib/audit";
 
 /**
  * Creates a new custom role within the organization's tenant schema.
@@ -49,6 +50,16 @@ export async function createRoleAction(formData: {
     }
 
     revalidatePath(`/org/${formData.orgSlug}/settings/roles`);
+
+    // Record Audit Log (Phase 11)
+    await recordAuditLog({
+      organizationId: formData.orgId,
+      action: "ROLE_CREATED",
+      entityType: "ROLE",
+      entityId: roleId,
+      details: `Criou a role customizada: ${formData.name} (${formData.slug})`
+    });
+
     return { success: true };
   });
 }
@@ -101,6 +112,16 @@ export async function updateRoleAction(formData: {
     }
 
     revalidatePath(`/org/${formData.orgSlug}/settings/roles`);
+
+    // Record Audit Log (Phase 11)
+    await recordAuditLog({
+      organizationId: formData.orgId,
+      action: "ROLE_UPDATED",
+      entityType: "ROLE",
+      entityId: formData.id,
+      details: `Atualizou a role: ${formData.name}`
+    });
+
     return { success: true };
   });
 }
@@ -130,6 +151,16 @@ export async function deleteRoleAction(roleId: string, orgId: string, orgSlug: s
     await tx.delete(roles).where(eq(roles.id, roleId));
 
     revalidatePath(`/org/${orgSlug}/settings/roles`);
+
+    // Record Audit Log (Phase 11)
+    await recordAuditLog({
+      organizationId: orgId,
+      action: "ROLE_DELETED",
+      entityType: "ROLE",
+      entityId: roleId,
+      details: `Removeu a role customizada da organização`
+    });
+
     return { success: true };
   });
 }

@@ -164,3 +164,17 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
 		references: [organizations.id],
 	}),
 }));
+
+export const auditLogs = pgTable("audit_log", {
+	id: text("id").primaryKey(),
+	userId: text("userId").notNull(), // Logical reference to public.user id
+	userName: text("userName").notNull(),
+	userEmail: text("userEmail").notNull(),
+	action: text("action").notNull(), // e.g., 'PROJECT_CREATED', 'MEMBER_INVITED'
+	entityType: text("entityType").notNull(), // e.g., 'PROJECT', 'MEMBER'
+	entityId: text("entityId"),
+	details: text("details"), // JSON string or summary
+	ipAddress: text("ipAddress"),
+	userAgent: text("userAgent"),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+});

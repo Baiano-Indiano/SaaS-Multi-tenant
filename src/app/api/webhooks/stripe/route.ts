@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { organizations } from "@/lib/db/schema";
 import { PLANS } from "@/lib/billing/plans";
+import { recordAuditLog } from "@/lib/audit";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 	// @ts-expect-error - Stripe type definitions mismatches in this specific version
@@ -53,6 +54,15 @@ export async function POST(req: Request) {
 					.where(eq(organizations.id, orgId));
                 
                 console.log(`✅ Organization ${orgId} upgraded to ${planId}`);
+
+                // Record Audit Log (Phase 11)
+                await recordAuditLog({
+                    organizationId: orgId,
+                    action: "SUBSCRIPTION_CREATED",
+                    entityType: "BILLING",
+                    details: `Assinatura do plano ${planId} ativada via Stripe`,
+                    actor: { id: "system", name: "Stripe Webhook", email: "billing@system.local" }
+                });
 
 				// Notify the organization
 				// Find any member to get a valid userId (or we could use a system account)
@@ -108,6 +118,17 @@ export async function POST(req: Request) {
 				}
 
                 console.log(`❌ Subscription ${subscription.id} downgraded to free`);
+
+                if (orgResult) {
+                    // Record Audit Log (Phase 11)
+                    await recordAuditLog({
+                        organizationId: orgResult.id,
+                        action: "SUBSCRIPTION_DELETED",
+                        entityType: "BILLING",
+                        details: `Assinatura cancelada ou expirada. Downgrade para o plano Free.`,
+                        actor: { id: "system", name: "Stripe Webhook", email: "billing@system.local" }
+                    });
+                }
             } else if (subscription.status === 'active') {
                 // Handle upgrades/downgrades that happen inside Stripe customer portal
                 const priceId = subscription.items.data[0].price.id;
@@ -139,6 +160,17 @@ export async function POST(req: Request) {
 				}
 
                 console.log(`🔄 Subscription ${subscription.id} updated to ${newPlanId}`);
+
+                if (orgResult) {
+                    // Record Audit Log (Phase 11)
+                    await recordAuditLog({
+                        organizationId: orgResult.id,
+                        action: "SUBSCRIPTION_UPDATED",
+                        entityType: "BILLING",
+                        details: `Plano atualizado para ${newPlanId} via Stripe`,
+                        actor: { id: "system", name: "Stripe Webhook", email: "billing@system.local" }
+                    });
+                }
             }
 			break;
             

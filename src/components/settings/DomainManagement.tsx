@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, Globe, CheckCircle2, AlertCircle, Trash2, ExternalLink, RefreshCw, Copy, Check } from "lucide-react";
+import { Loader2, Globe, CheckCircle2, AlertCircle, Trash2, ExternalLink, RefreshCw, Copy } from "lucide-react";
 import { addDomainAction, removeDomainAction, checkDomainStatusAction } from "@/app/actions/domains";
 import { useToast } from "@/hooks/use-toast";
 import { usePaywall } from "@/components/billing/PaywallProvider";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 interface DomainManagementProps {
   orgId: string;
@@ -29,7 +29,6 @@ export function DomainManagement({
   const [isVerifying, setIsVerifying] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
-  const [dnsStatus, setDnsStatus] = useState<any>(null);
   const [verified, setVerified] = useState(initialVerified);
   
   const { toast } = useToast();
@@ -63,7 +62,7 @@ export function DomainManagement({
         });
         window.location.reload(); // Refresh to get new state
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Erro inesperado",
         description: "Tente novamente mais tarde.",
@@ -94,7 +93,6 @@ export function DomainManagement({
     setIsChecking(true);
     try {
       const status = await checkDomainStatusAction(orgId);
-      setDnsStatus(status);
       if (status?.isValid) {
         setVerified(true);
         toast({

@@ -55,6 +55,13 @@ export const PERMISSIONS = {
     name: "Manage Subscription",
     description: "Ability to change plans and update payment methods",
   },
+
+  // Audit Logs
+  "audit_logs:read": {
+    key: "audit_logs:read",
+    name: "View Activity Log",
+    description: "Ability to view the organization's administrative activity log",
+  },
 } as const;
 
 export type PermissionKey = keyof typeof PERMISSIONS;

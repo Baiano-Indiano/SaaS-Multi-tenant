@@ -11,6 +11,7 @@ import { db } from "@/lib/db";
 import { organizations } from "@/lib/db/schema";
 
 import { sendNotification } from "@/lib/notifications";
+import { recordAuditLog } from "@/lib/audit";
 
 /**
  * createProjectAction
@@ -70,6 +71,16 @@ export async function createProjectAction(data: {
     });
 
     revalidatePath(`/org/${data.orgSlug}/projects`);
+
+    // Record Audit Log (Phase 11)
+    await recordAuditLog({
+      organizationId: data.orgId,
+      action: "PROJECT_CREATED",
+      entityType: "PROJECT",
+      entityId: result.project.id,
+      details: `Created project "${data.name}"`
+    });
+
     return result;
   } catch (error) {
     console.error("Failed to create project:", error);
@@ -107,6 +118,16 @@ export async function deleteProjectAction(projectId: string, orgId: string, orgS
     });
 
     revalidatePath(`/org/${orgSlug}/projects`);
+
+    // Record Audit Log (Phase 11)
+    await recordAuditLog({
+      organizationId: orgId,
+      action: "PROJECT_DELETED",
+      entityType: "PROJECT",
+      entityId: projectId,
+      details: `Deleted project (ID: ${projectId})`
+    });
+
     return { success: true };
   } catch (error) {
     console.error("Failed to delete project:", error);
