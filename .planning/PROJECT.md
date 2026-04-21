@@ -1,12 +1,12 @@
-# Multi-Tenant SaaS Starter
+# Project
 
-## What This Is
+**Multi-Tenant SaaS Starter**
 
-A B2B SaaS starter boilerplate focused on organization and access management. It provides authentication, organization creation, member invitations, and dynamic role-based access control (RBAC) to serve as a scalable foundation for future enterprise SaaS products.
+A B2B SaaS starter boilerplate focusing on deep organization isolation and premium user experience.
 
-## Core Value
-
-Secure, tenant-isolated data architecture with flexible organization management that accelerates the launch of enterprise-ready B2B applications.
+**Current State (2026-04-21):**
+- **v1.0 (Foundation)**: SHIPPED. Core architecture (Next.js 15, Drizzle schema-per-tenant, Better-Auth, Dynamic RBAC, Stripe, Projects) is fully operational.
+- **Next Goal**: v2.0 (Productivity & Scale).
 
 ## Requirements
 

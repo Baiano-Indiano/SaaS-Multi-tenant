@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in-progress
-last_updated: "2026-04-17T20:37:00.000Z"
+last_updated: "2026-04-21T14:10:00.000Z"
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 5
-  completed_plans: 5
+  total_phases: 7
+  completed_phases: 7
+  total_plans: 7
+  completed_plans: 7
   percent: 100
 ---
 
@@ -38,7 +38,9 @@ See: `.planning/PROJECT.md` (updated 2026-04-16)
 | 03 | Deep Multi-Tenant Context | ✅ Complete |
 | 04 | Dynamic RBAC Engine | ✅ Complete |
 | 05 | Member Invitations | ✅ Complete |
+| 06 | Billing & Subscriptions | ✅ Complete |
+| 07 | Project Management | ✅ Complete |
 
 ## Active Work
 
-*Milestone v1.0 phases complete. Next: QA walkthrough, E2E testing, and polish.*
+*Milestone v1.0 phases complete. Sincronização de documentos finalizada. Pronto para gsd-complete-milestone.*

@@ -1,3 +1,5 @@
+"use client"
+
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
 
@@ -40,15 +42,20 @@ const buttonVariants = cva(
   }
 )
 
+export interface ButtonProps extends ButtonPrimitive.Props, VariantProps<typeof buttonVariants> {
+  "data-slot"?: string | null;
+}
+
 function Button({
   className,
   variant = "default",
   size = "default",
+  "data-slot": dataSlot,
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonProps) {
   return (
     <ButtonPrimitive
-      data-slot="button"
+      data-slot={dataSlot ?? "button"}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />
