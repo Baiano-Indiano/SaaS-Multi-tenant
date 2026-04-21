@@ -138,3 +138,26 @@ export const invitationsRelations = relations(invitations, ({ one }) => ({
 		references: [users.id],
 	}),
 }));
+
+export const notifications = pgTable("notification", {
+	id: text("id").primaryKey(),
+	userId: text("userId").notNull().references(() => users.id, { onDelete: 'cascade' }),
+	organizationId: text("organizationId").references(() => organizations.id, { onDelete: 'cascade' }),
+	type: text("type").notNull(), // e.g., 'SYSTEM', 'BILLING', 'PROJECT_CREATED', 'MEMBER_JOINED'
+	title: text("title").notNull(),
+	message: text("message").notNull(),
+	link: text("link"),
+	readAt: timestamp("readAt"),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+	user: one(users, {
+		fields: [notifications.userId],
+		references: [users.id],
+	}),
+	organization: one(organizations, {
+		fields: [notifications.organizationId],
+		references: [organizations.id],
+	}),
+}));

@@ -2,8 +2,8 @@
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { organizations, members, invitations, projects, roles } from "@/lib/db/schema";
-import { eq, and, count, sql } from "drizzle-orm";
+import { members, invitations, projects, roles } from "@/lib/db/schema";
+import { eq, and, count } from "drizzle-orm";
 import { headers } from "next/headers";
 import { getTenantDb } from "@/lib/db/tenant-db";
 

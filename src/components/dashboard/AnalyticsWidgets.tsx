@@ -6,19 +6,16 @@ import {
   Card, 
   CardContent, 
   CardHeader, 
-  CardTitle,
-  CardDescription
+  CardTitle
 } from "@/components/ui/card";
 import { 
   LayoutGrid, 
   Users, 
   Shield, 
-  Mail, 
   TrendingUp,
   Activity,
   ArrowUpRight
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface AnalyticsWidgetsProps {
   stats: {

@@ -4,7 +4,7 @@ This project follows a phased implementation approach.
 
 ## 🚀 Milestone v2.0 (Productivity & Scale)
 
-### Phase 08: Real-time Foundation (Upstash)
+### [x] Phase 08: Real-time Foundation (Upstash)
 **Goal:** Establish the serverless real-time infrastructure using Upstash Redis.
 **Requirements:** REK-01, REK-02
 

@@ -7,6 +7,8 @@ import { projects } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
+import { sendNotification } from "@/lib/notifications";
+
 /**
  * createProjectAction
  * 
@@ -31,6 +33,16 @@ export async function createProjectAction(data: {
         description: data.description,
         userId: session.user.id, // Logical reference (Rule 3)
       }).returning();
+    });
+
+    // Real-time notification (Collaborative fan-out)
+    await sendNotification({
+      userId: session.user.id,
+      organizationId: data.orgId,
+      type: "PROJECT_CREATED",
+      title: "New Project Created",
+      message: `${session.user.name || session.user.email} created the project "${data.name}".`,
+      link: `/org/${data.orgSlug}/projects`
     });
 
     revalidatePath(`/org/${data.orgSlug}/projects`);

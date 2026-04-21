@@ -11,6 +11,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 	apiVersion: "2025-02-24.acacia", 
 });
 
+import { sendNotification } from "@/lib/notifications";
+import { members } from "@/lib/db/schema";
+
 export async function POST(req: Request) {
 	const body = await req.text();
 	const signature = (await headers()).get("Stripe-Signature") as string;
@@ -48,6 +51,24 @@ export async function POST(req: Request) {
 					.where(eq(organizations.id, orgId));
                 
                 console.log(`✅ Organization ${orgId} upgraded to ${planId}`);
+
+				// Notify the organization
+				// Find any member to get a valid userId (or we could use a system account)
+				// For better UX, we could pass the user id back in metadata
+				const member = await db.query.members.findFirst({
+					where: eq(members.organizationId, orgId)
+				});
+
+				if (member) {
+					await sendNotification({
+						userId: member.userId,
+						organizationId: orgId,
+						type: "BILLING",
+						title: "Subscription Activated!",
+						message: `The organization has been successfully upgraded to the ${planId} plan.`,
+						link: `/org/${orgId}/settings/billing`
+					});
+				}
 			}
 			break;
 
@@ -58,17 +79,41 @@ export async function POST(req: Request) {
             // If the subscription is no longer active (past_due, canceled, etc)
             if (event.type === "customer.subscription.deleted" || 
                ['canceled', 'unpaid', 'incomplete_expired'].includes(subscription.status)) {
-                await db.update(organizations)
+                
+				const orgResult = await db.query.organizations.findFirst({
+					where: eq(organizations.stripeSubscriptionId, subscription.id)
+				});
+
+				await db.update(organizations)
 					.set({
 						plan: "free",
 					})
 					.where(eq(organizations.stripeSubscriptionId, subscription.id));
                 
+				if (orgResult) {
+					const member = await db.query.members.findFirst({
+						where: eq(members.organizationId, orgResult.id)
+					});
+					if (member) {
+						await sendNotification({
+							userId: member.userId,
+							organizationId: orgResult.id,
+							type: "BILLING",
+							title: "Subscription Cancelled",
+							message: "The subscription has expired or was cancelled. The organization has been downgraded.",
+						});
+					}
+				}
+
                 console.log(`❌ Subscription ${subscription.id} downgraded to free`);
             } else if (subscription.status === 'active') {
                 // Handle upgrades/downgrades that happen inside Stripe customer portal
                 const priceId = subscription.items.data[0].price.id;
                 const newPlanId = Object.values(PLANS).find(p => p.priceId === priceId)?.id || "pro";
+
+				const orgResult = await db.query.organizations.findFirst({
+					where: eq(organizations.stripeSubscriptionId, subscription.id)
+				});
 
                 await db.update(organizations)
                     .set({
@@ -76,6 +121,21 @@ export async function POST(req: Request) {
                     })
                     .where(eq(organizations.stripeSubscriptionId, subscription.id));
                 
+				if (orgResult) {
+					const member = await db.query.members.findFirst({
+						where: eq(members.organizationId, orgResult.id)
+					});
+					if (member) {
+						await sendNotification({
+							userId: member.userId,
+							organizationId: orgResult.id,
+							type: "BILLING",
+							title: "Plan Updated",
+							message: `Your subscription has been updated to the ${newPlanId} plan.`,
+						});
+					}
+				}
+
                 console.log(`🔄 Subscription ${subscription.id} updated to ${newPlanId}`);
             }
 			break;

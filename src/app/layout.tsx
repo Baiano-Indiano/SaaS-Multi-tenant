@@ -18,7 +18,8 @@ export const metadata: Metadata = {
   description: "Enterprise multi-tenant architecture",
 };
 
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "sonner";
+import { NotificationProvider } from "@/components/notifications/notification-provider";
 
 export default function RootLayout({
   children,
@@ -32,8 +33,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <TooltipProvider>
-          {children}
-          <Toaster />
+          <NotificationProvider>
+            {children}
+            <Toaster position="top-right" richColors />
+          </NotificationProvider>
         </TooltipProvider>
       </body>
     </html>
