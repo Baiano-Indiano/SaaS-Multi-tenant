@@ -25,7 +25,8 @@ interface AuthSession {
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
-    schema: schema
+    schema: schema,
+    usePlural: true
   }),
   plugins: [
     organization({

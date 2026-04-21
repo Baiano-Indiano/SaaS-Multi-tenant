@@ -1,19 +1,19 @@
 import postgres from "postgres";
-import * as dotenv from "dotenv";
 
-dotenv.config({ path: ".env.local" });
-const connectionString = process.env.DATABASE_URL!;
+const connectionString = process.env.DATABASE_URL;
+console.log("Connecting to:", connectionString);
+
+const sql = postgres(connectionString!, { prepare: false, timeout: 5 });
 
 async function test() {
-  console.log("Testing connection to:", connectionString);
-  const sql = postgres(connectionString, { prepare: false });
   try {
-    const result = await sql`SELECT version()`;
-    console.log("Success!", result[0]);
-  } catch (e) {
-    console.error("Connection failed:", e);
+    const result = await sql`SELECT 1 as connected`;
+    console.log("✅ Database test result:", result);
+  } catch (err) {
+    console.error("❌ Database connection failed:", err);
   } finally {
     await sql.end();
   }
 }
+
 test();

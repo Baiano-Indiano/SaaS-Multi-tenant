@@ -6,6 +6,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { PaywallProvider } from '@/components/billing/PaywallProvider';
 
 export default async function OrgLayout({
   children,
@@ -56,14 +57,16 @@ export default async function OrgLayout({
 
   return (
     <SidebarProvider>
-      <AppSidebar organizations={userOrgs} activeOrgId={org.id} />
-      <main className="flex-1 overflow-hidden h-screen bg-zinc-950 flex flex-col">
-        <header className="h-16 border-b border-zinc-800 flex items-center px-4 shrink-0 bg-zinc-950/50 backdrop-blur-sm">
-          <SidebarTrigger />
-          <div className="ml-4 font-medium text-zinc-100">{org.name}</div>
-        </header>
-        <div className="flex-1 overflow-auto p-6">{children}</div>
-      </main>
+      <PaywallProvider>
+        <AppSidebar organizations={userOrgs} activeOrgId={org.id} />
+        <main className="flex-1 overflow-hidden h-screen bg-zinc-950 flex flex-col">
+          <header className="h-16 border-b border-zinc-800 flex items-center px-4 shrink-0 bg-zinc-950/50 backdrop-blur-sm">
+            <SidebarTrigger />
+            <div className="ml-4 font-medium text-zinc-100">{org.name}</div>
+          </header>
+          <div className="flex-1 overflow-auto p-6">{children}</div>
+        </main>
+      </PaywallProvider>
     </SidebarProvider>
   );
 }

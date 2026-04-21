@@ -25,6 +25,7 @@ import {
 import { inviteMemberAction } from "@/app/actions/member";
 import { toast } from "sonner";
 import { Loader2, UserPlus } from "lucide-react";
+import { usePaywall } from "@/components/billing/PaywallProvider";
 
 /**
  * Zod schema for invitation form validation
@@ -51,6 +52,7 @@ interface InviteMemberDialogProps {
 export function InviteMemberDialog({ roles, orgId, orgSlug }: InviteMemberDialogProps) {
   const [open, setOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
+  const { openPaywall } = usePaywall();
 
   const {
     register,
@@ -82,7 +84,15 @@ export function InviteMemberDialog({ roles, orgId, orgSlug }: InviteMemberDialog
       }
     } catch (error) {
        const message = error instanceof Error ? error.message : "Falha ao enviar convite.";
-       toast.error(message);
+       if (message.includes("plan only allows up to")) {
+           openPaywall({
+              title: "Upgrade Required",
+              reason: message,
+           });
+           setOpen(false);
+       } else {
+           toast.error(message);
+       }
     } finally {
       setIsPending(false);
     }

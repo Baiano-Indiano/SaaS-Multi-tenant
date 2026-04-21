@@ -9,6 +9,7 @@ import { db } from "@/lib/db";
 import { members, organizations, invitations } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import postgres from "postgres";
+import { PLANS, PlanType } from "@/lib/billing/plans";
 
 const connectionString = process.env.DATABASE_URL!;
 
@@ -113,6 +114,17 @@ export async function inviteMemberAction(data: {
     where: eq(organizations.id, data.orgId),
   });
   if (!org?.tenantSchemaName) throw new Error("Organization schema not found");
+
+  const planId = (org.plan?.toUpperCase() || "FREE") as PlanType;
+  const currentPlan = PLANS[planId] || PLANS.FREE;
+
+  const currentMembers = await db.query.members.findMany({
+    where: eq(members.organizationId, data.orgId),
+  });
+
+  if (currentMembers.length >= currentPlan.maxMembers) {
+    throw new Error(`Your ${currentPlan.name} plan only allows up to ${currentPlan.maxMembers} members.`);
+  }
 
   const schema = org.tenantSchemaName;
   const client = postgres(connectionString, { prepare: false });

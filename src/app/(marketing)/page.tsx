@@ -14,7 +14,7 @@ export default function LandingPage() {
           Secure, tenant-isolated data architecture with flexible organization management that accelerates the launch of enterprise-ready applications.
         </p>
         <div className="flex flex-col sm:flex-row items-center gap-4 mb-16 w-full sm:w-auto">
-          <Button size="lg" className="w-full sm:w-auto text-base" render={<a href="/register" />}>
+          <Button size="lg" className="w-full sm:w-auto text-base" render={<a href="/register" />} nativeButton={false}>
             Get Started
           </Button>
           <Button size="lg" variant="outline" className="w-full sm:w-auto text-base border-zinc-700 hover:bg-zinc-800 text-zinc-300">

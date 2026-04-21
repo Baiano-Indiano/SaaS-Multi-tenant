@@ -1,0 +1,71 @@
+import { headers } from "next/headers";
+import { NextResponse } from "next/server";
+import Stripe from "stripe";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { organizations } from "@/lib/db/schema";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+	// @ts-ignore - Stripe type definitions mismatches in this specific version
+	apiVersion: "2025-02-24.acacia", 
+});
+
+export async function POST(req: Request) {
+	const body = await req.text();
+	const signature = (await headers()).get("Stripe-Signature") as string;
+
+	let event: Stripe.Event;
+
+	try {
+		event = stripe.webhooks.constructEvent(
+			body,
+			signature,
+			process.env.STRIPE_WEBHOOK_SECRET!
+		);
+	} catch (error: unknown) {
+		const message = error instanceof Error ? error.message : "Unknown error";
+		console.error("Webhook signature verification failed.", message);
+		return new NextResponse(`Webhook Error: ${message}`, { status: 400 });
+	}
+
+	const session = event.data.object as Stripe.Checkout.Session;
+
+	switch (event.type) {
+		case "checkout.session.completed":
+			// Retrieve the subscription details from Stripe
+			const subscriptionId = session.subscription as string;
+			const customerId = session.customer as string;
+            
+            // The client_reference_id should be the organization ID
+            const orgId = session.client_reference_id;
+
+			if (orgId) {
+				await db.update(organizations)
+					.set({
+						plan: "pro", // Determine based on session/priceId in a real app, here we assume all upgrades are to 'pro' for simplicity or read metadata
+						stripeCustomerId: customerId,
+						stripeSubscriptionId: subscriptionId
+					})
+					.where(eq(organizations.id, orgId));
+			}
+			break;
+
+		case "customer.subscription.deleted":
+		case "customer.subscription.updated":
+			const subscription = event.data.object as Stripe.Subscription;
+            
+            if (event.type === "customer.subscription.deleted" || subscription.status !== 'active') {
+                await db.update(organizations)
+					.set({
+						plan: "free",
+					})
+					.where(eq(organizations.stripeSubscriptionId, subscription.id));
+            }
+			break;
+            
+		default:
+			console.log(`Unhandled event type ${event.type}`);
+	}
+
+	return new NextResponse(null, { status: 200 });
+}

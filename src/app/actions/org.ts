@@ -50,7 +50,8 @@ export async function createOrganizationAction(name: string, slug: string) {
           id UUID PRIMARY KEY,
           name TEXT NOT NULL,
           slug TEXT NOT NULL UNIQUE,
-          description TEXT
+          description TEXT,
+          "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
         )
       `;
 

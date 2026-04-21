@@ -2,12 +2,14 @@
 
 **Gravity SaaS** é um boilerplate *enterprise-ready* desenhado para acelerar a construção de aplicações SaaS modernas com foco em multilocação B2B (Multi-tenant).
 
-Seu objetivo é ser robusto, seguro e com isolamento profundo de dados, mantendo um design minimalista e premium. O projeto chegou na sua versão **v1.0** com a base estrutural de autenticação, organização de *tenants* e controle de acesso concluídos.
+Seu objetivo é ser robusto, seguro e com isolamento profundo de dados, mantendo um design minimalista e premium. O projeto agora se encontra na versão **v2.0**, com toda a base estrutural de autenticação, organização de *tenants*, controle de acesso e um robusto **Módulo de Produto-Led Growth (PLG) com Billing integrando ao Stripe** concluídos.
 
 ---
 
-## 🚀 Funcionalidades da v1.0
+## 🚀 Funcionalidades da v2.0
 
+- **Billing Módular & Webhooks (Stripe)**: Geração de sessoões de checkout (`client_reference_id`) aliada à uma listener server-side 100% blindada para capturar pagamentos da Stripe e espelhar assinaturas no BD.
+- **Paywalls Contextuais (Freemium)**: Limitações integradas no Server Action! Caso uma organização atinja o limite do Payload Free (membros, acessos), um Modal sofisticado de upgrade bloqueia ações da org para converter novos assinantes.
 - **Autenticação com Better-Auth**: Gestão de sessão fluida (E-mail/Senha). 
 - **Suporte Multi-Tenant 1:1**: Isolamento estrutural de dados com abordagens *schema-per-tenant* através do Drizzle ORM.
 - **Engine Dinâmico de RBAC**: Controle rígido e performático de Acesso Baseado em Cargos e Permissões. (Admin/Member).
@@ -50,6 +52,11 @@ DATABASE_URL="postgresql://user:password@localhost:5432/gravitysaas"
 
 # Disparos de E-mail (Opcional - Falha de fallback vai para o console.log local)
 RESEND_API_KEY="re_..."
+
+# Configurações do Stripe (Test Mode)
+STRIPE_SECRET_KEY="sk_test_..."
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
 ```
 
 ### 3. Rodando Scripts e Migrações
@@ -59,21 +66,16 @@ Após o BD conectado e criado na máquina, rode os pacotes core:
 # Push Inicial de Schemas & Seed 
 npm run db:push
 
+# (Manutenção) Aplicar patches em schemas de tenants antigos
+# Utilize caso adicione colunas novas no Tenant Schema após a criação de algumas orgs
+npx tsx --env-file=.env.local src/scripts/fix-tenant-schemas.ts
+
 # Inicializar Servidor de Desenvolvimento
 npm run dev
-
-# (Opcional) Build & Start Server
-npm run build && npm run start
-
-# (Opcional) Realizar a Automação e Smoke tests do Playwright E2E
-npx playwright test
 ```
 
----
-
-## 🛤️ Roadmap - v2.0 (Em Desenvolvimento na Branch `dev`)
-Nosso próximo marco foca no coração da monetização e engajamento B2B:
-- [ ] Billing Module e Integração Multi-Tenant com **Stripe** (BILL-01).
-- [ ] Módulos Websocket para alertas instantâneos ou limitações em Tempo Real (Limites Atuais de Planos). 
+## 🛤️ Roadmap - Futuras Versões
+- [ ] Módulos Websocket para alertas e features instantâneas em Real Time.
+- [ ] Analytics Admin-facing. Dashboard master para você supervisionar a rentabilidade total dos locatários do SaaS (MRR, Churn).
 
 > Criado em parceria com a Infra de Multi-Tenant Assistants. Equipe de Produto.
