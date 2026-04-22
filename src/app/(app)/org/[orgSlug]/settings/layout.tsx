@@ -1,50 +1,36 @@
-import { Separator } from "@/components/ui/separator";
 import { SettingsNav } from "@/components/settings/settings-nav";
-
-interface SettingsLayoutProps {
-  children: React.ReactNode;
-  params: Promise<{ orgSlug: string }>;
-}
-
-const sidebarNavItems = [
-  {
-    title: "General",
-    href: "settings",
-  },
-  {
-    title: "Members",
-    href: "settings/members",
-  },
-  {
-    title: "Roles & Permissions",
-    href: "settings/roles",
-  },
-  {
-    title: "Billing",
-    href: "settings/billing",
-  },
-  {
-    title: "Activity Log",
-    href: "settings/activity",
-  },
-];
+import { Separator } from "@/components/ui/separator";
 
 export default async function SettingsLayout({
   children,
   params,
-}: SettingsLayoutProps) {
+}: {
+  children: React.ReactNode;
+  params: Promise<{ orgSlug: string }>;
+}) {
   const { orgSlug } = await params;
-  const navItems = sidebarNavItems.map((item) => ({
-    ...item,
-    href: `/org/${orgSlug}/${item.href}`,
-  }));
+
+  const navItems = [
+    {
+      title: "General",
+      href: `/org/${orgSlug}/settings/general`,
+    },
+    {
+      title: "Members",
+      href: `/org/${orgSlug}/settings/members`,
+    },
+    {
+      title: "Activity",
+      href: `/org/${orgSlug}/settings/activity`,
+    },
+  ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-10 pb-16">
       <div className="space-y-0.5">
         <h2 className="text-2xl font-bold tracking-tight text-zinc-100">Settings</h2>
-        <p className="text-zinc-400">
-          Manage your organization settings, members, and permissions.
+        <p className="text-muted-foreground">
+          Manage your organization settings, team members, and monitor activity logs.
         </p>
       </div>
       <Separator className="bg-zinc-800" />
