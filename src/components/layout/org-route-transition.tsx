@@ -44,8 +44,6 @@ export function OrgRouteTransition({ children }: OrgRouteTransitionProps) {
 
       const mm = gsap.matchMedia();
       const currentRank = resolveRank(pathname);
-      const previousRank = previousRankRef.current;
-      const direction = previousRank === null ? 0 : currentRank >= previousRank ? 1 : -1;
       previousRankRef.current = currentRank;
 
       mm.add("(prefers-reduced-motion: no-preference)", () => {
@@ -53,14 +51,14 @@ export function OrgRouteTransition({ children }: OrgRouteTransitionProps) {
           containerRef.current,
           {
             autoAlpha: 0,
-            x: direction === 0 ? 0 : direction * 18,
-            y: 14,
+            scale: 0.98,
+            y: 10,
           },
           {
             autoAlpha: 1,
-            x: 0,
+            scale: 1,
             y: 0,
-            duration: 0.34,
+            duration: 0.36,
             ease: "power2.out",
             clearProps: "transform,opacity",
           }

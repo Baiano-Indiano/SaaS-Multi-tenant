@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
+import { usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -33,6 +34,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 }
 
 export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarProps) {
+  const pathname = usePathname();
   const activeOrg = organizations.find((o) => o.id === activeOrgId);
   const activeSlug = activeOrg?.slug || "";
 
@@ -49,12 +51,12 @@ export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarP
     },
     {
       title: "Members",
-      url: `/org/${activeSlug}/settings?tab=members`,
+      url: `/org/${activeSlug}/settings/members`,
       icon: Users,
     },
     {
       title: "Settings",
-      url: `/org/${activeSlug}/settings`,
+      url: `/org/${activeSlug}/settings/general`,
       icon: Settings,
     },
   ];
@@ -63,6 +65,14 @@ export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarP
   const reduceMotionRef = React.useRef(false);
   const onMouseEnterRef = React.useRef<(e: React.MouseEvent<HTMLAnchorElement>) => void>(() => {});
   const onMouseLeaveRef = React.useRef<(e: React.MouseEvent<HTMLAnchorElement>) => void>(() => {});
+
+  const isRouteActive = (url: string) => {
+    // For settings, we want exact match for specific items, but sub-path awareness for the general area
+    if (url.includes("/settings/general")) {
+      return pathname.includes("/settings") && !pathname.includes("/members") && !pathname.includes("/activity");
+    }
+    return pathname === url || pathname.startsWith(url + "/");
+  };
 
   useGSAP((_, contextSafe) => {
     if (!containerRef.current) return;
@@ -132,23 +142,32 @@ export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarP
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="px-2">
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title} className="sidebar-item">
-                  <SidebarMenuButton
-                    render={
-                      <Link
-                        href={item.url}
-                        onMouseEnter={(e) => onMouseEnterRef.current(e)}
-                        onMouseLeave={(e) => onMouseLeaveRef.current(e)}
-                      />
-                    }
-                    className="hover:bg-zinc-900 transition-colors"
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span className="text-sm font-medium">{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {menuItems.map((item) => {
+                const active = isRouteActive(item.url);
+                return (
+                  <SidebarMenuItem key={item.title} className="sidebar-item">
+                    <SidebarMenuButton
+                      isActive={active}
+                      render={
+                        <Link
+                          href={item.url}
+                          onMouseEnter={(e) => onMouseEnterRef.current(e)}
+                          onMouseLeave={(e) => onMouseLeaveRef.current(e)}
+                        />
+                      }
+                      className={cn(
+                        "transition-all duration-200",
+                        active 
+                          ? "bg-zinc-800/50 text-zinc-50 shadow-sm ring-1 ring-zinc-700/50" 
+                          : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
+                      )}
+                    >
+                      <item.icon className={cn("h-4 w-4", active ? "text-zinc-50" : "text-zinc-400")} />
+                      <span className="text-sm font-medium">{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -156,3 +175,4 @@ export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarP
     </Sidebar>
   );
 }
+

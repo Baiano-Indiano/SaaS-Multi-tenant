@@ -74,7 +74,7 @@ export function SettingsNav({ items }: SettingsNavProps) {
       <div
         ref={indicatorRef}
         aria-hidden
-        className="absolute left-0 w-full rounded-md bg-zinc-800/70 ring-1 ring-zinc-700/80 opacity-0"
+        className="absolute left-0 w-full rounded-md bg-zinc-800/50 ring-1 ring-zinc-700/40 opacity-0"
       />
       {items.map((item) => (
         <Link
@@ -86,8 +86,8 @@ export function SettingsNav({ items }: SettingsNavProps) {
           className={cn(
             "settings-nav-item relative z-10 justify-start rounded-md px-3 py-2 text-sm font-medium transition-colors",
             isActive(item.href)
-              ? "text-zinc-100"
-              : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
+              ? "text-zinc-50 font-semibold"
+              : "text-zinc-400 hover:text-zinc-200 transition-colors duration-200"
           )}
         >
           {item.title}
