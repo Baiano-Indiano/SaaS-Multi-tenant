@@ -5,7 +5,6 @@ type PoseDebugState = {
 };
 
 declare global {
-  // eslint-disable-next-line no-var
   var __poseDebugState: PoseDebugState | undefined;
 }
 

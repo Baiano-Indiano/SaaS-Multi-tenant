@@ -1,146 +1,83 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { db } from "@/lib/db";
-import { members, organizations } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { getRoles } from "@/lib/auth/rbac-utils";
-import { 
-  Table, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { PermissionBoundary } from "@/components/rbac/PermissionBoundary";
-import { RoleSelector, RemoveMemberButton } from "@/components/members/MemberActions";
+import { db } from "@/lib/db";
+import { organizations } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { getTenantDb } from "@/lib/db/tenant-db";
+import { MemberList } from "@/components/members/MemberList";
 import { InviteMemberDialog } from "@/components/members/InviteMemberDialog";
-import { InvitationsTable } from "@/components/members/InvitationsTable";
-import { getPendingInvitationsAction } from "@/app/actions/member";
-import { AnimatedTableBody } from "@/components/animations/animated-table-body";
+import { Users } from "lucide-react";
 
-interface PageProps {
+export default async function MembersPage({
+  params,
+}: {
   params: Promise<{ orgSlug: string }>;
-}
-
-export default async function MembersPage({ params }: PageProps) {
+}) {
   const { orgSlug } = await params;
   const session = await auth.api.getSession({ headers: await headers() });
+
   if (!session?.user) redirect("/login");
 
+  // 1. Get Org Info
   const org = await db.query.organizations.findFirst({
     where: eq(organizations.slug, orgSlug),
   });
 
   if (!org) redirect("/selecionar-org");
 
-  // Fetch all members of this organization
-  const orgMembers = await db.query.members.findMany({
-    where: eq(members.organizationId, org.id),
-    with: {
-      user: true,
+  // 2. Fetch Members and Roles using Tenant Context
+  const { orgMembers, availableRoles } = await getTenantDb(
+    session.user.id,
+    org.id,
+    async (tx) => {
+      const orgMembers = await tx.query.members.findMany({
+        where: (members, { eq }) => eq(members.organizationId, org.id),
+        with: {
+          user: true,
+        },
+        orderBy: (members, { desc }) => [desc(members.createdAt)],
+      });
+
+      const availableRoles = await tx.query.roles.findMany({
+        orderBy: (roles, { asc }) => [asc(roles.name)],
+      });
+
+      return { orgMembers, availableRoles };
     }
-  });
-
-  // Fetch all roles available in this tenant
-  // Fetch all roles available in this tenant
-  const availableRoles = await getRoles(org.id);
-
-  // Fetch pending invitations
-  const pendingInvitations = await getPendingInvitationsAction(org.id);
+  );
 
   return (
-    <div className="space-y-6 container py-10">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Members</h1>
-          <p className="text-muted-foreground">
-            Manage your team and their access levels.
+          <h3 className="text-xl font-bold text-zinc-100 flex items-center gap-2">
+            <Users className="h-5 w-5 text-zinc-400" />
+            Team Members
+          </h3>
+          <p className="text-sm text-zinc-400 mt-1">
+            Manage your team, invite new members and control their access levels.
           </p>
         </div>
-        <PermissionBoundary permissions="members:invite">
-          <InviteMemberDialog 
-            roles={availableRoles} 
-            orgId={org.id} 
-            orgSlug={org.slug ?? ""} 
-          />
-        </PermissionBoundary>
-      </div>
-
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold tracking-tight">Equipe Atual</h2>
-        <div className="rounded-md border bg-card overflow-hidden shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Joined</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <AnimatedTableBody rowKeys={orgMembers.map((member) => member.id)}>
-            {orgMembers.map((member) => (
-              <TableRow key={member.id} data-flip-id={member.id}>
-                <TableCell className="flex items-center gap-3 py-4">
-                  <Avatar className="h-9 w-9 border">
-                    <AvatarImage src={member.user.image ?? ""} />
-                    <AvatarFallback className="bg-muted text-muted-foreground font-semibold">
-                      {member.user.name.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-sm leading-none mb-1">{member.user.name}</span>
-                    <span className="text-xs text-muted-foreground">{member.user.email}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <PermissionBoundary 
-                    permissions="roles:assign" 
-                    fallback={<Badge variant="secondary" className="capitalize">{member.role}</Badge>}
-                  >
-                    <RoleSelector 
-                      memberId={member.id} 
-                      currentRoleId={member.roleId ?? ""} 
-                      roles={availableRoles}
-                      orgId={org.id}
-                      orgSlug={org.slug ?? ""}
-                    />
-                  </PermissionBoundary>
-                </TableCell>
-                <TableCell className="text-muted-foreground text-sm font-medium">
-                  {new Date(member.createdAt).toLocaleDateString(undefined, {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}
-                </TableCell>
-                <TableCell className="text-right">
-                  <PermissionBoundary permissions="members:remove">
-                    {member.user.id !== session.user.id && (
-                       <RemoveMemberButton 
-                         memberId={member.id} 
-                         orgId={org.id} 
-                         orgSlug={org.slug ?? ""} 
-                       />
-                    )}
-                  </PermissionBoundary>
-                </TableCell>
-              </TableRow>
-            ))}
-          </AnimatedTableBody>
-        </Table>
-      </div>
-
-      <PermissionBoundary permissions="members:invite">
-        <InvitationsTable 
-          invitations={pendingInvitations} 
+        
+        <InviteMemberDialog 
+          roles={availableRoles} 
           orgId={org.id} 
-          orgSlug={org.slug ?? ""} 
+          orgSlug={org.slug!} 
         />
-      </PermissionBoundary>
+      </div>
+
+      <MemberList 
+        members={orgMembers} 
+        orgId={org.id} 
+        orgSlug={org.slug!} 
+        roles={availableRoles} 
+      />
+
+      <div className="bg-zinc-950/30 border border-zinc-900 border-dashed rounded-xl p-6 text-center">
+        <p className="text-xs text-zinc-500 font-medium">
+          Roles and permissions are managed per organization. Need custom roles? Upgrade to the Enterprise plan.
+        </p>
       </div>
     </div>
   );

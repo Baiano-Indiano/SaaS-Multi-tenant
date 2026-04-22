@@ -2,19 +2,19 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { organizations } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { can } from "@/lib/auth/rbac-utils";
-import { getAuditLogsAction } from "@/app/actions/audit";
-import { ActivityLogFeed } from "@/components/settings/ActivityLog";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { organizations, auditLogs } from "@/lib/db/schema";
+import { eq, and, sql } from "drizzle-orm";
+import { getTenantDb } from "@/lib/db/tenant-db";
+import { ActivityLogFeed, type AuditLog } from "@/components/settings/ActivityLog";
+import { Activity } from "lucide-react";
 
-interface PageProps {
+export default async function ActivityPage({
+  params,
+  searchParams,
+}: {
   params: Promise<{ orgSlug: string }>;
   searchParams: Promise<{ q?: string; type?: string }>;
-}
-
-export default async function ActivityPage({ params, searchParams }: PageProps) {
+}) {
   const { orgSlug } = await params;
   const { q, type } = await searchParams;
   const session = await auth.api.getSession({ headers: await headers() });
@@ -27,45 +27,45 @@ export default async function ActivityPage({ params, searchParams }: PageProps) 
 
   if (!org) redirect("/selecionar-org");
 
-  // Check permission
-  const hasPermission = await can(session.user.id, org.id, "audit_logs:read");
-  
-  if (!hasPermission) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-        <h3 className="text-xl font-bold text-zinc-100">Access Denied</h3>
-        <p className="text-zinc-400 max-w-sm mt-2">
-          You don&apos;t have the required permissions to view the activity log for this organization.
-        </p>
-      </div>
-    );
-  }
+  // Fetch logs using Tenant Context
+  const logs = await getTenantDb(
+    session.user.id,
+    org.id,
+    async (tx) => {
+      // Build filters
+      const conditions = [];
+      
+      if (type && type !== "all") {
+        conditions.push(eq(auditLogs.entityType, type.toUpperCase()));
+      }
+      
+      if (q) {
+        conditions.push(
+          sql`(${auditLogs.action} ILIKE ${`%${q}%`} OR ${auditLogs.details} ILIKE ${`%${q}%`} OR ${auditLogs.userName} ILIKE ${`%${q}%`})`
+        );
+      }
 
-  const logs = await getAuditLogsAction(org.id, {
-    query: q,
-    entityType: type,
-  });
+      return await tx.query.auditLogs.findMany({
+        where: conditions.length > 0 ? and(...conditions) : undefined,
+        orderBy: (logs, { desc }) => [desc(logs.createdAt)],
+        limit: 100, // Enterprise limit for initial load
+      });
+    }
+  );
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium text-zinc-100">Activity Log</h3>
-        <p className="text-sm text-zinc-400">
-          Track all administrative actions performed in your organization.
+        <h3 className="text-xl font-bold text-zinc-100 flex items-center gap-2">
+          <Activity className="h-5 w-5 text-zinc-400" />
+          Activity Log
+        </h3>
+        <p className="text-sm text-zinc-400 mt-1">
+          Monitor all administrative actions and security events within your organization.
         </p>
       </div>
 
-      <Card className="bg-zinc-950 border-zinc-800">
-        <CardHeader>
-          <CardTitle className="text-zinc-100">Audit Trail</CardTitle>
-          <CardDescription className="text-zinc-400">
-            Showing the latest 100 activities. Data is retained for 90 days.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ActivityLogFeed logs={logs} />
-        </CardContent>
-      </Card>
+      <ActivityLogFeed logs={logs as AuditLog[]} />
     </div>
   );
 }

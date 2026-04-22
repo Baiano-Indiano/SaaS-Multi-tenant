@@ -61,6 +61,10 @@ export async function GET(req: NextRequest) {
 					const keys = Object.keys(streams);
 					const ids = Object.values(streams);
 
+					interface RedisStreamData {
+						payload: unknown;
+					}
+
 					const data = (await redis.xread(
 						keys, 
 						ids, 
@@ -68,7 +72,7 @@ export async function GET(req: NextRequest) {
 							count: 5,
 							blockMS: 0 
 						}
-					)) as { name: string; messages: { id: string; data: { payload: any } }[] }[] | null;
+					)) as { name: string; messages: { id: string; data: RedisStreamData }[] }[] | null;
 
 					if (data && data.length > 0) {
 						for (const streamResult of data) {

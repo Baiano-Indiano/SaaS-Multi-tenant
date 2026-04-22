@@ -230,3 +230,31 @@ export function RemoveMemberButton({
     </AlertDialog>
   );
 }
+interface MemberActionsProps {
+  member: {
+    id: string;
+    roleId: string | null;
+  };
+  roles: { id: string; name: string; slug: string }[];
+  orgId: string;
+  orgSlug: string;
+}
+
+export function MemberActions({ member, roles, orgId, orgSlug }: MemberActionsProps) {
+  return (
+    <div className="flex items-center justify-end gap-2">
+      <RoleSelector 
+        memberId={member.id} 
+        currentRoleId={member.roleId || ''} 
+        roles={roles} 
+        orgId={orgId} 
+        orgSlug={orgSlug} 
+      />
+      <RemoveMemberButton 
+        memberId={member.id} 
+        orgId={orgId} 
+        orgSlug={orgSlug} 
+      />
+    </div>
+  );
+}

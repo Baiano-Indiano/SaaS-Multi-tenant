@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
-interface AuditLog {
+export interface AuditLog {
   id: string;
   userId: string;
   userName: string;
@@ -50,7 +50,7 @@ interface AuditLog {
   createdAt: Date;
 }
 
-interface ActivityLogFeedProps {
+export interface ActivityLogFeedProps {
   logs: AuditLog[];
 }
 

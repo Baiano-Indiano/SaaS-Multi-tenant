@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/sidebar";
 import { LayoutDashboard, Users, Settings, FolderKanban } from "lucide-react";
 import { OrgSwitcher } from "@/components/org-switcher";
+import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP);
 
