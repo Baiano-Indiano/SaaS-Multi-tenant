@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { 
   useListOrganizations, 
-  authClient 
+  authClient,
+  useSession,
 } from "@/lib/auth/client";
 import { 
   createOrganizationAction 
@@ -22,14 +23,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Plus, Building2, Check } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { FeedbackBanner } from "@/components/ui/feedback-banner";
 
 export default function SelecionarOrgPage() {
   const router = useRouter();
+  const { data: session, isPending: sessionPending } = useSession();
   const { data: orgs, isPending } = useListOrganizations();
   const [newOrgName, setNewOrgName] = useState("");
   const [newOrgSlug, setNewOrgSlug] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!sessionPending && !session?.user) {
+      router.replace("/login");
+    }
+  }, [sessionPending, session?.user, router]);
 
   const handleCreateOrg = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,10 +54,12 @@ export default function SelecionarOrgPage() {
           organizationId: result.organizationId
         });
         router.push(`/org/${result.slug}/dashboard`);
+      } else {
+        setError(result.error);
+        if (result.error.toLowerCase().includes("sessão expirada")) {
+          router.push("/login");
+        }
       }
-    } catch (err) {
-      const error = err as Error;
-      setError(error.message || "Erro ao criar organização");
     } finally {
       setLoading(false);
     }
@@ -60,8 +71,8 @@ export default function SelecionarOrgPage() {
         organizationId: orgId
       });
       router.push(`/org/${slug}/dashboard`);
-    } catch (err) {
-      console.error("Erro ao selecionar organização:", err);
+    } catch {
+      setError("Não foi possível abrir esta organização agora. Tente novamente em alguns segundos.");
     }
   };
 
@@ -70,12 +81,16 @@ export default function SelecionarOrgPage() {
     setNewOrgSlug(name.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, ""));
   };
 
-  if (isPending) {
+  if (sessionPending || isPending) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-950">
         <Loader2 className="h-8 w-8 animate-spin text-white" />
       </div>
     );
+  }
+
+  if (!session?.user) {
+    return null;
   }
 
   return (
@@ -123,6 +138,7 @@ export default function SelecionarOrgPage() {
             ) : (
               <div className="p-8 rounded-xl border border-dashed border-zinc-800 text-center">
                 <p className="text-sm text-zinc-600">Nenhuma organização encontrada.</p>
+                <p className="text-xs text-zinc-500 mt-2">Crie sua primeira organização no formulário ao lado.</p>
               </div>
             )}
           </div>
@@ -144,9 +160,11 @@ export default function SelecionarOrgPage() {
               <form onSubmit={handleCreateOrg}>
                 <CardContent className="p-4 space-y-4">
                   {error && (
-                    <div className="rounded-md bg-red-900/20 p-3 text-sm text-red-400 border border-red-900/50">
-                      {error}
-                    </div>
+                    <FeedbackBanner
+                      variant="error"
+                      title="Ação não concluída"
+                      message={error}
+                    />
                   )}
                   <div className="space-y-2">
                     <Label htmlFor="orgName">Nome da Empresa</Label>

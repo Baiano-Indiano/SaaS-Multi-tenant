@@ -13,9 +13,15 @@ import { recordAuditLog } from "@/lib/audit";
 
 const connectionString = process.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/saas_db";
 
-export async function createOrganizationAction(name: string, slug: string) {
+type CreateOrganizationResult =
+  | { success: true; organizationId: string; slug: string }
+  | { success: false; error: string };
+
+export async function createOrganizationAction(name: string, slug: string): Promise<CreateOrganizationResult> {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
+  if (!session?.user) {
+    return { success: false, error: "Sessão expirada. Faça login novamente." };
+  }
 
   try {
     // 1. Create organization using Better-Auth
@@ -142,7 +148,7 @@ export async function createOrganizationAction(name: string, slug: string) {
       action: "ORG_CREATED",
       entityType: "ORGANIZATION",
       entityId: org.id,
-      details: `Criou a organização ${name} (${slug})`
+      details: `Created organization "${name}" (${slug})`
     });
 
     return { 
@@ -152,6 +158,7 @@ export async function createOrganizationAction(name: string, slug: string) {
     };
   } catch (error) {
     console.error("Organization creation failed:", error);
-    throw error;
+    const message = error instanceof Error ? error.message : "Falha ao criar organização.";
+    return { success: false, error: message };
   }
 }

@@ -1,0 +1,5 @@
+- [x] Configurar `vercel.json` para custom domains
+- [x] Implementar Server Actions para domínios (add/verify)
+- [x] Refatorar `OrgSwitcher` para escala
+- [x] Melhorar UX da página de seleção de organização
+- [ ] Implementar verificação de DNS TXT via API (backlog)

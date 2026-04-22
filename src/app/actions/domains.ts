@@ -61,7 +61,7 @@ export async function addDomainAction(orgId: string, domain: string) {
     organizationId: orgId,
     action: "DOMAIN_ADDED",
     entityType: "DOMAIN",
-    details: `Adicionou o domínio customizado: ${domain}`
+    details: `Added custom domain: ${domain}`
   });
 
   return { success: true };
@@ -105,7 +105,7 @@ export async function removeDomainAction(orgId: string) {
     organizationId: orgId,
     action: "DOMAIN_REMOVED",
     entityType: "DOMAIN",
-    details: `Removeu o domínio customizado: ${domainToRemove}`
+    details: `Removed custom domain: ${domainToRemove}`
   });
 
   return { success: true };
