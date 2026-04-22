@@ -2,6 +2,7 @@
 
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
+import gsap from "gsap"
 
 import { cn } from "@/lib/utils"
 
@@ -51,12 +52,66 @@ function Button({
   variant = "default",
   size = "default",
   "data-slot": dataSlot,
+  onPointerDown,
+  onPointerUp,
+  onPointerLeave,
+  onClick,
   ...props
 }: ButtonProps) {
+  const isReducedMotion = () =>
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   return (
     <ButtonPrimitive
       data-slot={dataSlot ?? "button"}
       className={cn(buttonVariants({ variant, size, className }))}
+      onPointerDown={(event) => {
+        onPointerDown?.(event);
+        if (isReducedMotion() || props.disabled) return;
+        gsap.to(event.currentTarget, {
+          scale: 0.97,
+          duration: 0.08,
+          ease: "power2.out",
+          overwrite: "auto",
+        });
+      }}
+      onPointerUp={(event) => {
+        onPointerUp?.(event);
+        if (isReducedMotion() || props.disabled) return;
+        gsap.to(event.currentTarget, {
+          scale: 1,
+          duration: 0.14,
+          ease: "power2.out",
+          overwrite: "auto",
+        });
+      }}
+      onPointerLeave={(event) => {
+        onPointerLeave?.(event);
+        if (isReducedMotion() || props.disabled) return;
+        gsap.to(event.currentTarget, {
+          scale: 1,
+          duration: 0.16,
+          ease: "power2.out",
+          overwrite: "auto",
+        });
+      }}
+      onClick={(event) => {
+        onClick?.(event);
+        if (isReducedMotion() || props.disabled) return;
+        gsap.fromTo(
+          event.currentTarget,
+          { scale: 1 },
+          {
+            scale: 1.03,
+            duration: 0.12,
+            ease: "power2.out",
+            yoyo: true,
+            repeat: 1,
+            overwrite: "auto",
+          }
+        );
+      }}
       {...props}
     />
   )

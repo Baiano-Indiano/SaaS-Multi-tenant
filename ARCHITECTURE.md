@@ -37,7 +37,7 @@ Roles are managed per-tenant, allowing organizations to define custom roles whil
 
 - **Framework**: Next.js 16 (App Router).
 - **Styles**: Tailwind CSS v4 + shadcn/ui.
-- **Animations**: Framer Motion (App UI) & Anime.js (Landing Page).
+- **Animations**: Framer Motion (App UI) & GSAP (Landing Page).
 - **ORM**: Drizzle ORM (Primary) + raw `postgres.js` for dynamic schema operations.
 - **Auth**: Better-Auth 1.1+.
 ## 5. Security Model: Defense in Depth (DiD)

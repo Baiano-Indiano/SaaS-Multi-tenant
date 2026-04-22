@@ -25,12 +25,12 @@ A B2B SaaS starter boilerplate focusing on deep organization isolation and premi
 - [ ] Organization management (creation, joining)
 - [ ] Member invitations workflow
 - [ ] Dynamic customizable roles and permissions (RBAC/ABAC)
-- [ ] High-impact landing page using Anime.js for hero animations
+- [x] High-impact landing page using GSAP for hero animations
 - [ ] Multi-tenant data architecture using Schema-per-tenant isolation
 
 ### Out of Scope
 
-- Anime.js for standard React UI interactions — To avoid Virtual DOM conflicts, Framer Motion and native Tailwind transitions will be used for daily UI states (modals, dropdowns, routing).
+- GSAP for standard React UI interactions — To avoid Virtual DOM conflicts, Framer Motion and native Tailwind transitions will be used for daily UI states (modals, dropdowns, routing). GSAP is reserved for high-impact visual moments.
 
 ## Context
 
@@ -42,7 +42,7 @@ A B2B SaaS starter boilerplate focusing on deep organization isolation and premi
 
 - **Tech Stack**: Next.js (App Router), TypeScript, Tailwind CSS v4, shadcn/ui.
 - **Database Architecture**: PostgreSQL with Drizzle ORM (native schema support) implementing Schema-per-tenant logic.
-- **Visual Design**: Premium aesthetic with Anime.js for landing page/hero moments, and Framer Motion/CSS for standard UI workflows.
+- **Visual Design**: Premium aesthetic with GSAP for landing page/hero moments, and Framer Motion/CSS for standard UI workflows.
 
 ## Key Decisions
 
@@ -51,7 +51,7 @@ A B2B SaaS starter boilerplate focusing on deep organization isolation and premi
 | Next.js App Router | Modern industry standard for React full-stack applications. | — Pending |
 | Schema-per-tenant on PostgreSQL | Provides true data isolation mandated for enterprise/B2B products securely and scalably. | — Pending |
 | Drizzle ORM | Native support for dynamic schemas unlike Prisma, essential for Schema-per-tenant pattern. | — Pending |
-| Anime.js limited to high-impact views | Powerful timeline logic for wow-factor on static/landing pages, but risks fighting React's Virtual DOM in standard UI. | — Pending |
+| GSAP limited to high-impact views | Powerful timeline logic for wow-factor on static/landing pages. Used with `gsap.context()` for React safety. | — Validated |
 
 ## Evolution
 

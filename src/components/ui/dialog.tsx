@@ -2,10 +2,14 @@
 
 import * as React from "react"
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
+import { useGSAP } from "@gsap/react"
+import gsap from "gsap"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
+
+gsap.registerPlugin(useGSAP)
 
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />
@@ -33,11 +37,30 @@ function DialogOverlay({
   className,
   ...props
 }: DialogPrimitive.Backdrop.Props) {
+  const overlayRef = React.useRef<HTMLDivElement>(null)
+
+  useGSAP(
+    () => {
+      if (!overlayRef.current) return
+      const mm = gsap.matchMedia()
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        gsap.fromTo(
+          overlayRef.current,
+          { autoAlpha: 0 },
+          { autoAlpha: 1, duration: 0.16, ease: "power1.out" }
+        )
+      })
+      return () => mm.revert()
+    },
+    { scope: overlayRef }
+  )
+
   return (
     <DialogPrimitive.Backdrop
+      ref={overlayRef}
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        "fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs",
         className
       )}
       {...props}
@@ -53,13 +76,44 @@ function DialogContent({
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
 }) {
+  const popupRef = React.useRef<HTMLDivElement>(null)
+
+  useGSAP(
+    () => {
+      if (!popupRef.current) return
+
+      const mm = gsap.matchMedia()
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const tl = gsap.timeline({ defaults: { ease: "power2.out" } })
+        tl.fromTo(
+          popupRef.current,
+          { autoAlpha: 0, y: 18, scale: 0.98 },
+          { autoAlpha: 1, y: 0, scale: 1, duration: 0.2 }
+        ).from(
+          "[data-slot='dialog-header'], form, [data-slot='dialog-footer']",
+          {
+            autoAlpha: 0,
+            y: 8,
+            duration: 0.18,
+            stagger: 0.04,
+          },
+          "-=0.12"
+        )
+      })
+
+      return () => mm.revert()
+    },
+    { scope: popupRef }
+  )
+
   return (
     <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Popup
+        ref={popupRef}
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm",
           className
         )}
         {...props}

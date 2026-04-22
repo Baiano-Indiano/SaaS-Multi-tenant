@@ -21,7 +21,7 @@
 | Library | Version | Purpose | When to Use |
 |---------|---------|---------|-------------|
 | Better-Auth | 1.x | Authentication | Best modern plugin-based auth. Great built-in organization logic. |
-| Anime.js | 4.x/latest| Hero Animations | Wow-factor micro-interactions directly on marketing/landing pages |
+| GSAP | 3.x/latest | Hero Animations | Industry standard for high-performance timelines and wow-factor interactions |
 | Framer Motion| 11.x | UI Animations | Used strictly for App UI state (modals, dropdowns) to prevent VDOM clash |
 | shadcn/ui | latest | UI Components | Pre-built accessible components built on Radix primitives |
 
@@ -32,7 +32,7 @@
 npm install next react react-dom drizzle-orm postgres tailwindcss @tailwindcss/postcss
 
 # Auth & UI
-npm install better-auth framer-motion clsx tailwind-merge lucide-react animejs
+npm install better-auth framer-motion clsx tailwind-merge lucide-react gsap
 
 # Dev dependencies
 npm install -D typescript @types/react @types/node drizzle-kit
@@ -51,7 +51,7 @@ npm install -D typescript @types/react @types/node drizzle-kit
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
 | Client-side pure React | Poor initial load performance, vulnerable auth flows | Next.js server components |
-| Anime.js for App UI | Fights React VDOM and lifecycle hooks causing UI sync bugs | Framer Motion |
+| GSAP for standard App UI | Fights React VDOM if not handled with context/hooks; overkill for simple transitions | Framer Motion |
 
 ---
 *Stack research for: B2B Multi-Tenant SaaS App*

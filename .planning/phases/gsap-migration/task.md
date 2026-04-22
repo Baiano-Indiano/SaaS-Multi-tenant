@@ -1,5 +1,6 @@
-- [x] Migrar `HeroGraphic` para GSAP
-- [x] Criar `AnimatedTableBody` component
-- [x] Atualizar `LandingPage` layout
-- [ ] Remover `animejs` do `package.json`
-- [ ] Executar build de verificação
+- [x] Integrate `@gsap/react` and `gsap` in `package.json`
+- [x] Implement GSAP interactions in `button.tsx`
+- [x] Implement staggered entrance in `app-sidebar.tsx`
+- [x] Refine Modal/Dialog transitions with GSAP/Framer Motion
+- [x] Update documentation (`PROJECT.md`, `README.md`, `STACK.md`)
+- [x] Verify accessibility (prefers-reduced-motion)

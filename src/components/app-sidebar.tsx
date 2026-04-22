@@ -1,4 +1,9 @@
-import * as React from 'react';
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 import {
   Sidebar,
   SidebarContent,
@@ -9,9 +14,11 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from '@/components/ui/sidebar';
-import { LayoutDashboard, Users, Settings, CreditCard, FolderKanban, Globe } from 'lucide-react';
-import { OrgSwitcher } from '@/components/org-switcher';
+} from "@/components/ui/sidebar";
+import { LayoutDashboard, Users, Settings, FolderKanban } from "lucide-react";
+import { OrgSwitcher } from "@/components/org-switcher";
+
+gsap.registerPlugin(useGSAP);
 
 interface Organization {
   id: string;
@@ -30,16 +37,87 @@ export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarP
   const activeSlug = activeOrg?.slug || "";
 
   const menuItems = [
-    { title: "Overview", url: `/org/${activeSlug}/dashboard`, icon: LayoutDashboard },
-    { title: "Projects", url: `/org/${activeSlug}/projects`, icon: FolderKanban },
-    { title: "Domains", url: `/org/${activeSlug}/settings/domains`, icon: Globe },
-    { title: "Members", url: `/org/${activeSlug}/settings/members`, icon: Users },
-    { title: "Billing", url: `/org/${activeSlug}/settings/billing`, icon: CreditCard },
-    { title: "Settings", url: `/org/${activeSlug}/settings/roles`, icon: Settings },
+    {
+      title: "Dashboard",
+      url: `/org/${activeSlug}/dashboard`,
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Projects",
+      url: `/org/${activeSlug}/projects`,
+      icon: FolderKanban,
+    },
+    {
+      title: "Members",
+      url: `/org/${activeSlug}/settings?tab=members`,
+      icon: Users,
+    },
+    {
+      title: "Settings",
+      url: `/org/${activeSlug}/settings`,
+      icon: Settings,
+    },
   ];
 
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const reduceMotionRef = React.useRef(false);
+  const onMouseEnterRef = React.useRef<(e: React.MouseEvent<HTMLAnchorElement>) => void>(() => {});
+  const onMouseLeaveRef = React.useRef<(e: React.MouseEvent<HTMLAnchorElement>) => void>(() => {});
+
+  useGSAP((_, contextSafe) => {
+    if (!containerRef.current) return;
+    const safe = contextSafe ?? ((fn: (e: React.MouseEvent<HTMLAnchorElement>) => void) => fn);
+
+    const mm = gsap.matchMedia();
+
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      reduceMotionRef.current = true;
+    });
+
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      reduceMotionRef.current = false;
+
+      gsap.from(".sidebar-item", {
+        autoAlpha: 0,
+        x: -12,
+        duration: 0.55,
+        stagger: 0.05,
+        ease: "power2.out",
+        delay: 0.08,
+      });
+    });
+
+    onMouseEnterRef.current = safe((e: React.MouseEvent<HTMLAnchorElement>) => {
+      if (reduceMotionRef.current) return;
+
+      gsap.to(e.currentTarget, {
+        x: 3,
+        duration: 0.18,
+        ease: "power2.out",
+        overwrite: "auto",
+      });
+    });
+
+    onMouseLeaveRef.current = safe((e: React.MouseEvent<HTMLAnchorElement>) => {
+      if (reduceMotionRef.current) return;
+
+      gsap.to(e.currentTarget, {
+        x: 0,
+        duration: 0.2,
+        ease: "power2.out",
+        overwrite: "auto",
+      });
+    });
+
+    return () => {
+      mm.revert();
+      onMouseEnterRef.current = () => {};
+      onMouseLeaveRef.current = () => {};
+    };
+  }, { scope: containerRef });
+
   return (
-    <Sidebar {...props}>
+    <Sidebar ref={containerRef} {...props}>
       <SidebarHeader className="border-b border-sidebar-border/50">
         <SidebarMenu>
           <SidebarMenuItem>
@@ -55,9 +133,15 @@ export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarP
           <SidebarGroupContent>
             <SidebarMenu className="px-2">
               {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.title} className="sidebar-item">
                   <SidebarMenuButton
-                    render={<a href={item.url} />}
+                    render={
+                      <Link
+                        href={item.url}
+                        onMouseEnter={(e) => onMouseEnterRef.current(e)}
+                        onMouseLeave={(e) => onMouseLeaveRef.current(e)}
+                      />
+                    }
                     className="hover:bg-zinc-900 transition-colors"
                   >
                     <item.icon className="h-4 w-4" />

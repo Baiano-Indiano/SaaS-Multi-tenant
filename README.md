@@ -29,7 +29,7 @@ Seu objetivo é ser robusto, seguro e com isolamento profundo de dados, mantendo
 | **Framework** | [Next.js 15 (App Router)](https://nextjs.org/) | Core, SSR (Server-Side Rendering) e Server Actions. |
 | **Linguagem** | [TypeScript](https://www.typescriptlang.org/) | Tipagem forte e prevenção contra vazamentos (strict bounds). |
 | **Estilização** | [Tailwind CSS v4](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) | Design UI minimalista, CSS Variables e Acessibilidade Radix. |
-| **Animações** | [Framer Motion](https://www.framer.com/motion/) + [Anime.js](https://animejs.com/) | Micro-interações otimizadas a nível VDOM e Hero animations. |
+| **Animações** | [Framer Motion](https://www.framer.com/motion/) + [GSAP](https://gsap.com/) | Micro-interações otimizadas a nível VDOM e Hero animations. |
 | **Database** | [PostgreSQL](https://www.postgresql.org/) + [Drizzle ORM](https://orm.drizzle.team/) | Persistência, TypeSafety de DB e Native Tenant Schemas. |
 | **Auth** | [Better-Auth](https://better-auth.com/) | Extensibilidade, Session & Org Management. |
 | **Testes (E2E)** | [Playwright](https://playwright.dev/) | Chromium / Webkit Automation & Smoke Testing. |
