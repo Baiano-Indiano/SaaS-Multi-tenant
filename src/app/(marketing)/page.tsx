@@ -22,7 +22,7 @@ export default function LandingPage() {
           </Button>
         </div>
         
-        {/* AnimeJS Hero Graphic */}
+        {/* GSAP Hero Graphic */}
         <div className="w-full h-auto max-w-4xl mx-auto rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 shadow-2xl relative overflow-hidden">
           <HeroGraphic />
         </div>

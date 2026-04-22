@@ -1,0 +1,5 @@
+- [x] Migrar `HeroGraphic` para GSAP
+- [x] Criar `AnimatedTableBody` component
+- [x] Atualizar `LandingPage` layout
+- [ ] Remover `animejs` do `package.json`
+- [ ] Executar build de verificação
