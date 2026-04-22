@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Trash2, ExternalLink, Settings } from "lucide-react";
 import { deleteProjectAction } from "@/app/actions/projects";
 import { toast } from "sonner";
+import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -32,9 +33,11 @@ interface ProjectActionsProps {
 export function ProjectActions({ projectId, orgId, orgSlug }: ProjectActionsProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleDelete = async () => {
     setIsDeleting(true);
+    setDeleteError(null);
     try {
       const result = await deleteProjectAction(projectId, orgId, orgSlug);
       if (result.success) {
@@ -42,7 +45,9 @@ export function ProjectActions({ projectId, orgId, orgSlug }: ProjectActionsProp
         setShowDeleteDialog(false);
       }
     } catch {
-      toast.error("Falha ao excluir projeto.");
+      const message = "Falha ao excluir projeto.";
+      setDeleteError(message);
+      toast.error(message);
     } finally {
       setIsDeleting(false);
     }
@@ -87,6 +92,13 @@ export function ProjectActions({ projectId, orgId, orgSlug }: ProjectActionsProp
               This project will be permanently deleted from this organization&apos;s schema. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {deleteError ? (
+            <FeedbackBanner
+              variant="error"
+              title="Exclusão não concluída"
+              message={deleteError}
+            />
+          ) : null}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction 

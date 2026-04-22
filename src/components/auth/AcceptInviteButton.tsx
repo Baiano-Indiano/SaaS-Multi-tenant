@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { animate } from "animejs";
+import gsap from "gsap";
 import { Button } from "@/components/ui/button";
 import { acceptInvitationAction } from "@/app/actions/member";
 import { toast } from "sonner";
@@ -26,13 +26,22 @@ export function AcceptInviteButton({
 
   useEffect(() => {
     if (cardRef.current) {
-      animate(cardRef.current, {
-        translateY: [20, 0],
-        opacity: [0, 1],
-        duration: 1000,
-        easing: "easeOutExpo",
-        delay: 200
+      const ctx = gsap.context(() => {
+        gsap.fromTo(cardRef.current, 
+          { 
+            y: 20, 
+            opacity: 0 
+          },
+          { 
+            y: 0, 
+            opacity: 1, 
+            duration: 1, 
+            ease: "expo.out",
+            delay: 0.2
+          }
+        );
       });
+      return () => ctx.revert();
     }
   }, []);
 

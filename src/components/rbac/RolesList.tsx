@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { RoleActions } from "./RoleActions";
 import { TenantRoleWithPermissions } from "@/lib/auth/rbac-utils";
+import { FeedbackBanner } from "@/components/ui/feedback-banner";
 
 interface RolesListProps {
   roles: TenantRoleWithPermissions[];
@@ -27,6 +28,16 @@ const item = {
 };
 
 export function RolesList({ roles, orgId, orgSlug }: RolesListProps) {
+  if (roles.length === 0) {
+    return (
+      <FeedbackBanner
+        variant="info"
+        title="Nenhuma role encontrada"
+        message="Crie a primeira role personalizada para começar a definir permissões da organização."
+      />
+    );
+  }
+
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 backdrop-blur-sm shadow-xl overflow-hidden">
       <Table>

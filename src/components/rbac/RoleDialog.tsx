@@ -20,6 +20,7 @@ import { createRoleAction, updateRoleAction } from "@/app/actions/rbac";
 import { useState } from "react";
 import { Loader2, ShieldCheck, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { FeedbackBanner } from "@/components/ui/feedback-banner";
 
 interface RoleDialogProps {
   trigger: React.ReactElement;
@@ -44,6 +45,8 @@ const groupedPermissions = ALL_PERMISSION_KEYS.reduce((acc, key) => {
 export function RoleDialog({ trigger, orgId, orgSlug, role }: RoleDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedbackVariant, setFeedbackVariant] = useState<"error" | "info" | "success">("info");
   const [selectedPermissions, setSelectedPermissions] = useState<PermissionKey[]>(
     role?.permissions || []
   );
@@ -56,6 +59,8 @@ export function RoleDialog({ trigger, orgId, orgSlug, role }: RoleDialogProps) {
     if (isSystemRole) return;
     
     setLoading(true);
+    setFeedback(isEditing ? "Atualizando role..." : "Criando role...");
+    setFeedbackVariant("info");
 
     const formData = new FormData(event.currentTarget);
     const data = {
@@ -73,9 +78,14 @@ export function RoleDialog({ trigger, orgId, orgSlug, role }: RoleDialogProps) {
       } else {
         await createRoleAction(data);
       }
+      setFeedback(isEditing ? "Role atualizada com sucesso." : "Role criada com sucesso.");
+      setFeedbackVariant("success");
       setOpen(false);
     } catch (error) {
       console.error("Action failed:", error);
+      const message = error instanceof Error ? error.message : "Não foi possível salvar a role.";
+      setFeedback(message);
+      setFeedbackVariant("error");
     } finally {
       setLoading(false);
     }
@@ -117,6 +127,19 @@ export function RoleDialog({ trigger, orgId, orgSlug, role }: RoleDialogProps) {
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+            {feedback ? (
+              <FeedbackBanner
+                variant={feedbackVariant}
+                title={
+                  feedbackVariant === "error"
+                    ? "Não foi possível salvar"
+                    : feedbackVariant === "success"
+                      ? "Role salva"
+                      : "Processando"
+                }
+                message={feedback}
+              />
+            ) : null}
             {/* Core Info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-2">

@@ -26,6 +26,7 @@ import { inviteMemberAction } from "@/app/actions/member";
 import { toast } from "sonner";
 import { Loader2, UserPlus } from "lucide-react";
 import { usePaywall } from "@/components/billing/PaywallProvider";
+import { FeedbackBanner } from "@/components/ui/feedback-banner";
 
 /**
  * Zod schema for invitation form validation
@@ -52,6 +53,8 @@ interface InviteMemberDialogProps {
 export function InviteMemberDialog({ roles, orgId, orgSlug }: InviteMemberDialogProps) {
   const [open, setOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedbackVariant, setFeedbackVariant] = useState<"error" | "info" | "success">("info");
   const { openPaywall } = usePaywall();
 
   const {
@@ -70,6 +73,8 @@ export function InviteMemberDialog({ roles, orgId, orgSlug }: InviteMemberDialog
 
   const onSubmit = async (data: InviteFormValues) => {
     setIsPending(true);
+    setFeedback("Enviando convite...");
+    setFeedbackVariant("info");
     try {
       const result = await inviteMemberAction({
         ...data,
@@ -78,10 +83,14 @@ export function InviteMemberDialog({ roles, orgId, orgSlug }: InviteMemberDialog
       });
 
       if (result.success) {
+        setFeedback("Convite enviado com sucesso.");
+        setFeedbackVariant("success");
         toast.success(`Convite enviado para ${data.email}`);
         setOpen(false);
         reset();
       } else if (result.error === "QUOTA_EXCEEDED") {
+        setFeedback("Limite de membros atingido no plano atual.");
+        setFeedbackVariant("error");
         setOpen(false);
         openPaywall({
           title: "Limite de Membros Atingido",
@@ -91,12 +100,16 @@ export function InviteMemberDialog({ roles, orgId, orgSlug }: InviteMemberDialog
     } catch (error) {
        const message = error instanceof Error ? error.message : "Falha ao enviar convite.";
        if (message.includes("plan only allows up to")) {
+           setFeedback("Limite de membros do plano atual atingido.");
+           setFeedbackVariant("error");
            openPaywall({
               title: "Upgrade Required",
               reason: message,
            });
            setOpen(false);
        } else {
+           setFeedback(message);
+           setFeedbackVariant("error");
            toast.error(message);
        }
     } finally {
@@ -122,6 +135,19 @@ export function InviteMemberDialog({ roles, orgId, orgSlug }: InviteMemberDialog
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pt-4">
+          {feedback ? (
+            <FeedbackBanner
+              variant={feedbackVariant}
+              title={
+                feedbackVariant === "error"
+                  ? "Não foi possível enviar"
+                  : feedbackVariant === "success"
+                    ? "Convite enviado"
+                    : "Processando"
+              }
+              message={feedback}
+            />
+          ) : null}
           <div className="space-y-2">
             <Label htmlFor="email" className="text-sm font-semibold">E-mail</Label>
             <Input

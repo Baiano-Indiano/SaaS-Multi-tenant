@@ -56,7 +56,7 @@ export async function updateMemberRoleAction(formData: {
       action: "MEMBER_ROLE_UPDATED",
       entityType: "MEMBER",
       entityId: formData.memberId,
-      details: `Alterou a role do membro para o ID ${formData.roleId}`
+      details: `Updated member role to ID: ${formData.roleId}`
     });
 
     return { success: true };
@@ -93,7 +93,7 @@ export async function removeMemberAction(memberId: string, orgId: string, orgSlu
       action: "MEMBER_REMOVED",
       entityType: "MEMBER",
       entityId: memberId,
-      details: `Removeu o membro da organização`
+      details: `Removed member from organization`
     });
 
     return { success: true };
@@ -163,7 +163,7 @@ export async function inviteMemberAction(data: {
       organizationId: data.orgId,
       action: "MEMBER_INVITED",
       entityType: "INVITATION",
-      details: `Convidou o usuário ${data.email} para a organização`
+      details: `Invited user ${data.email} to the organization`
     });
 
     return result;
@@ -196,7 +196,7 @@ export async function cancelInvitationAction(id: string, orgId: string, orgSlug:
       action: "INVITATION_CANCELLED",
       entityType: "INVITATION",
       entityId: id,
-      details: `Cancelou o convite pendente`
+      details: `Cancelled pending invitation`
     });
 
     return { success: true };
@@ -284,7 +284,7 @@ export async function acceptInvitationAction(invitationId: string) {
       action: "INVITATION_ACCEPTED",
       entityType: "MEMBER",
       entityId: session.user.id,
-      details: `Aceitou o convite para entrar na organização`
+      details: `Accepted invitation to join the organization`
     });
 
   } catch (error) {

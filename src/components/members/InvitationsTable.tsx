@@ -16,6 +16,17 @@ import { cancelInvitationAction } from "@/app/actions/member";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Mail, Trash2, Clock } from "lucide-react";
+import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { InferSelectModel } from "drizzle-orm";
 import { invitations } from "@/lib/db/schema";
 
@@ -36,18 +47,21 @@ interface InvitationsTableProps {
 export function InvitationsTable({ invitations, orgId, orgSlug }: InvitationsTableProps) {
   const router = useRouter();
   const [currentTimestamp] = useState(Date.now);
+  const [cancelingId, setCancelingId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   const handleCancel = async (id: string) => {
-    if (!confirm("Tem certeza que deseja cancelar este convite?")) return;
-
+    setFeedback(null);
     try {
       const result = await cancelInvitationAction(id, orgId, orgSlug);
       if (result.success) {
         toast.success("Convite cancelado.");
+        setCancelingId(null);
         router.refresh();
       }
     } catch {
       toast.error("Falha ao cancelar convite.");
+      setFeedback("Não foi possível cancelar o convite neste momento.");
     }
   };
 
@@ -55,6 +69,13 @@ export function InvitationsTable({ invitations, orgId, orgSlug }: InvitationsTab
 
   return (
     <div className="space-y-4 pt-4 border-t mt-8">
+      {feedback ? (
+        <FeedbackBanner
+          variant="error"
+          title="Ação não concluída"
+          message={feedback}
+        />
+      ) : null}
       <div className="flex items-center gap-2 px-1">
         <Mail className="h-4 w-4 text-muted-foreground" />
         <h2 className="text-lg font-semibold tracking-tight">Convites Pendentes</h2>
@@ -95,7 +116,7 @@ export function InvitationsTable({ invitations, orgId, orgSlug }: InvitationsTab
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      onClick={() => handleCancel(invite.id)}
+                      onClick={() => setCancelingId(invite.id)}
                       className="opacity-0 group-hover:opacity-100 transition-all text-destructive hover:text-destructive hover:bg-destructive/10 h-8 font-semibold px-3"
                     >
                       <Trash2 className="mr-2 h-3.5 w-3.5" />
@@ -108,6 +129,29 @@ export function InvitationsTable({ invitations, orgId, orgSlug }: InvitationsTab
           </TableBody>
         </Table>
       </div>
+      <AlertDialog open={!!cancelingId} onOpenChange={(open) => !open && setCancelingId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar convite?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A pessoa convidada não poderá mais usar este link para entrar na organização.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (cancelingId) {
+                  void handleCancel(cancelingId);
+                }
+              }}
+            >
+              Confirmar cancelamento
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

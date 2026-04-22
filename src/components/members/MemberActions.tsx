@@ -22,6 +22,7 @@ import {
   UserCog,
   AlertTriangle
 } from "lucide-react";
+import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,6 +52,7 @@ export function RoleSelector({
 }: RoleSelectorProps) {
   const router = useRouter();
   const [updating, setUpdating] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   const systemRoles = roles.filter(r => ['admin', 'member', 'viewer', 'owner'].includes(r.slug));
   const customRoles = roles.filter(r => !['admin', 'member', 'viewer', 'owner'].includes(r.slug));
@@ -59,6 +61,7 @@ export function RoleSelector({
     if (newRoleId === currentRoleId) return;
     
     setUpdating(true);
+    setFeedback("Atualizando nível de acesso...");
     try {
       const result = await updateMemberRoleAction({
         memberId,
@@ -68,17 +71,19 @@ export function RoleSelector({
       });
       if (result.success) {
         toast.success("Access level updated");
+        setFeedback("Nível de acesso atualizado.");
         router.refresh();
       }
     } catch {
       toast.error("Failed to update access level");
+      setFeedback("Não foi possível atualizar o nível de acesso.");
     } finally {
       setUpdating(false);
     }
   };
 
   return (
-    <div className="relative group">
+    <div className="relative group space-y-2">
       <Select 
         disabled={updating}
         defaultValue={currentRoleId} 
@@ -132,6 +137,12 @@ export function RoleSelector({
           )}
         </SelectContent>
       </Select>
+      {feedback ? (
+        <FeedbackBanner
+          variant={feedback.includes("Não foi possível") ? "error" : "info"}
+          message={feedback}
+        />
+      ) : null}
     </div>
   );
 }
@@ -147,9 +158,11 @@ export function RemoveMemberButton({
 }) {
   const router = useRouter();
   const [isRemoving, setIsRemoving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleRemove = async () => {
     setIsRemoving(true);
+    setError(null);
     try {
       const result = await removeMemberAction(memberId, orgId, orgSlug);
       if (result.success) {
@@ -158,6 +171,7 @@ export function RemoveMemberButton({
       }
     } catch {
       toast.error("Failed to remove member");
+      setError("Não foi possível remover este membro agora.");
     } finally {
       setIsRemoving(false);
     }
@@ -191,6 +205,14 @@ export function RemoveMemberButton({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="bg-zinc-900/10 p-2 sm:p-0 mt-4">
+          {error ? (
+            <FeedbackBanner
+              variant="error"
+              title="Remoção não concluída"
+              message={error}
+              className="w-full mb-2"
+            />
+          ) : null}
           <AlertDialogCancel className="bg-transparent border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100 rounded-lg h-10 px-6 font-medium">
             Cancel
           </AlertDialogCancel>

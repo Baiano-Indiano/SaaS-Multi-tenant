@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { deleteRoleAction } from "@/app/actions/rbac";
 import { useState } from "react";
 import { Loader2, AlertTriangle } from "lucide-react";
+import { FeedbackBanner } from "@/components/ui/feedback-banner";
 
 interface DeleteRoleDialogProps {
   open: boolean;
@@ -32,14 +33,17 @@ export function DeleteRoleDialog({
   orgSlug,
 }: DeleteRoleDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleDelete() {
     setLoading(true);
+    setError(null);
     try {
       await deleteRoleAction(roleId, orgId, orgSlug);
       onOpenChange(false);
     } catch (error) {
       console.error("Failed to delete role:", error);
+      setError(error instanceof Error ? error.message : "Não foi possível excluir a role.");
     } finally {
       setLoading(false);
     }
@@ -60,6 +64,13 @@ export function DeleteRoleDialog({
             This action cannot be undone and may affect users currently assigned to this role.
           </DialogDescription>
         </DialogHeader>
+        {error ? (
+          <FeedbackBanner
+            variant="error"
+            title="Exclusão não concluída"
+            message={error}
+          />
+        ) : null}
 
         <DialogFooter className="mt-6 gap-2 sm:gap-0">
           <Button

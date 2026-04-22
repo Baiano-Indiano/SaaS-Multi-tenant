@@ -20,6 +20,7 @@ import { createProjectAction } from "@/app/actions/projects";
 import { toast } from "sonner";
 import { Loader2, Plus } from "lucide-react";
 import { usePaywall } from "@/components/billing/PaywallProvider";
+import { FeedbackBanner } from "@/components/ui/feedback-banner";
 
 const projectSchema = z.object({
   name: z.string().min(3, "O nome deve ter pelo menos 3 caracteres"),
@@ -37,6 +38,8 @@ interface CreateProjectDialogProps {
 export function CreateProjectDialog({ orgId, orgSlug, trigger }: CreateProjectDialogProps) {
   const [open, setOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedbackVariant, setFeedbackVariant] = useState<"error" | "info" | "success">("info");
   const { openPaywall } = usePaywall();
 
   const {
@@ -54,6 +57,8 @@ export function CreateProjectDialog({ orgId, orgSlug, trigger }: CreateProjectDi
 
   const onSubmit = async (data: ProjectFormValues) => {
     setIsPending(true);
+    setFeedback("Criando projeto...");
+    setFeedbackVariant("info");
     try {
       const result = await createProjectAction({
         ...data,
@@ -62,10 +67,14 @@ export function CreateProjectDialog({ orgId, orgSlug, trigger }: CreateProjectDi
       });
 
       if (result.success) {
+        setFeedback("Projeto criado com sucesso.");
+        setFeedbackVariant("success");
         toast.success("Projeto criado com sucesso!");
         setOpen(false);
         reset();
       } else if ('error' in result && result.error === "QUOTA_EXCEEDED") {
+        setFeedback("Limite de projetos do plano atual atingido.");
+        setFeedbackVariant("error");
         setOpen(false);
         openPaywall({
           title: "Limite de Projetos Atingido",
@@ -73,7 +82,10 @@ export function CreateProjectDialog({ orgId, orgSlug, trigger }: CreateProjectDi
         });
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Falha ao criar projeto.");
+      const message = error instanceof Error ? error.message : "Falha ao criar projeto.";
+      setFeedback(message);
+      setFeedbackVariant("error");
+      toast.error(message);
     } finally {
       setIsPending(false);
     }
@@ -99,6 +111,19 @@ export function CreateProjectDialog({ orgId, orgSlug, trigger }: CreateProjectDi
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pt-4">
+          {feedback ? (
+            <FeedbackBanner
+              variant={feedbackVariant}
+              title={
+                feedbackVariant === "error"
+                  ? "Não foi possível criar"
+                  : feedbackVariant === "success"
+                    ? "Projeto criado"
+                    : "Processando"
+              }
+              message={feedback}
+            />
+          ) : null}
           <div className="space-y-2">
             <Label htmlFor="name" className="text-sm font-semibold">Project Name</Label>
             <Input

@@ -138,6 +138,27 @@ export function ActivityLogFeed({ logs }: ActivityLogFeedProps) {
     });
   };
 
+  const groupedLogs = logs.reduce((acc, log) => {
+    const date = new Date(log.createdAt);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    let dateKey = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    
+    if (date.toDateString() === today.toDateString()) {
+      dateKey = "Today";
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      dateKey = "Yesterday";
+    }
+    
+    if (!acc[dateKey]) {
+      acc[dateKey] = [];
+    }
+    acc[dateKey].push(log);
+    return acc;
+  }, {} as Record<string, AuditLog[]>);
+
   return (
     <div className="space-y-6">
       {/* Search and Filters */}
@@ -193,100 +214,116 @@ export function ActivityLogFeed({ logs }: ActivityLogFeedProps) {
         </div>
       ) : (
         <div className={cn(
-          "relative space-y-4 transition-opacity duration-300",
+          "relative transition-opacity duration-300",
           isPending && "opacity-50 pointer-events-none"
         )}>
-          {/* Vertical line with gradient */}
-          <div className="absolute left-6 top-4 bottom-4 w-px bg-gradient-to-b from-zinc-800 via-zinc-800 to-transparent" />
-
           {isPending && (
             <div className="absolute inset-0 flex items-center justify-center z-20">
               <Loader2 className="h-8 w-8 text-zinc-500 animate-spin" />
             </div>
           )}
 
-          {logs.map((log, index) => (
-            <motion.div
-              key={log.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.03 }}
-              className="relative pl-12 group"
-            >
-              {/* Icon Circle */}
-              <div className="absolute left-6 top-3 -translate-x-1/2 flex items-center justify-center h-8 w-8 rounded-full bg-zinc-950 border border-zinc-800 shadow-[0_0_15px_rgba(0,0,0,0.5)] z-10 group-hover:border-zinc-700 transition-colors">
-                {getActionIcon(log.action, log.entityType)}
-              </div>
-
-              <div 
-                onClick={() => setSelectedLog(log)}
-                className="bg-zinc-900/40 border border-zinc-800/50 hover:border-zinc-700/50 rounded-xl p-4 transition-all cursor-pointer hover:bg-zinc-900/60 shadow-sm relative overflow-hidden group/card"
-              >
-                {/* Hover Glow */}
-                <div className="absolute inset-0 bg-gradient-to-r from-zinc-800/0 via-zinc-800/5 to-zinc-800/0 opacity-0 group-hover/card:opacity-100 transition-opacity" />
-
-                <div className="flex items-start justify-between gap-4 relative z-10">
-                  <div className="flex items-start gap-4">
-                    <Avatar className="h-10 w-10 border border-zinc-800 shadow-sm ring-2 ring-transparent group-hover/card:ring-zinc-800 transition-all">
-                      {log.userId === "system" ? (
-                        <div className="flex h-full w-full items-center justify-center bg-zinc-900 text-zinc-400">
-                          <Bot className="h-5 w-5" />
-                        </div>
-                      ) : (
-                        <AvatarFallback className="bg-gradient-to-br from-zinc-800 to-zinc-900 text-xs text-zinc-300 font-bold">
-                          {log.userName ? log.userName.slice(0, 2).toUpperCase() : "U"}
-                        </AvatarFallback>
-                      )}
-                    </Avatar>
-                    
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-zinc-100 text-sm">
-                          {log.userName || "Unknown User"}
-                        </span>
-                        <span className="text-zinc-500 text-xs font-medium">
-                          {log.action.replace(/_/g, " ").toLowerCase()}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center gap-3 text-[10px] text-zinc-500 font-medium">
-                        <div className="flex items-center gap-1">
-                          <User className="h-3 w-3" />
-                          <span>{log.userEmail}</span>
-                        </div>
-                        <span className="h-1 w-1 rounded-full bg-zinc-800" />
-                        <div className="flex items-center gap-1">
-                          <Info className="h-3 w-3" />
-                          <span>{log.ipAddress}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 bg-zinc-800/50 px-2 py-1 rounded-full border border-zinc-700/30">
-                      <Calendar className="h-3 w-3" />
-                      {formatRelativeTime(log.createdAt)}
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-zinc-950 text-zinc-400 border border-zinc-800 uppercase tracking-wider">
-                        {log.entityType}
-                      </span>
-                      <ChevronRight className="h-3.5 w-3.5 text-zinc-700 group-hover/card:text-zinc-400 group-hover/card:translate-x-0.5 transition-all" />
-                    </div>
-                  </div>
+          <div className="space-y-8">
+            {Object.entries(groupedLogs).map(([date, dateLogs]) => (
+              <div key={date} className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="h-px flex-1 bg-zinc-800/50" />
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest bg-zinc-950 px-3 py-1 rounded-full border border-zinc-800/50">
+                    {date}
+                  </span>
+                  <div className="h-px flex-1 bg-zinc-800/50" />
                 </div>
-                
-                {log.details && (
-                  <div className="mt-4 pt-3 border-t border-zinc-800/30">
-                    <p className="text-xs text-zinc-400 font-medium leading-relaxed line-clamp-1">
-                      {log.details}
-                    </p>
-                  </div>
-                )}
+
+                <div className="relative space-y-4">
+                  {/* Vertical line per group */}
+                  <div className="absolute left-6 top-4 bottom-4 w-px bg-gradient-to-b from-zinc-800 via-zinc-800 to-transparent" />
+                  
+                  {dateLogs.map((log, index) => (
+                    <motion.div
+                      key={log.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.02 }}
+                      className="relative pl-12 group"
+                    >
+                      {/* Icon Circle */}
+                      <div className="absolute left-6 top-3 -translate-x-1/2 flex items-center justify-center h-8 w-8 rounded-full bg-zinc-950 border border-zinc-800 shadow-[0_0_15px_rgba(0,0,0,0.5)] z-10 group-hover:border-zinc-700 transition-colors">
+                        {getActionIcon(log.action, log.entityType)}
+                      </div>
+
+                      <div 
+                        onClick={() => setSelectedLog(log)}
+                        className="bg-zinc-900/40 border border-zinc-800/50 hover:border-zinc-700/50 rounded-xl p-4 transition-all cursor-pointer hover:bg-zinc-900/60 shadow-sm relative overflow-hidden group/card"
+                      >
+                        {/* Hover Glow */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-zinc-800/0 via-zinc-800/5 to-zinc-800/0 opacity-0 group-hover/card:opacity-100 transition-opacity" />
+
+                        <div className="flex items-start justify-between gap-4 relative z-10">
+                          <div className="flex items-start gap-4">
+                            <Avatar className="h-10 w-10 border border-zinc-800 shadow-sm ring-2 ring-transparent group-hover/card:ring-zinc-800 transition-all">
+                              {log.userId === "system" ? (
+                                <div className="flex h-full w-full items-center justify-center bg-zinc-900 text-zinc-400">
+                                  <Bot className="h-5 w-5" />
+                                </div>
+                              ) : (
+                                <AvatarFallback className="bg-gradient-to-br from-zinc-800 to-zinc-900 text-xs text-zinc-300 font-bold">
+                                  {log.userName ? log.userName.slice(0, 2).toUpperCase() : "U"}
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                            
+                            <div className="space-y-1.5">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold text-zinc-100 text-sm">
+                                  {log.userName || "Unknown User"}
+                                </span>
+                                <span className="text-zinc-500 text-xs font-medium">
+                                  {log.action.replace(/_/g, " ").toLowerCase()}
+                                </span>
+                              </div>
+                              
+                              <div className="flex items-center gap-3 text-[10px] text-zinc-500 font-medium">
+                                <div className="flex items-center gap-1">
+                                  <User className="h-3 w-3" />
+                                  <span>{log.userEmail}</span>
+                                </div>
+                                <span className="h-1 w-1 rounded-full bg-zinc-800" />
+                                <div className="flex items-center gap-1">
+                                  <Info className="h-3 w-3" />
+                                  <span>{log.ipAddress}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col items-end gap-2 shrink-0">
+                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 bg-zinc-800/50 px-2 py-1 rounded-full border border-zinc-700/30">
+                              <Calendar className="h-3 w-3" />
+                              {formatRelativeTime(log.createdAt)}
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-zinc-950 text-zinc-400 border border-zinc-800 uppercase tracking-wider">
+                                {log.entityType}
+                              </span>
+                              <ChevronRight className="h-3.5 w-3.5 text-zinc-700 group-hover/card:text-zinc-400 group-hover/card:translate-x-0.5 transition-all" />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {log.details && (
+                          <div className="mt-4 pt-3 border-t border-zinc-800/30">
+                            <p className="text-xs text-zinc-400 font-medium leading-relaxed line-clamp-1">
+                              {log.details}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
-            </motion.div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 

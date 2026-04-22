@@ -57,7 +57,7 @@ export async function createRoleAction(formData: {
       action: "ROLE_CREATED",
       entityType: "ROLE",
       entityId: roleId,
-      details: `Criou a role customizada: ${formData.name} (${formData.slug})`
+      details: `Created custom role: ${formData.name} (${formData.slug})`
     });
 
     return { success: true };
@@ -119,7 +119,7 @@ export async function updateRoleAction(formData: {
       action: "ROLE_UPDATED",
       entityType: "ROLE",
       entityId: formData.id,
-      details: `Atualizou a role: ${formData.name}`
+      details: `Updated role: ${formData.name}`
     });
 
     return { success: true };
@@ -158,7 +158,7 @@ export async function deleteRoleAction(roleId: string, orgId: string, orgSlug: s
       action: "ROLE_DELETED",
       entityType: "ROLE",
       entityId: roleId,
-      details: `Removeu a role customizada da organização`
+      details: `Removed custom role from organization`
     });
 
     return { success: true };
