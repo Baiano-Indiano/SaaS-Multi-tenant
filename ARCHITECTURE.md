@@ -37,7 +37,7 @@ Roles are managed per-tenant, allowing organizations to define custom roles whil
 
 - **Framework**: Next.js 16 (App Router).
 - **Styles**: Tailwind CSS v4 + shadcn/ui.
-- **Animations**: Framer Motion (App UI) & GSAP (Landing Page).
+- **Animations**: GSAP (Landing Page & Dashboard Transitions) & Framer Motion (App UI Modals/Dropdowns).
 - **ORM**: Drizzle ORM (Primary) + raw `postgres.js` for dynamic schema operations.
 - **Auth**: Better-Auth 1.1+.
 ## 5. Security Model: Defense in Depth (DiD)
@@ -66,3 +66,14 @@ Product-Led Growth (PLG) logic is enforced via a **Soft-Block** strategy.
 - **Real-time Quotas**: Statistics are fetched in real-time using SQL `count()` on the isolated tenant schema, ensuring 100% accuracy for billing.
 - **Premium Intercepts**: Instead of disabling UI features, the system allows the action attempt but intercepts it with an `UpgradeModal` (via `PaywallProvider`) when limits are hit.
 - **Plan Scope**: Quota definitions are centralized in `src/lib/billing/plans.ts` and evaluated at both the Server Action level (for security) and the UI level (for UX).
+
+## 8. Routing Conventions: Sub-routes vs Query Params
+
+To maintain a premium, enterprise-grade user experience and clean codebase, the platform follows these routing rules:
+
+- **Sub-routes (Primary)**: Used for functional transitions and separate business scopes (e.g., `/settings/general`, `/settings/members`). 
+    - *Benefit*: Enables robust RBAC isolation per page, cleaner component structure, and deep-linking support.
+- **Query Params (Secondary)**: Reserved for transient state within a single view (e.g., search filters `?q=...`, pagination `?page=2`, or temporary modal states).
+    - *Benefit*: Instant navigation without full page mounting and easily shareable state for list views.
+
+Standardizing on sub-routes for settings ensures that navigation transitions (GSAP Fade-and-Scale) are consistent across the administrative interface.
