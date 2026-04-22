@@ -21,8 +21,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 		let eventSource: EventSource | null = null;
 		let retryCount = 0;
 		const maxRetries = 5;
+		let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+		let stopped = false;
 
 		const connect = () => {
+			if (stopped) return;
 			if (eventSource) eventSource.close();
 
 			eventSource = new EventSource("/api/notifications/stream");
@@ -32,7 +35,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 					const data = JSON.parse(event.data);
 
 					if (data.type === "CONNECTED") {
-						console.log("实时通知已连接:", data.userId);
+						console.log("Real-time notifications connected:", data.userId);
 						retryCount = 0;
 						return;
 					}
@@ -59,21 +62,27 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 				}
 			};
 
-			eventSource.onerror = (err) => {
-				console.error("SSE Connection Error:", err);
+			eventSource.onerror = () => {
 				eventSource?.close();
-				
-				if (retryCount < maxRetries) {
-					retryCount++;
-					const delay = Math.pow(2, retryCount) * 1000;
-					setTimeout(connect, delay);
+				eventSource = null;
+
+				if (stopped) return;
+				if (retryCount >= maxRetries) {
+					console.warn("Notifications stream paused after max retries.");
+					return;
 				}
+
+				retryCount += 1;
+				const delay = Math.min(3000 * retryCount, 15000);
+				reconnectTimer = setTimeout(connect, delay);
 			};
 		};
 
 		connect();
 
 		return () => {
+			stopped = true;
+			if (reconnectTimer) clearTimeout(reconnectTimer);
 			if (eventSource) eventSource.close();
 		};
 	}, [session?.user, session?.session?.activeOrganizationId, setUnreadCount]);

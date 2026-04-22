@@ -2,13 +2,19 @@ import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { redis } from "@/lib/upstash";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-	const session = await auth.api.getSession({
-		headers: req.headers,
-	});
+	let session: Awaited<ReturnType<typeof auth.api.getSession>> | null = null;
+	try {
+		session = await auth.api.getSession({
+			headers: req.headers,
+		});
+	} catch (error) {
+		console.error("Failed to resolve auth session for notifications stream:", error);
+		return new Response("Session unavailable", { status: 503 });
+	}
 
 	if (!session || !session.user) {
 		return new Response("Unauthorized", { status: 401 });
@@ -31,30 +37,66 @@ export async function GET(req: NextRequest) {
 			// Send initial heart-beat or connection success
 			sendEvent({ type: "CONNECTED", userId });
 
-			// 2. Subscribe to Upstash channels
-			// Channel for private user notifications
-			const userChannel = `user:${userId}`;
-			const subscriber = redis.subscribe(userChannel);
+			// 2. Subscribe to Upstash streams via polling (XREAD)
+			// We use '$' to only get new messages after connection
+			const userStream = `stream:user:${userId}`;
+			const orgStream = activeOrgId ? `stream:org:${activeOrgId}` : null;
+			
+			let lastUserMsgId = "$";
+			let lastOrgMsgId = "$";
+			let lastHeartbeat = Date.now();
 
-			subscriber.on("message", (message) => {
-				sendEvent({ channel: userChannel, payload: message });
-			});
+			// Polling loop
+			while (!req.signal.aborted) {
+				try {
+					// 3. Heartbeat (every 15 seconds) to keep connection alive on Edge
+					if (Date.now() - lastHeartbeat > 15000) {
+						controller.enqueue(encoder.encode(": ping\n\n"));
+						lastHeartbeat = Date.now();
+					}
 
-			// If user is in an organization, subscribe to org channel too
-			if (activeOrgId) {
-				const orgChannel = `org:${activeOrgId}`;
-				const orgSubscriber = redis.subscribe(orgChannel);
-				orgSubscriber.on("message", (message) => {
-					sendEvent({ channel: orgChannel, payload: message });
-				});
+					const streams = { [userStream]: lastUserMsgId };
+					if (orgStream) streams[orgStream] = lastOrgMsgId;
+
+					const keys = Object.keys(streams);
+					const ids = Object.values(streams);
+
+					const data = (await redis.xread(
+						keys, 
+						ids, 
+						{ 
+							count: 5,
+							blockMS: 0 
+						}
+					)) as { name: string; messages: { id: string; data: { payload: any } }[] }[] | null;
+
+					if (data && data.length > 0) {
+						for (const streamResult of data) {
+							const streamName = streamResult.name;
+							const messages = streamResult.messages;
+
+							for (const msg of messages) {
+								sendEvent({ 
+									channel: streamName, 
+									payload: msg.data.payload 
+								});
+								
+								// Update last ID to avoid duplicate reads
+								if (streamName === userStream) lastUserMsgId = msg.id;
+								if (streamName === orgStream) lastOrgMsgId = msg.id;
+							}
+						}
+					}
+					
+					// Small delay to prevent infinite loop spamming if no data
+					// Reducing to 1s for slightly better responsiveness while still being light
+					await new Promise(resolve => setTimeout(resolve, 1000));
+				} catch (err) {
+					console.error("Stream read error:", err);
+					// Wait longer on error before retry
+					await new Promise(resolve => setTimeout(resolve, 5000));
+				}
 			}
-
-			// 3. Handle client disconnection
-			req.signal.addEventListener("abort", () => {
-				// Note: Upstash subscriber handles cleanup if the runtime kills the function
-				// but explicit close is better if the environment allows
-				controller.close();
-			});
 		},
 	});
 

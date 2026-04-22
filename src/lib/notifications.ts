@@ -36,15 +36,23 @@ export async function sendNotification({
 	// 1. Persist to Database
 	await db.insert(notifications).values(notificationData);
 
-	// 2. Publish to Redis for Real-time
-	// We publish to the private user channel
-	const userChannel = `user:${userId}`;
-	await redis.publish(userChannel, JSON.stringify(notificationData));
-
-	// 3. If it's an organization event, publish to org channel too
+	// 2. Add to Redis Stream for Real-time
+	// We use Redis Streams (XADD) instead of Publish because it works better with Upstash REST
+	const userStream = `stream:user:${userId}`;
+	await redis.xadd(userStream, "*", { 
+		payload: JSON.stringify(notificationData) 
+	}, { 
+		trim: { type: "MAXLEN", threshold: 100, comparison: "~" } 
+	});
+ 
+	// 3. If it's an organization event, add to org stream too
 	if (organizationId) {
-		const orgChannel = `org:${organizationId}`;
-		await redis.publish(orgChannel, JSON.stringify(notificationData));
+		const orgStream = `stream:org:${organizationId}`;
+		await redis.xadd(orgStream, "*", { 
+			payload: JSON.stringify(notificationData) 
+		}, { 
+			trim: { type: "MAXLEN", threshold: 100, comparison: "~" } 
+		});
 	}
 
 	return id;
