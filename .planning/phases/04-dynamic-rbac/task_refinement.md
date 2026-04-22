@@ -1,0 +1,5 @@
+- [x] Refinar validação de permissões no lado do servidor
+- [x] Corrigir bug de expiração de convites
+- [x] Adicionar feedback visual na tabela de membros
+- [x] Sincronizar UI de edição de Roles com o novo schema
+- [ ] Implementar Roles customizadas além das 3 básicas (backlog)

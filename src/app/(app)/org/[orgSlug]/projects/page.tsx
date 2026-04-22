@@ -7,7 +7,6 @@ import { redirect } from "next/navigation";
 import { getProjectsAction } from "@/app/actions/projects";
 import { 
   Table, 
-  TableBody, 
   TableCell, 
   TableHead, 
   TableHeader, 
@@ -18,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, FolderKanban, LayoutGrid } from "lucide-react";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
 import { ProjectActions } from "@/components/projects/ProjectActions";
+import { AnimatedTableBody } from "@/components/animations/animated-table-body";
 
 interface PageProps {
   params: Promise<{ orgSlug: string }>;
@@ -79,9 +79,9 @@ export default async function ProjectsPage({ params }: PageProps) {
                 <TableHead className="text-right font-bold">Actions</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <AnimatedTableBody rowKeys={projects.map((project: { id: string }) => project.id)}>
               {projects.map((project: { id: string; name: string; description: string | null; status: string; createdAt: Date }) => (
-                <TableRow key={project.id} className="hover:bg-muted/30 transition-colors">
+                <TableRow key={project.id} data-flip-id={project.id} className="hover:bg-muted/30 transition-colors">
                   <TableCell className="py-4">
                     <div className="flex flex-col">
                       <span className="font-bold decoration-primary/30 underline-offset-4">{project.name}</span>
@@ -109,7 +109,7 @@ export default async function ProjectsPage({ params }: PageProps) {
                   </TableCell>
                 </TableRow>
               ))}
-            </TableBody>
+            </AnimatedTableBody>
           </Table>
         </div>
       )}

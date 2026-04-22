@@ -40,6 +40,10 @@ See: `.planning/PROJECT.md` (updated 2026-04-16)
 | 05 | Member Invitations | ✅ Complete |
 | 06 | Billing & Subscriptions | ✅ Complete |
 | 07 | Project Management | ✅ Complete |
+| 08 | Real-time Foundation | ✅ Complete |
+| 09 | Tenant Analytics | ✅ Complete |
+| 10 | Enterprise Domains | ✅ Complete |
+| 11 | Team Activity & Audit Logs | ✅ Complete |
 
 ## Active Work
 

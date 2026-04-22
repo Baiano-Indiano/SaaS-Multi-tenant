@@ -29,15 +29,17 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   )
 }
 
-function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
-  return (
+const TableBody = React.forwardRef<HTMLTableSectionElement, React.ComponentProps<"tbody">>(
+  ({ className, ...props }, ref) => (
     <tbody
+      ref={ref}
       data-slot="table-body"
       className={cn("[&_tr:last-child]:border-0", className)}
       {...props}
     />
   )
-}
+)
+TableBody.displayName = "TableBody"
 
 function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
   return (

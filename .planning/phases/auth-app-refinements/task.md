@@ -1,0 +1,8 @@
+- [x] Refine `AuthForm` with feedback banners and error logic
+- [x] Create centralized `feedback-banner.tsx` component
+- [x] Refactor settings navigation into `settings-nav.tsx`
+- [x] Implement internal API test routes for Auth/Tenancy
+- [x] Add request debugging utility (`pose-request-debug.ts`)
+- [x] Update global `STATE.md` to reflect Phase 11 completion
+- [x] Finalize `walkthrough.md` with recent changes
+- [x] Finalize `GEMINI.md` project context

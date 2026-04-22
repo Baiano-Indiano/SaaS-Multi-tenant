@@ -7,7 +7,6 @@ import { redirect } from "next/navigation";
 import { getRoles } from "@/lib/auth/rbac-utils";
 import { 
   Table, 
-  TableBody, 
   TableCell, 
   TableHead, 
   TableHeader, 
@@ -20,6 +19,7 @@ import { RoleSelector, RemoveMemberButton } from "@/components/members/MemberAct
 import { InviteMemberDialog } from "@/components/members/InviteMemberDialog";
 import { InvitationsTable } from "@/components/members/InvitationsTable";
 import { getPendingInvitationsAction } from "@/app/actions/member";
+import { AnimatedTableBody } from "@/components/animations/animated-table-body";
 
 interface PageProps {
   params: Promise<{ orgSlug: string }>;
@@ -81,9 +81,9 @@ export default async function MembersPage({ params }: PageProps) {
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <AnimatedTableBody rowKeys={orgMembers.map((member) => member.id)}>
             {orgMembers.map((member) => (
-              <TableRow key={member.id}>
+              <TableRow key={member.id} data-flip-id={member.id}>
                 <TableCell className="flex items-center gap-3 py-4">
                   <Avatar className="h-9 w-9 border">
                     <AvatarImage src={member.user.image ?? ""} />
@@ -130,7 +130,7 @@ export default async function MembersPage({ params }: PageProps) {
                 </TableCell>
               </TableRow>
             ))}
-          </TableBody>
+          </AnimatedTableBody>
         </Table>
       </div>
 

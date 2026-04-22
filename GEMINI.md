@@ -11,7 +11,7 @@ A B2B SaaS starter boilerplate focused on organization and access management. It
 
 - **Tech Stack**: Next.js (App Router), TypeScript, Tailwind CSS v4, shadcn/ui.
 - **Database Architecture**: PostgreSQL with Drizzle ORM (native schema support) implementing Schema-per-tenant logic.
-- **Visual Design**: Premium aesthetic with Anime.js for landing page/hero moments, and Framer Motion/CSS for standard UI workflows.
+- **Visual Design**: Premium aesthetic with GSAP for landing page/hero moments, and Framer Motion/CSS for standard UI workflows.
 <!-- GSD:project-end -->
 
 <!-- GSD:stack-start source:research/STACK.md -->
@@ -30,7 +30,7 @@ A B2B SaaS starter boilerplate focused on organization and access management. It
 | Library | Version | Purpose | When to Use |
 |---------|---------|---------|-------------|
 | Better-Auth | 1.x | Authentication | Best modern plugin-based auth. Great built-in organization logic. |
-| Anime.js | 4.x/latest| Hero Animations | Wow-factor micro-interactions directly on marketing/landing pages |
+| GSAP | 3.x/latest| Hero Animations | Wow-factor micro-interactions directly on marketing/landing pages |
 | Framer Motion| 11.x | UI Animations | Used strictly for App UI state (modals, dropdowns) to prevent VDOM clash |
 | shadcn/ui | latest | UI Components | Pre-built accessible components built on Radix primitives |
 ## Installation
@@ -47,7 +47,7 @@ A B2B SaaS starter boilerplate focused on organization and access management. It
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
 | Client-side pure React | Poor initial load performance, vulnerable auth flows | Next.js server components |
-| Anime.js for App UI | Fights React VDOM and lifecycle hooks causing UI sync bugs | Framer Motion |
+| GSAP for App UI | Fights React VDOM and lifecycle hooks causing UI sync bugs | Framer Motion |
 <!-- GSD:stack-end -->
 
 <!-- GSD:conventions-start source:CONVENTIONS.md -->

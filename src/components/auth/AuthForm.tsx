@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth/client";
 import { Loader2 } from "lucide-react";
+import { FeedbackBanner } from "@/components/ui/feedback-banner";
 
 const authSchema = z.object({
   email: z.string().email("E-mail inválido"),
@@ -35,36 +36,91 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export function AuthForm({ type }: AuthFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
+  const [showCreateAccountHint, setShowCreateAccountHint] = useState(false);
+  const [lastSubmittedEmail, setLastSubmittedEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<AuthValues>({
     resolver: zodResolver(authSchema),
   });
 
+  useEffect(() => {
+    const emailFromQuery = searchParams.get("email");
+    if (type === "register" && emailFromQuery) {
+      setValue("email", emailFromQuery);
+    }
+  }, [searchParams, setValue, type]);
+
   const onSubmit = async (values: AuthValues) => {
     setLoading(true);
     setError(null);
+    setShowCreateAccountHint(false);
+    setLastSubmittedEmail(values.email);
+
+    const mapAuthError = (raw: string) => {
+      const lowered = raw.toLowerCase();
+      if (type === "login" && lowered.includes("user not found")) {
+        setShowCreateAccountHint(true);
+        return "Nenhuma conta encontrada com este e-mail. Clique em \"Registre-se\" para criar sua conta.";
+      }
+      if (type === "login" && (lowered.includes("invalid") || lowered.includes("credentials"))) {
+        return "E-mail ou senha inválidos.";
+      }
+      if (type === "register" && lowered.includes("already exists")) {
+        return "Este e-mail já está cadastrado. Faça login.";
+      }
+      return raw;
+    };
+
     try {
+      let response: unknown;
       if (type === "login") {
-        await authClient.signIn.email({
+        response = await authClient.signIn.email({
           email: values.email,
           password: values.password,
         });
       } else {
-        await authClient.signUp.email({
+        response = await authClient.signUp.email({
           email: values.email,
           password: values.password,
           name: values.name || "",
         });
       }
+
+      const authResult = response as {
+        data?: { user?: { id?: string } };
+        error?: { message?: string; code?: string } | string | null;
+      };
+
+      if (authResult?.error) {
+        const raw =
+          typeof authResult.error === "string"
+            ? authResult.error
+            : authResult.error.message || authResult.error.code || "Falha na autenticação.";
+        setError(mapAuthError(raw));
+        return;
+      }
+
+      if (!authResult?.data?.user?.id) {
+        setError(
+          type === "login"
+            ? "Não foi possível entrar. Verifique suas credenciais."
+            : "Não foi possível criar a conta. Tente novamente."
+        );
+        return;
+      }
+
       router.push("/selecionar-org");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Ocorreu um erro inesperado.");
+      const raw = err instanceof Error ? err.message : "Ocorreu um erro inesperado.";
+      setError(mapAuthError(raw));
     } finally {
       setLoading(false);
     }
@@ -109,9 +165,23 @@ export function AuthForm({ type }: AuthFormProps) {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="rounded-md bg-red-900/20 p-3 text-sm text-red-400 border border-red-900/50 overflow-hidden"
+                  className="overflow-hidden"
                 >
-                  {error}
+                  <FeedbackBanner
+                    variant="error"
+                    title="Não foi possível concluir"
+                    message={error}
+                    actionLabel={
+                      showCreateAccountHint && type === "login"
+                        ? "Criar conta com este e-mail"
+                        : undefined
+                    }
+                    onAction={
+                      showCreateAccountHint && type === "login"
+                        ? () => router.push(`/register?email=${encodeURIComponent(lastSubmittedEmail)}`)
+                        : undefined
+                    }
+                  />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -180,6 +250,13 @@ export function AuthForm({ type }: AuthFormProps) {
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {type === "login" ? "Entrar" : "Cadastrar"}
             </Button>
+            {loading ? (
+              <FeedbackBanner
+                variant="info"
+                message={type === "login" ? "Verificando suas credenciais..." : "Criando sua conta..."}
+                className="w-full"
+              />
+            ) : null}
             
             <div className="text-center text-sm text-zinc-500 italic">
               {type === "login" ? (

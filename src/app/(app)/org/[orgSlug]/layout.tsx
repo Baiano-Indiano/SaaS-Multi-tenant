@@ -8,6 +8,7 @@ import { NotificationBell } from '@/components/notifications/notification-bell';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { PaywallProvider } from "@/components/billing/PaywallProvider";
+import { OrgRouteTransition } from "@/components/layout/org-route-transition";
 
 export default async function OrgLayout({
   children,
@@ -70,7 +71,9 @@ export default async function OrgLayout({
               <NotificationBell />
             </div>
           </header>
-          <div className="flex-1 overflow-auto p-6">{children}</div>
+          <div className="flex-1 overflow-auto p-6">
+            <OrgRouteTransition>{children}</OrgRouteTransition>
+          </div>
         </main>
       </PaywallProvider>
     </SidebarProvider>

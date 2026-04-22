@@ -1,5 +1,5 @@
 import { Separator } from "@/components/ui/separator";
-import Link from "next/link";
+import { SettingsNav } from "@/components/settings/settings-nav";
 
 interface SettingsLayoutProps {
   children: React.ReactNode;
@@ -34,6 +34,10 @@ export default async function SettingsLayout({
   params,
 }: SettingsLayoutProps) {
   const { orgSlug } = await params;
+  const navItems = sidebarNavItems.map((item) => ({
+    ...item,
+    href: `/org/${orgSlug}/${item.href}`,
+  }));
 
   return (
     <div className="space-y-6">
@@ -46,17 +50,7 @@ export default async function SettingsLayout({
       <Separator className="bg-zinc-800" />
       <div className="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">
         <aside className="-mx-4 lg:w-1/5">
-          <nav className="flex space-x-2 lg:flex-col lg:space-x-0 lg:space-y-1">
-            {sidebarNavItems.map((item) => (
-              <Link
-                key={item.href}
-                href={`/org/${orgSlug}/${item.href}`}
-                className="justify-start text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-md px-3 py-2 text-sm font-medium transition-colors"
-              >
-                {item.title}
-              </Link>
-            ))}
-          </nav>
+          <SettingsNav items={navItems} />
         </aside>
         <div className="flex-1 lg:max-w-4xl">{children}</div>
       </div>
