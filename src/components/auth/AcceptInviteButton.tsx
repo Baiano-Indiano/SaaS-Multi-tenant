@@ -5,7 +5,7 @@ import gsap from "gsap";
 import { Button } from "@/components/ui/button";
 import { acceptInvitationAction } from "@/app/actions/member";
 import { toast } from "sonner";
-import { Loader2, LogOut, CheckCircle2 } from "lucide-react";
+import { LogOut, CheckCircle2 } from "lucide-react";
 import { authClient } from "@/lib/auth/client";
 
 interface AcceptInviteButtonProps {
@@ -47,12 +47,18 @@ export function AcceptInviteButton({
 
   const handleAccept = async () => {
     setIsPending(true);
+    const promise = acceptInvitationAction(invitationId);
+
+    toast.promise(promise, {
+      loading: "Processando seu acesso...",
+      success: "Acesso confirmado à organização!",
+      error: (error) => error instanceof Error ? error.message : "Falha ao aceitar convite",
+    });
+
     try {
-      await acceptInvitationAction(invitationId);
-      toast.success("Acesso confirmado à organização!");
+      await promise;
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : "Falha ao aceitar convite");
     } finally {
       setIsPending(false);
     }
@@ -117,16 +123,9 @@ export function AcceptInviteButton({
         <Button 
           className="w-full h-12 text-base font-semibold bg-zinc-100 text-zinc-900 hover:bg-zinc-200 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-70"
           onClick={handleAccept}
-          disabled={isPending}
+          isLoading={isPending}
         >
-          {isPending ? (
-            <>
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Processando...
-            </>
-          ) : (
-            "Aceitar e Ingressar no Dashboard"
-          )}
+          Aceitar e Ingressar no Dashboard
         </Button>
         
         <p className="text-[10px] text-zinc-600 uppercase tracking-widest font-bold">

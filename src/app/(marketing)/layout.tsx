@@ -1,4 +1,4 @@
-import React from 'react';
+import { NavDashboardButton } from '@/components/layout/nav-dashboard-button';
 
 export default function MarketingLayout({
   children,
@@ -11,7 +11,7 @@ export default function MarketingLayout({
         <div className="text-xl font-bold tracking-tight">SaaS Multi-tenant</div>
         <nav className="flex items-center gap-4">
           <a href="/login" className="text-sm font-medium hover:text-zinc-300 transition-colors">Log in</a>
-          <a href="/dashboard" className="text-sm font-medium bg-white text-zinc-950 px-4 py-2 rounded-md hover:bg-zinc-200 transition-colors">Go to Dashboard</a>
+          <NavDashboardButton />
         </nav>
       </header>
       <main className="flex-1">

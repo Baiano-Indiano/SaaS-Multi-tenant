@@ -16,7 +16,6 @@ import { cancelInvitationAction } from "@/app/actions/member";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Mail, Trash2, Clock } from "lucide-react";
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,20 +47,23 @@ export function InvitationsTable({ invitations, orgId, orgSlug }: InvitationsTab
   const router = useRouter();
   const [currentTimestamp] = useState(Date.now);
   const [cancelingId, setCancelingId] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<string | null>(null);
 
   const handleCancel = async (id: string) => {
-    setFeedback(null);
-    try {
-      const result = await cancelInvitationAction(id, orgId, orgSlug);
-      if (result.success) {
-        toast.success("Convite cancelado.");
-        setCancelingId(null);
+    const promise = cancelInvitationAction(id, orgId, orgSlug);
+
+    toast.promise(promise, {
+      loading: "Cancelando convite...",
+      success: () => {
         router.refresh();
-      }
-    } catch {
-      toast.error("Falha ao cancelar convite.");
-      setFeedback("Não foi possível cancelar o convite neste momento.");
+        return "Convite cancelado com sucesso";
+      },
+      error: "Falha ao cancelar convite",
+    });
+
+    try {
+      await promise;
+    } finally {
+      setCancelingId(null);
     }
   };
 
@@ -69,13 +71,6 @@ export function InvitationsTable({ invitations, orgId, orgSlug }: InvitationsTab
 
   return (
     <div className="space-y-4 pt-4 border-t mt-8">
-      {feedback ? (
-        <FeedbackBanner
-          variant="error"
-          title="Ação não concluída"
-          message={feedback}
-        />
-      ) : null}
       <div className="flex items-center gap-2 px-1">
         <Mail className="h-4 w-4 text-muted-foreground" />
         <h2 className="text-lg font-semibold tracking-tight">Convites Pendentes</h2>

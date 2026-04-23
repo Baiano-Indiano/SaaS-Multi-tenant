@@ -18,9 +18,9 @@ import { Badge } from "@/components/ui/badge";
 import { PERMISSIONS, ALL_PERMISSION_KEYS, PermissionKey } from "@/lib/auth/permissions";
 import { createRoleAction, updateRoleAction } from "@/app/actions/rbac";
 import { useState } from "react";
-import { Loader2, ShieldCheck, Info } from "lucide-react";
+import { ShieldCheck, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { toast } from "sonner";
 
 interface RoleDialogProps {
   trigger: React.ReactElement;
@@ -45,8 +45,6 @@ const groupedPermissions = ALL_PERMISSION_KEYS.reduce((acc, key) => {
 export function RoleDialog({ trigger, orgId, orgSlug, role }: RoleDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const [feedbackVariant, setFeedbackVariant] = useState<"error" | "info" | "success">("info");
   const [selectedPermissions, setSelectedPermissions] = useState<PermissionKey[]>(
     role?.permissions || []
   );
@@ -58,10 +56,6 @@ export function RoleDialog({ trigger, orgId, orgSlug, role }: RoleDialogProps) {
     event.preventDefault();
     if (isSystemRole) return;
     
-    setLoading(true);
-    setFeedback(isEditing ? "Atualizando role..." : "Criando role...");
-    setFeedbackVariant("info");
-
     const formData = new FormData(event.currentTarget);
     const data = {
       name: formData.get("name") as string,
@@ -72,23 +66,25 @@ export function RoleDialog({ trigger, orgId, orgSlug, role }: RoleDialogProps) {
       orgSlug,
     };
 
-    try {
-      if (isEditing) {
-        await updateRoleAction({ ...data, id: role.id });
-      } else {
-        await createRoleAction(data);
+    const promise = async () => {
+      setLoading(true);
+      try {
+        if (isEditing) {
+          await updateRoleAction({ ...data, id: role.id });
+        } else {
+          await createRoleAction(data);
+        }
+        setOpen(false);
+      } finally {
+        setLoading(false);
       }
-      setFeedback(isEditing ? "Role atualizada com sucesso." : "Role criada com sucesso.");
-      setFeedbackVariant("success");
-      setOpen(false);
-    } catch (error) {
-      console.error("Action failed:", error);
-      const message = error instanceof Error ? error.message : "Não foi possível salvar a role.";
-      setFeedback(message);
-      setFeedbackVariant("error");
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    toast.promise(promise(), {
+      loading: isEditing ? "Updating role..." : "Creating role profile...",
+      success: isEditing ? "Role updated successfully." : "Role profile created successfully.",
+      error: (err) => err instanceof Error ? err.message : "Could not save role.",
+    });
   }
 
   const togglePermission = (key: PermissionKey) => {
@@ -127,19 +123,6 @@ export function RoleDialog({ trigger, orgId, orgSlug, role }: RoleDialogProps) {
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
-            {feedback ? (
-              <FeedbackBanner
-                variant={feedbackVariant}
-                title={
-                  feedbackVariant === "error"
-                    ? "Não foi possível salvar"
-                    : feedbackVariant === "success"
-                      ? "Role salva"
-                      : "Processando"
-                }
-                message={feedback}
-              />
-            ) : null}
             {/* Core Info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -257,10 +240,10 @@ export function RoleDialog({ trigger, orgId, orgSlug, role }: RoleDialogProps) {
               </Button>
               <Button
                 type="submit"
-                disabled={loading || isSystemRole}
+                isLoading={loading}
+                disabled={isSystemRole}
                 className="bg-zinc-100 text-zinc-950 hover:bg-zinc-200 min-w-[140px] rounded-lg flex-1 sm:flex-none h-11 px-6 font-bold transition-all shadow-lg active:scale-95 disabled:hover:bg-zinc-100"
               >
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 {isSystemRole ? "System Protected" : (isEditing ? "Update Role" : "Create Role Profile")}
               </Button>
             </div>

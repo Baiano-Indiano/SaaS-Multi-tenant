@@ -23,6 +23,10 @@ export default async function SettingsLayout({
       title: "Activity",
       href: `/org/${orgSlug}/settings/activity`,
     },
+    {
+      title: "Connectivity",
+      href: `/org/${orgSlug}/settings/connectivity`,
+    },
   ];
 
   return (

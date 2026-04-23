@@ -21,9 +21,9 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import { Loader2, Plus, Building2, Check } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
 
 export default function SelecionarOrgPage() {
   const router = useRouter();
@@ -32,7 +32,6 @@ export default function SelecionarOrgPage() {
   const [newOrgName, setNewOrgName] = useState("");
   const [newOrgSlug, setNewOrgSlug] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!sessionPending && !session?.user) {
@@ -43,37 +42,58 @@ export default function SelecionarOrgPage() {
   const handleCreateOrg = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
-    try {
+    const promise = (async () => {
       const result = await createOrganizationAction(newOrgName, newOrgSlug);
       
-      if (result.success) {
-        // Set active org and redirect
-        await authClient.organization.setActive({
-          organizationId: result.organizationId
-        });
-        router.push(`/org/${result.slug}/dashboard`);
-      } else {
-        setError(result.error);
+      if (!result.success) {
         if (result.error.toLowerCase().includes("sessão expirada")) {
           router.push("/login");
         }
+        throw new Error(result.error);
       }
+
+      await authClient.organization.setActive({
+        organizationId: result.organizationId
+      });
+      
+      return result;
+    })();
+
+    toast.promise(promise, {
+      loading: "Criando organização...",
+      success: (data: { slug: string }) => {
+        router.push(`/org/${data.slug}/dashboard`);
+        return "Organização criada com sucesso!";
+      },
+      error: (err) => err.message || "Falha ao criar organização.",
+    });
+
+    try {
+      await promise;
+    } catch {
+      // Erro tratado pelo toast
     } finally {
       setLoading(false);
     }
   };
 
   const handleSelectOrg = async (orgId: string, slug: string) => {
-    try {
+    const promise = (async () => {
       await authClient.organization.setActive({
         organizationId: orgId
       });
-      router.push(`/org/${slug}/dashboard`);
-    } catch {
-      setError("Não foi possível abrir esta organização agora. Tente novamente em alguns segundos.");
-    }
+      return slug;
+    })();
+
+    toast.promise(promise, {
+      loading: "Abrindo organização...",
+      success: (slug) => {
+        router.push(`/org/${slug}/dashboard`);
+        return "Bem-vindo!";
+      },
+      error: "Não foi possível abrir esta organização agora.",
+    });
   };
 
   const generateSlug = (name: string) => {
@@ -159,13 +179,6 @@ export default function SelecionarOrgPage() {
               </CardHeader>
               <form onSubmit={handleCreateOrg}>
                 <CardContent className="p-4 space-y-4">
-                  {error && (
-                    <FeedbackBanner
-                      variant="error"
-                      title="Ação não concluída"
-                      message={error}
-                    />
-                  )}
                   <div className="space-y-2">
                     <Label htmlFor="orgName">Nome da Empresa</Label>
                     <Input
@@ -196,15 +209,10 @@ export default function SelecionarOrgPage() {
                   <Button 
                     type="submit" 
                     className="w-full bg-white text-black hover:bg-zinc-200"
-                    disabled={loading || !newOrgName}
+                    isLoading={loading}
+                    disabled={!newOrgName}
                   >
-                    {loading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <>
-                        <Plus className="mr-2 h-4 w-4" /> Criar Organização
-                      </>
-                    )}
+                    <Plus className="mr-2 h-4 w-4" /> Criar Organização
                   </Button>
                 </CardFooter>
               </form>

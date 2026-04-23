@@ -3,8 +3,8 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
-import { organizations } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { organizations, members } from "@/lib/db/schema";
+import { eq, sql, and } from "drizzle-orm";
 import postgres from "postgres";
 
 import { randomUUID } from "crypto";
@@ -15,6 +15,10 @@ const connectionString = process.env.DATABASE_URL || "postgres://postgres:postgr
 
 type CreateOrganizationResult =
   | { success: true; organizationId: string; slug: string }
+  | { success: false; error: string };
+
+type UpdateOrganizationResult =
+  | { success: true }
   | { success: false; error: string };
 
 export async function createOrganizationAction(name: string, slug: string): Promise<CreateOrganizationResult> {
@@ -159,6 +163,53 @@ export async function createOrganizationAction(name: string, slug: string): Prom
   } catch (error) {
     console.error("Organization creation failed:", error);
     const message = error instanceof Error ? error.message : "Falha ao criar organização.";
+    return { success: false, error: message };
+  }
+}
+
+export async function updateOrganizationAction(orgId: string, name: string, slug: string): Promise<UpdateOrganizationResult> {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) {
+    return { success: false, error: "Sessão expirada. Faça login novamente." };
+  }
+
+  try {
+    // 1. Verify Permission (Check if user is admin/owner of this org)
+    // In Better-Auth, the default roles are 'admin' and 'member'. 
+    // We check against the public.member table.
+    const member = await db.query.members.findFirst({
+      where: and(
+        eq(members.organizationId, orgId),
+        eq(members.userId, session.user.id)
+      )
+    });
+
+    if (!member || (member.role !== "admin" && member.role !== "owner")) {
+      return { success: false, error: "Você não tem permissão para editar esta organização." };
+    }
+
+    // 2. Update organization
+    await db.update(organizations)
+      .set({ 
+        name, 
+        slug,
+        // We could also allow logo updates here in the future
+      })
+      .where(eq(organizations.id, orgId));
+
+    // 3. Record Audit Log
+    await recordAuditLog({
+      organizationId: orgId,
+      action: "ORG_UPDATED",
+      entityType: "ORGANIZATION",
+      entityId: orgId,
+      details: `Updated organization name to "${name}" and slug to "${slug}"`
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Organization update failed:", error);
+    const message = error instanceof Error ? error.message : "Falha ao atualizar organização.";
     return { success: false, error: message };
   }
 }

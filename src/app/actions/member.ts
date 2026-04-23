@@ -12,6 +12,7 @@ import { PLANS, PlanType } from "@/lib/billing/plans";
 import { can } from "@/lib/auth/rbac-utils";
 import postgres from "postgres";
 import { recordAuditLog } from "@/lib/audit";
+import { emitEvent } from "@/lib/events";
 
 const connectionString = process.env.DATABASE_URL!;
 
@@ -166,6 +167,12 @@ export async function inviteMemberAction(data: {
       details: `Invited user ${data.email} to the organization`
     });
 
+    // Trigger Automations (Phase 16)
+    await emitEvent(data.orgId, "member.invited", { 
+      email: data.email, 
+      roleId: data.roleId 
+    });
+
     return result;
   } catch (error) {
     console.error("Failed to invite member:", error);
@@ -285,6 +292,14 @@ export async function acceptInvitationAction(invitationId: string) {
       entityType: "MEMBER",
       entityId: session.user.id,
       details: `Accepted invitation to join the organization`
+    });
+
+    // Trigger Automations (Phase 16)
+    await emitEvent(org.id, "organization.invitation_accepted", {
+      userId: session.user.id,
+      email: session.user.email,
+      invitationId,
+      roleId: invite.roleId,
     });
 
   } catch (error) {

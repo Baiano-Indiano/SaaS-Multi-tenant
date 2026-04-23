@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -17,8 +17,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth/client";
-import { Loader2 } from "lucide-react";
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { toast } from "sonner";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 
 const authSchema = z.object({
   email: z.string().email("E-mail inválido"),
@@ -37,10 +38,54 @@ import { motion, AnimatePresence } from "framer-motion";
 export function AuthForm({ type }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [error, setError] = useState<string | null>(null);
-  const [showCreateAccountHint, setShowCreateAccountHint] = useState(false);
-  const [lastSubmittedEmail, setLastSubmittedEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const progressRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    // Entrance animation for the whole container
+    gsap.to(containerRef.current, {
+      opacity: 1,
+      y: 0,
+      duration: 0.5,
+      ease: "power2.out"
+    });
+
+    // Initial entrance stagger for fields
+    gsap.from(".auth-field", {
+      opacity: 0,
+      y: 15,
+      duration: 0.6,
+      stagger: 0.08,
+      ease: "power3.out",
+      delay: 0.2
+    });
+  }, { scope: containerRef });
+
+  useGSAP(() => {
+    if (loading) {
+      // Start progress bar animation
+      gsap.to(progressRef.current, {
+        width: "70%",
+        duration: 2,
+        ease: "power2.out",
+      });
+    } else {
+      // Complete and hide
+      const tl = gsap.timeline();
+      tl.to(progressRef.current, {
+        width: "100%",
+        duration: 0.3,
+        ease: "power2.inOut",
+      }).to(progressRef.current, {
+        opacity: 0,
+        duration: 0.2,
+        onComplete: () => {
+          gsap.set(progressRef.current, { width: "0%", opacity: 1 });
+        }
+      });
+    }
+  }, { dependencies: [loading], scope: containerRef });
 
   const {
     register,
@@ -60,14 +105,10 @@ export function AuthForm({ type }: AuthFormProps) {
 
   const onSubmit = async (values: AuthValues) => {
     setLoading(true);
-    setError(null);
-    setShowCreateAccountHint(false);
-    setLastSubmittedEmail(values.email);
 
     const mapAuthError = (raw: string) => {
       const lowered = raw.toLowerCase();
       if (type === "login" && lowered.includes("user not found")) {
-        setShowCreateAccountHint(true);
         return "Nenhuma conta encontrada com este e-mail. Clique em \"Registre-se\" para criar sua conta.";
       }
       if (type === "login" && (lowered.includes("invalid") || lowered.includes("credentials"))) {
@@ -79,8 +120,8 @@ export function AuthForm({ type }: AuthFormProps) {
       return raw;
     };
 
-    try {
-      let response: unknown;
+    const authPromise = (async () => {
+      let response;
       if (type === "login") {
         response = await authClient.signIn.email({
           email: values.email,
@@ -94,46 +135,66 @@ export function AuthForm({ type }: AuthFormProps) {
         });
       }
 
-      const authResult = response as {
-        data?: { user?: { id?: string } };
-        error?: { message?: string; code?: string } | string | null;
-      };
-
-      if (authResult?.error) {
+      if (response?.error) {
         const raw =
-          typeof authResult.error === "string"
-            ? authResult.error
-            : authResult.error.message || authResult.error.code || "Falha na autenticação.";
-        setError(mapAuthError(raw));
-        return;
+          typeof response.error === "string"
+            ? response.error
+            : response.error.message || response.error.code || "Falha na autenticação.";
+        const mapped = mapAuthError(raw);
+        throw new Error(mapped);
       }
 
-      if (!authResult?.data?.user?.id) {
-        setError(
-          type === "login"
-            ? "Não foi possível entrar. Verifique suas credenciais."
-            : "Não foi possível criar a conta. Tente novamente."
-        );
-        return;
+      if (!response?.data?.user?.id) {
+        const msg = type === "login"
+          ? "Não foi possível entrar. Verifique suas credenciais."
+          : "Não foi possível criar a conta. Tente novamente.";
+        throw new Error(msg);
       }
 
-      router.push("/selecionar-org");
-    } catch (err) {
-      const raw = err instanceof Error ? err.message : "Ocorreu um erro inesperado.";
-      setError(mapAuthError(raw));
+      return response.data;
+    })();
+
+    toast.promise(authPromise, {
+      loading: type === "login" ? "Verificando credenciais..." : "Criando sua conta...",
+      success: () => {
+        router.push("/selecionar-org");
+        return type === "login" ? "Bem-vindo de volta!" : "Conta criada com sucesso!";
+      },
+      error: (err) => {
+        const message = err.message;
+        if (type === "login" && message.includes("Nenhuma conta encontrada")) {
+          return {
+            description: message,
+            action: {
+              label: "Registrar",
+              onClick: () => router.push(`/register?email=${encodeURIComponent(values.email)}`),
+            },
+          };
+        }
+        return message;
+      },
+    });
+
+    try {
+      await authPromise;
+    } catch {
+      // Erro já capturado no authPromise e exibido via toast
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="w-full max-w-md"
+    <div
+      ref={containerRef}
+      className="w-full max-w-md opacity-0"
     >
       <Card className="w-full border-zinc-800 bg-zinc-950/50 backdrop-blur-sm shadow-2xl relative overflow-hidden group">
+        {/* GSAP Progress Bar */}
+        <div 
+          ref={progressRef}
+          className="absolute top-0 left-0 h-[2px] bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)] z-50 w-0"
+        />
         <div className="absolute inset-0 bg-gradient-to-br from-zinc-500/5 to-transparent pointer-events-none" />
         
         <CardHeader className="space-y-1 relative">
@@ -159,32 +220,7 @@ export function AuthForm({ type }: AuthFormProps) {
 
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-4 relative">
-            <AnimatePresence>
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden"
-                >
-                  <FeedbackBanner
-                    variant="error"
-                    title="Não foi possível concluir"
-                    message={error}
-                    actionLabel={
-                      showCreateAccountHint && type === "login"
-                        ? "Criar conta com este e-mail"
-                        : undefined
-                    }
-                    onAction={
-                      showCreateAccountHint && type === "login"
-                        ? () => router.push(`/register?email=${encodeURIComponent(lastSubmittedEmail)}`)
-                        : undefined
-                    }
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
+
 
             <AnimatePresence mode="popLayout">
               {type === "register" && (
@@ -192,7 +228,7 @@ export function AuthForm({ type }: AuthFormProps) {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="space-y-2 overflow-hidden"
+                  className="space-y-2 overflow-hidden auth-field"
                 >
                   <Label htmlFor="name" className="text-zinc-300">
                     Nome
@@ -210,7 +246,7 @@ export function AuthForm({ type }: AuthFormProps) {
               )}
             </AnimatePresence>
 
-            <div className="space-y-2">
+            <div className="space-y-2 auth-field">
               <Label htmlFor="email" className="text-zinc-300">
                 E-mail
               </Label>
@@ -226,7 +262,7 @@ export function AuthForm({ type }: AuthFormProps) {
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 auth-field">
               <Label htmlFor="password" className="text-zinc-300">
                 Senha
               </Label>
@@ -245,18 +281,10 @@ export function AuthForm({ type }: AuthFormProps) {
             <Button
               type="submit"
               className="w-full bg-white text-black hover:bg-zinc-200 h-11 transition-all active:scale-[0.98]"
-              disabled={loading}
+              isLoading={loading}
             >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {type === "login" ? "Entrar" : "Cadastrar"}
             </Button>
-            {loading ? (
-              <FeedbackBanner
-                variant="info"
-                message={type === "login" ? "Verificando suas credenciais..." : "Criando sua conta..."}
-                className="w-full"
-              />
-            ) : null}
             
             <div className="text-center text-sm text-zinc-500 italic">
               {type === "login" ? (
@@ -286,6 +314,6 @@ export function AuthForm({ type }: AuthFormProps) {
           </CardFooter>
         </form>
       </Card>
-    </motion.div>
+    </div>
   );
 }

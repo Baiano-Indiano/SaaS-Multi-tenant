@@ -12,6 +12,7 @@ import { organizations } from "@/lib/db/schema";
 
 import { sendNotification } from "@/lib/notifications";
 import { recordAuditLog } from "@/lib/audit";
+import { emitEvent } from "@/lib/events";
 
 /**
  * createProjectAction
@@ -80,6 +81,9 @@ export async function createProjectAction(data: {
       entityId: result.project.id,
       details: `Created project "${data.name}"`
     });
+
+    // Trigger Automations (Phase 16)
+    await emitEvent(data.orgId, "project.created", result.project);
 
     return result;
   } catch (error) {

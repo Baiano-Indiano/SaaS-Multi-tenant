@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, Globe, CheckCircle2, AlertCircle, Trash2, ExternalLink, RefreshCw, Copy } from "lucide-react";
+import { Globe, CheckCircle2, AlertCircle, Trash2, ExternalLink, RefreshCw, Copy } from "lucide-react";
 import { addDomainAction, removeDomainAction, checkDomainStatusAction } from "@/app/actions/domains";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { usePaywall } from "@/components/billing/PaywallProvider";
 import { motion } from "framer-motion";
 
@@ -31,7 +31,6 @@ export function DomainManagement({
   const [isChecking, setIsChecking] = useState(false);
   const [verified, setVerified] = useState(initialVerified);
   
-  const { toast } = useToast();
   const { openPaywall } = usePaywall();
 
   const handleAddDomain = async () => {
@@ -47,27 +46,24 @@ export function DomainManagement({
     if (!domain) return;
     
     setIsVerifying(true);
+    const promise = addDomainAction(orgId, domain).then((res) => {
+      if (res?.error) throw new Error(res.error);
+      return res;
+    });
+
+    toast.promise(promise, {
+      loading: "Adicionando domínio...",
+      success: () => {
+        setTimeout(() => window.location.reload(), 1500);
+        return "Domínio adicionado com sucesso! Agora configure os registros DNS.";
+      },
+      error: (err) => err.message,
+    });
+
     try {
-      const result = await addDomainAction(orgId, domain);
-      if (result?.error) {
-        toast({
-          title: "Erro ao adicionar domínio",
-          description: result.error,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Domínio adicionado",
-          description: "Agora configure os registros DNS para verificar a propriedade.",
-        });
-        window.location.reload(); // Refresh to get new state
-      }
+      await promise;
     } catch {
-      toast({
-        title: "Erro inesperado",
-        description: "Tente novamente mais tarde.",
-        variant: "destructive",
-      });
+      // Handled by toast
     } finally {
       setIsVerifying(false);
     }
@@ -77,13 +73,19 @@ export function DomainManagement({
     if (!confirm("Tem certeza que deseja remover este domínio? Isso interromperá o acesso via URL customizada.")) return;
     
     setIsRemoving(true);
+    const promise = removeDomainAction(orgId);
+
+    toast.promise(promise, {
+      loading: "Removendo domínio...",
+      success: () => {
+        setTimeout(() => window.location.reload(), 1000);
+        return "Domínio removido com sucesso.";
+      },
+      error: "Erro ao remover o domínio.",
+    });
+
     try {
-      await removeDomainAction(orgId);
-      toast({
-        title: "Domínio removido",
-        description: "O mapeamento de domínio foi excluído com sucesso.",
-      });
-      window.location.reload();
+      await promise;
     } finally {
       setIsRemoving(false);
     }
@@ -91,21 +93,22 @@ export function DomainManagement({
 
   const handleCheckStatus = async () => {
     setIsChecking(true);
-    try {
-      const status = await checkDomainStatusAction(orgId);
-      if (status?.isValid) {
+    const promise = checkDomainStatusAction(orgId).then((status) => {
+      if (!status?.isValid) throw new Error("Ainda não verificado. Aguarde a propagação do DNS.");
+      return status;
+    });
+
+    toast.promise(promise, {
+      loading: "Verificando status do domínio...",
+      success: () => {
         setVerified(true);
-        toast({
-          title: "Domínio verificado!",
-          description: "Sua configuração DNS está correta e o SSL foi provisionado.",
-        });
-      } else {
-        toast({
-          title: "Ainda não verificado",
-          description: "Aguarde a propagação do DNS ou verifique seus registros.",
-          variant: "destructive",
-        });
-      }
+        return "Domínio verificado com sucesso!";
+      },
+      error: (err) => err.message,
+    });
+
+    try {
+      await promise;
     } finally {
       setIsChecking(false);
     }
@@ -113,8 +116,9 @@ export function DomainManagement({
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast({ description: "Copiado para a área de transferência" });
+    toast.success("Copiado para a área de transferência");
   };
+
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -144,10 +148,10 @@ export function DomainManagement({
                 />
                 <Button 
                   onClick={handleAddDomain} 
-                  disabled={isVerifying || !domain}
+                  isLoading={isVerifying}
+                  disabled={!domain}
                   className="h-11 px-8 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90 transition-opacity"
                 >
-                  {isVerifying ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                   Conectar Domínio
                 </Button>
               </div>
@@ -178,12 +182,12 @@ export function DomainManagement({
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={handleCheckStatus} disabled={isChecking}>
-                    {isChecking ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                  <Button variant="outline" size="sm" onClick={handleCheckStatus} isLoading={isChecking}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
                     Verificar DNS
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={handleRemoveDomain} disabled={isRemoving} className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10">
-                    {isRemoving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                  <Button variant="ghost" size="sm" onClick={handleRemoveDomain} isLoading={isRemoving} className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10">
+                    <Trash2 className="h-4 w-4 mr-2" />
                     Remover
                   </Button>
                 </div>

@@ -21,6 +21,9 @@ export const metadata: Metadata = {
 import { Toaster } from "sonner";
 import { NotificationProvider } from "@/components/notifications/notification-provider";
 
+import { GSAPProgressBar } from "@/components/layout/gsap-progress-bar";
+import { Suspense } from "react";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,6 +35,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
       <body className="min-h-full flex flex-col">
+        <Suspense fallback={null}>
+          <GSAPProgressBar />
+        </Suspense>
         <TooltipProvider>
           <NotificationProvider>
             {children}

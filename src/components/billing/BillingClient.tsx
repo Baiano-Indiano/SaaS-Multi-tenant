@@ -1,11 +1,9 @@
 "use client";
 
 import { useTransition } from "react";
-import { useState } from "react";
 import { PLANS } from "@/lib/billing/plans";
 import { PlanCard } from "./PlanCard";
-import { useToast } from "@/hooks/use-toast";
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { toast } from "sonner";
 
 interface BillingClientProps {
   orgSlug: string;
@@ -14,55 +12,50 @@ interface BillingClientProps {
 
 export function BillingClient({ orgSlug, currentPlanId }: BillingClientProps) {
   const [isPending, startTransition] = useTransition();
-  const { toast } = useToast();
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const [feedbackVariant, setFeedbackVariant] = useState<"error" | "info" | "success">("info");
 
   const handleUpgrade = async (priceId: string) => {
-    setFeedback("Estamos abrindo o checkout seguro do Stripe...");
-    setFeedbackVariant("info");
-    startTransition(async () => {
-      try {
-        const res = await fetch("/api/stripe/checkout", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            orgSlug,
-            priceId,
-          }),
-        });
+    const action = async () => {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          orgSlug,
+          priceId,
+        }),
+      });
 
-        if (!res.ok) {
-          const errorData = await res.text();
-          throw new Error(errorData || "Falha ao iniciar checkout");
-        }
-
-        const { url } = await res.json();
-        window.location.href = url;
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "Desconhecido";
-        setFeedback("Não foi possível iniciar o checkout. Tente novamente em alguns segundos.");
-        setFeedbackVariant("error");
-        toast({
-          title: "Erro no Checkout",
-          description: message || "Não foi possível redirecionar para o Stripe.",
-          variant: "destructive",
-        });
+      if (!res.ok) {
+        const errorData = await res.text();
+        throw new Error(errorData || "Falha ao iniciar checkout");
       }
-    });
+
+      const { url } = await res.json();
+      window.location.href = url;
+    };
+
+    toast.promise(
+      new Promise((resolve, reject) => {
+        startTransition(async () => {
+          try {
+            await action();
+            resolve(true);
+          } catch (e) {
+            reject(e);
+          }
+        });
+      }),
+      {
+        loading: "Preparando checkout seguro do Stripe...",
+        success: "Redirecionando...",
+        error: (err) => err instanceof Error ? err.message : "Não foi possível iniciar o checkout.",
+      }
+    );
   };
 
   return (
     <div className="mt-8 space-y-4">
-      {feedback ? (
-        <FeedbackBanner
-          variant={feedbackVariant}
-          title={feedbackVariant === "error" ? "Pagamento não iniciado" : "Processando"}
-          message={feedback}
-        />
-      ) : null}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {Object.values(PLANS).map((plan) => (
           <PlanCard

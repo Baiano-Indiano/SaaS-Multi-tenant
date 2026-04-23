@@ -45,6 +45,68 @@ export async function createTenantSchema(tenantSchemaName: string): Promise<{ ad
       );
     `;
 
+    await sql`
+      CREATE TABLE IF NOT EXISTS ${sql(schemaName)}.project (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        status TEXT NOT NULL DEFAULT 'active',
+        "userId" TEXT NOT NULL,
+        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+        "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS ${sql(schemaName)}.api_key (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        "keyHash" TEXT NOT NULL UNIQUE,
+        "keyPrefix" TEXT NOT NULL,
+        "roleId" TEXT NOT NULL,
+        "lastUsedAt" TIMESTAMP,
+        "expiresAt" TIMESTAMP,
+        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS ${sql(schemaName)}.webhook (
+        id TEXT PRIMARY KEY,
+        url TEXT NOT NULL,
+        secret TEXT NOT NULL,
+        events TEXT,
+        "isActive" BOOLEAN NOT NULL DEFAULT TRUE,
+        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS ${sql(schemaName)}.workflow (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        trigger TEXT NOT NULL,
+        "actionType" TEXT NOT NULL DEFAULT 'webhook',
+        "actionConfig" TEXT NOT NULL,
+        "isActive" BOOLEAN NOT NULL DEFAULT TRUE,
+        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS ${sql(schemaName)}.webhook_delivery (
+        id TEXT PRIMARY KEY,
+        "webhookId" TEXT REFERENCES ${sql(schemaName)}.webhook(id) ON DELETE CASCADE,
+        "workflowId" TEXT REFERENCES ${sql(schemaName)}.workflow(id) ON DELETE CASCADE,
+        "eventType" TEXT NOT NULL,
+        payload TEXT NOT NULL,
+        "responseStatus" TEXT,
+        "responseBody" TEXT,
+        duration TEXT,
+        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+    `;
+
     // Check if default roles exist
     const roles = await sql`SELECT id FROM ${sql(schemaName)}.role LIMIT 1`;
     

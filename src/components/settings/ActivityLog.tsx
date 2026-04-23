@@ -24,7 +24,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect, useTransition } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore, useTransition } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useDebounce } from "@/hooks/use-debounce";
 import { 
@@ -112,8 +112,19 @@ export function ActivityLogFeed({ logs }: ActivityLogFeedProps) {
 
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
 
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
+    const existingQ = params.get("q") || "";
+    
+    // Guard: Only push if the search value actually changed from what's in the URL
+    if (debouncedSearch === existingQ) return;
+
     if (debouncedSearch) {
       params.set("q", debouncedSearch);
     } else {
@@ -127,6 +138,10 @@ export function ActivityLogFeed({ logs }: ActivityLogFeedProps) {
 
   const handleTypeChange = (type: string) => {
     const params = new URLSearchParams(searchParams.toString());
+    const existingType = params.get("type") || "all";
+
+    if (type === existingType) return;
+
     if (type === "all") {
       params.delete("type");
     } else {
@@ -138,26 +153,28 @@ export function ActivityLogFeed({ logs }: ActivityLogFeedProps) {
     });
   };
 
-  const groupedLogs = logs.reduce((acc, log) => {
-    const date = new Date(log.createdAt);
-    const today = new Date();
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    let dateKey = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    
-    if (date.toDateString() === today.toDateString()) {
-      dateKey = "Today";
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      dateKey = "Yesterday";
-    }
-    
-    if (!acc[dateKey]) {
-      acc[dateKey] = [];
-    }
-    acc[dateKey].push(log);
-    return acc;
-  }, {} as Record<string, AuditLog[]>);
+  const groupedLogs = useMemo(() => {
+    return logs.reduce((acc, log) => {
+      const date = new Date(log.createdAt);
+      const today = new Date();
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      let dateKey = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      
+      if (date.toDateString() === today.toDateString()) {
+        dateKey = "Today";
+      } else if (date.toDateString() === yesterday.toDateString()) {
+        dateKey = "Yesterday";
+      }
+      
+      if (!acc[dateKey]) {
+        acc[dateKey] = [];
+      }
+      acc[dateKey].push(log);
+      return acc;
+    }, {} as Record<string, AuditLog[]>);
+  }, [logs]);
 
   return (
     <div className="space-y-6">
@@ -299,7 +316,7 @@ export function ActivityLogFeed({ logs }: ActivityLogFeedProps) {
                           <div className="flex flex-col items-end gap-2 shrink-0">
                             <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 bg-zinc-800/50 px-2 py-1 rounded-full border border-zinc-700/30">
                               <Calendar className="h-3 w-3" />
-                              {formatRelativeTime(log.createdAt)}
+                              {isClient ? formatRelativeTime(log.createdAt) : "Loading..."}
                             </div>
                             <div className="flex items-center gap-1.5">
                               <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-zinc-950 text-zinc-400 border border-zinc-800 uppercase tracking-wider">
@@ -362,7 +379,7 @@ export function ActivityLogFeed({ logs }: ActivityLogFeedProps) {
                 <div className="space-y-1">
                   <p className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Date</p>
                   <p className="text-sm text-zinc-200 font-medium">
-                    {new Date(selectedLog.createdAt).toLocaleString()}
+                    {isClient ? new Date(selectedLog.createdAt).toLocaleString() : "Loading..."}
                   </p>
                 </div>
                 <div className="space-y-1">

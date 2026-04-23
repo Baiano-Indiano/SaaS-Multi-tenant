@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useState } from 'react';
 import { createOrganizationAction } from '@/lib/actions/organization';
 import {
   Dialog,
@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 
 interface CreateOrgDialogProps {
   open: boolean;
@@ -20,7 +21,33 @@ interface CreateOrgDialogProps {
 }
 
 export function CreateOrgDialog({ open, onOpenChange }: CreateOrgDialogProps) {
-  const [state, action, isPending] = useActionState(createOrganizationAction, {});
+  const [isPending, setIsPending] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    
+    setIsPending(true);
+    const promise = createOrganizationAction({}, formData).then((res) => {
+      if (res?.error) throw new Error(res.error);
+      return res;
+    });
+
+    toast.promise(promise, {
+      loading: 'Creating organization...',
+      success: 'Organization created successfully!',
+      error: (err) => err.message,
+    });
+
+    try {
+      await promise;
+      onOpenChange(false);
+    } catch {
+      // Error is handled by toast
+    } finally {
+      setIsPending(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -31,7 +58,7 @@ export function CreateOrgDialog({ open, onOpenChange }: CreateOrgDialogProps) {
             Give your workspace a name. You can invite members after creation.
           </DialogDescription>
         </DialogHeader>
-        <form action={action}>
+        <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="org-name">Organization Name</Label>
@@ -45,20 +72,18 @@ export function CreateOrgDialog({ open, onOpenChange }: CreateOrgDialogProps) {
                 autoFocus
               />
             </div>
-            {state.error && (
-              <p className="text-sm text-destructive">{state.error}</p>
-            )}
           </div>
           <DialogFooter>
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              disabled={isPending}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? 'Creating...' : 'Create Organization'}
+            <Button type="submit" isLoading={isPending}>
+              Create Organization
             </Button>
           </DialogFooter>
         </form>
@@ -66,3 +91,4 @@ export function CreateOrgDialog({ open, onOpenChange }: CreateOrgDialogProps) {
     </Dialog>
   );
 }
+

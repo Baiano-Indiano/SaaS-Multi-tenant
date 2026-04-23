@@ -4,9 +4,10 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Settings, Info } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Settings } from "lucide-react";
+import { OrganizationSettingsForm } from "@/components/org/OrganizationSettingsForm";
 
 export default async function GeneralSettingsPage({
   params,
@@ -25,10 +26,10 @@ export default async function GeneralSettingsPage({
   if (!org) redirect("/selecionar-org");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-5xl">
       <div>
-        <h3 className="text-xl font-bold text-zinc-100 flex items-center gap-2">
-          <Settings className="h-5 w-5 text-zinc-400" />
+        <h3 className="text-2xl font-bold text-zinc-100 flex items-center gap-2 tracking-tight">
+          <Settings className="h-6 w-6 text-zinc-400" />
           General Settings
         </h3>
         <p className="text-sm text-zinc-400 mt-1">
@@ -36,55 +37,57 @@ export default async function GeneralSettingsPage({
         </p>
       </div>
 
-      <div className="grid gap-6">
-        <Card className="bg-zinc-950 border-zinc-800 shadow-xl shadow-black/40">
-          <CardHeader>
-            <CardTitle className="text-zinc-100">Organization Profile</CardTitle>
-            <CardDescription className="text-zinc-400">
-              Basic details about your team and how it appears to others.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Display Name</p>
-                <p className="text-zinc-200 font-medium">{org.name}</p>
-              </div>
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Organization URL</p>
-                <p className="text-zinc-400 font-mono text-sm bg-zinc-900/50 px-2 py-0.5 rounded w-fit">
-                  /{org.slug}
-                </p>
-              </div>
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Current Plan</p>
+      <div className="grid gap-8">
+        {/* Functional Form */}
+        <OrganizationSettingsForm 
+          organization={{
+            id: org.id,
+            name: org.name,
+            slug: org.slug || "",
+          }} 
+        />
+
+        {/* Secondary Info Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="bg-zinc-950/40 border-zinc-900 shadow-lg">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Subscription Plan</p>
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-zinc-100 text-zinc-950 hover:bg-zinc-100 font-bold px-3">
-                    {org.plan?.toUpperCase() || "FREE"}
+                  <p className="text-zinc-200 font-medium capitalize">{org.plan || "Free"}</p>
+                  <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 text-[10px] px-2 py-0">
+                    ACTIVE
                   </Badge>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Creation Date</p>
-                <p className="text-zinc-400 text-sm">
-                  {new Date(org.createdAt).toLocaleDateString(undefined, {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
+              <div className="bg-zinc-900/50 p-2 rounded-lg border border-zinc-800">
+                <Badge variant="outline" className="border-zinc-700 text-zinc-400">
+                  Manage
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-zinc-950/40 border-zinc-900 shadow-lg">
+            <CardContent className="p-6">
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Organization ID</p>
+                <p className="text-zinc-400 font-mono text-[11px] bg-zinc-900/50 px-2 py-1 rounded w-fit border border-zinc-800">
+                  {org.id}
                 </p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
-        <Card className="bg-zinc-950/30 border border-zinc-900 border-dashed rounded-xl p-8 text-center">
+        {/* Coming Soon Card */}
+        <Card className="bg-zinc-950/20 border border-zinc-900 border-dashed rounded-xl p-8 text-center">
           <CardContent className="p-0">
             <div className="mx-auto w-10 h-10 rounded-full bg-zinc-900/50 flex items-center justify-center mb-4 ring-1 ring-zinc-800">
-              <Settings className="h-5 w-5 text-zinc-600" />
+              <Info className="h-5 w-5 text-zinc-600" />
             </div>
-            <p className="text-xs text-zinc-500 font-medium max-w-xs mx-auto">
-              Additional features like custom branding, security policies and webhooks are being prepared for your organization.
+            <p className="text-xs text-zinc-500 font-medium max-w-sm mx-auto leading-relaxed">
+              Additional features like custom branding, security policies and advanced webhooks are being prepared for your organization.
             </p>
           </CardContent>
         </Card>

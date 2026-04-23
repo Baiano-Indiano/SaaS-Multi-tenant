@@ -72,22 +72,10 @@ export function PlanCard({
             className="w-full"
             variant={isCurrentPlan ? "outline" : isPopular ? "default" : "secondary"}
             onClick={onSelect}
-            disabled={isCurrentPlan || isLoading}
+            disabled={isCurrentPlan}
+            isLoading={isLoading}
           >
-            {isLoading ? (
-              <span className="flex items-center gap-2">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                  className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
-                />
-                Processando...
-              </span>
-            ) : isCurrentPlan ? (
-              "Seu Plano Atual"
-            ) : (
-              "Assinar agora"
-            )}
+            {isCurrentPlan ? "Seu Plano Atual" : "Assinar agora"}
           </Button>
         </CardFooter>
       </Card>

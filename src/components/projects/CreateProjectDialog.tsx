@@ -18,9 +18,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createProjectAction } from "@/app/actions/projects";
 import { toast } from "sonner";
-import { Loader2, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { usePaywall } from "@/components/billing/PaywallProvider";
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
 
 const projectSchema = z.object({
   name: z.string().min(3, "O nome deve ter pelo menos 3 caracteres"),
@@ -38,8 +37,6 @@ interface CreateProjectDialogProps {
 export function CreateProjectDialog({ orgId, orgSlug, trigger }: CreateProjectDialogProps) {
   const [open, setOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const [feedbackVariant, setFeedbackVariant] = useState<"error" | "info" | "success">("info");
   const { openPaywall } = usePaywall();
 
   const {
@@ -49,43 +46,53 @@ export function CreateProjectDialog({ orgId, orgSlug, trigger }: CreateProjectDi
     formState: { errors },
   } = useForm<ProjectFormValues>({
     resolver: zodResolver(projectSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-    },
   });
 
   const onSubmit = async (data: ProjectFormValues) => {
     setIsPending(true);
-    setFeedback("Criando projeto...");
-    setFeedbackVariant("info");
-    try {
+
+    const promise = (async () => {
       const result = await createProjectAction({
         ...data,
         orgId,
         orgSlug,
       });
 
-      if (result.success) {
-        setFeedback("Projeto criado com sucesso.");
-        setFeedbackVariant("success");
-        toast.success("Projeto criado com sucesso!");
+      if (!result.success) {
+        if ('error' in result && result.error === "QUOTA_EXCEEDED") {
+          throw new Error("QUOTA_EXCEEDED");
+        }
+        throw new Error('error' in result ? result.error : "Falha ao criar projeto.");
+      }
+
+      return result;
+    })();
+
+    toast.promise(promise, {
+      loading: "Criando projeto...",
+      success: () => {
         setOpen(false);
         reset();
-      } else if ('error' in result && result.error === "QUOTA_EXCEEDED") {
-        setFeedback("Limite de projetos do plano atual atingido.");
-        setFeedbackVariant("error");
+        return "Projeto criado com sucesso!";
+      },
+      error: (error) => {
+        if (error instanceof Error && error.message === "QUOTA_EXCEEDED") {
+          return "Limite de projetos atingido.";
+        }
+        return error instanceof Error ? error.message : "Falha ao criar projeto.";
+      },
+    });
+
+    try {
+      await promise;
+    } catch (error) {
+      if (error instanceof Error && error.message === "QUOTA_EXCEEDED") {
         setOpen(false);
         openPaywall({
           title: "Limite de Projetos Atingido",
           reason: "Seu plano atual atingiu o limite de projetos. Faça o upgrade para continuar criando novos espaços de trabalho.",
         });
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Falha ao criar projeto.";
-      setFeedback(message);
-      setFeedbackVariant("error");
-      toast.error(message);
     } finally {
       setIsPending(false);
     }
@@ -111,19 +118,6 @@ export function CreateProjectDialog({ orgId, orgSlug, trigger }: CreateProjectDi
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pt-4">
-          {feedback ? (
-            <FeedbackBanner
-              variant={feedbackVariant}
-              title={
-                feedbackVariant === "error"
-                  ? "Não foi possível criar"
-                  : feedbackVariant === "success"
-                    ? "Projeto criado"
-                    : "Processando"
-              }
-              message={feedback}
-            />
-          ) : null}
           <div className="space-y-2">
             <Label htmlFor="name" className="text-sm font-semibold">Project Name</Label>
             <Input
@@ -156,17 +150,10 @@ export function CreateProjectDialog({ orgId, orgSlug, trigger }: CreateProjectDi
             </Button>
             <Button 
                 type="submit" 
-                disabled={isPending}
+                isLoading={isPending}
                 className="min-w-[140px] font-semibold"
             >
-                {isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  "Create Project"
-                )}
+                Create Project
             </Button>
           </div>
         </form>

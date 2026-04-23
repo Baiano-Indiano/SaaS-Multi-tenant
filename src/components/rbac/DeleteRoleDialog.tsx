@@ -12,8 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { deleteRoleAction } from "@/app/actions/rbac";
 import { useState } from "react";
-import { Loader2, AlertTriangle } from "lucide-react";
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
 
 interface DeleteRoleDialogProps {
   open: boolean;
@@ -33,20 +33,23 @@ export function DeleteRoleDialog({
   orgSlug,
 }: DeleteRoleDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function handleDelete() {
-    setLoading(true);
-    setError(null);
-    try {
-      await deleteRoleAction(roleId, orgId, orgSlug);
-      onOpenChange(false);
-    } catch (error) {
-      console.error("Failed to delete role:", error);
-      setError(error instanceof Error ? error.message : "Não foi possível excluir a role.");
-    } finally {
-      setLoading(false);
-    }
+    const promise = async () => {
+      setLoading(true);
+      try {
+        await deleteRoleAction(roleId, orgId, orgSlug);
+        onOpenChange(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    toast.promise(promise(), {
+      loading: "Excluindo role...",
+      success: "Role excluída com sucesso.",
+      error: (err) => err instanceof Error ? err.message : "Não foi possível excluir a role.",
+    });
   }
 
   return (
@@ -64,13 +67,6 @@ export function DeleteRoleDialog({
             This action cannot be undone and may affect users currently assigned to this role.
           </DialogDescription>
         </DialogHeader>
-        {error ? (
-          <FeedbackBanner
-            variant="error"
-            title="Exclusão não concluída"
-            message={error}
-          />
-        ) : null}
 
         <DialogFooter className="mt-6 gap-2 sm:gap-0">
           <Button
@@ -84,11 +80,10 @@ export function DeleteRoleDialog({
           </Button>
           <Button
             onClick={handleDelete}
-            disabled={loading}
+            isLoading={loading}
             variant="destructive"
-            className="bg-red-600 hover:bg-red-700 text-white min-w-[100px]"
+            className="bg-red-600 hover:bg-red-700 text-white min-w-[140px]"
           >
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Delete Role
           </Button>
         </DialogFooter>

@@ -10,10 +10,12 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { ShieldAlert, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { RoleDialog } from "./RoleDialog";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { RoleActions } from "./RoleActions";
 import { TenantRoleWithPermissions } from "@/lib/auth/rbac-utils";
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
 
 interface RolesListProps {
   roles: TenantRoleWithPermissions[];
@@ -30,11 +32,29 @@ const item = {
 export function RolesList({ roles, orgId, orgSlug }: RolesListProps) {
   if (roles.length === 0) {
     return (
-      <FeedbackBanner
-        variant="info"
-        title="Nenhuma role encontrada"
-        message="Crie a primeira role personalizada para começar a definir permissões da organização."
-      />
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col items-center justify-center py-20 px-4 rounded-xl border border-dashed border-zinc-800 bg-zinc-950/20 text-center"
+      >
+        <div className="w-16 h-16 rounded-full bg-zinc-900 flex items-center justify-center mb-6 border border-zinc-800 shadow-inner">
+          <ShieldAlert className="w-8 h-8 text-zinc-600" />
+        </div>
+        <h3 className="text-xl font-bold text-white tracking-tight mb-2">Nenhuma role encontrada</h3>
+        <p className="text-zinc-500 max-w-sm mb-8 leading-relaxed text-sm">
+          Crie a primeira role personalizada para começar a definir permissões da organização. Isso ajudará você a gerenciar o acesso de forma segura e escalável.
+        </p>
+        <RoleDialog 
+          orgId={orgId} 
+          orgSlug={orgSlug}
+          trigger={
+            <Button className="bg-white text-black hover:bg-zinc-200 h-10 px-6 font-semibold transition-all hover:scale-105 active:scale-95 shadow-lg shadow-white/5">
+              <Plus className="w-4 h-4 mr-2" />
+              Criar Primeira Role
+            </Button>
+          }
+        />
+      </motion.div>
     );
   }
 

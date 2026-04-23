@@ -178,3 +178,48 @@ export const auditLogs = pgTable("audit_log", {
 	userAgent: text("userAgent"),
 	createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
+
+/**
+ * Connectivity Ecosystem Tables (Tenant-Side)
+ */
+export const apiKeys = pgTable("api_key", {
+	id: text("id").primaryKey(),
+	name: text("name").notNull(),
+	keyHash: text("keyHash").notNull().unique(),
+	keyPrefix: text("keyPrefix").notNull(),
+	roleId: text("roleId").notNull(), // Logical reference to tenant.role id
+	lastUsedAt: timestamp("lastUsedAt"),
+	expiresAt: timestamp("expiresAt"),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export const webhooks = pgTable("webhook", {
+	id: text("id").primaryKey(),
+	url: text("url").notNull(),
+	secret: text("secret").notNull(),
+	events: text("events"), // JSON string array of event names
+	isActive: boolean("isActive").notNull().default(true),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export const webhookDeliveries = pgTable("webhook_delivery", {
+	id: text("id").primaryKey(),
+	webhookId: text("webhookId").references(() => webhooks.id, { onDelete: 'cascade' }), // Optional if it's a workflow
+	workflowId: text("workflowId").references(() => workflows.id, { onDelete: 'cascade' }), // Optional if it's a standard webhook
+	eventType: text("eventType").notNull(),
+	payload: text("payload").notNull(), // JSON string
+	responseStatus: text("responseStatus"),
+	responseBody: text("responseBody"),
+	duration: text("duration"), // ms
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export const workflows = pgTable("workflow", {
+	id: text("id").primaryKey(),
+	name: text("name").notNull(),
+	trigger: text("trigger").notNull(), // e.g., 'project.created'
+	actionType: text("actionType").notNull().default("webhook"),
+	actionConfig: text("actionConfig").notNull(), // JSON string for target URL, etc.
+	isActive: boolean("isActive").notNull().default(true),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
