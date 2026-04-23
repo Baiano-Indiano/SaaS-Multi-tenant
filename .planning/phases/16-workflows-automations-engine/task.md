@@ -1,0 +1,5 @@
+- [x] Implement Workflows list UI
+- [x] Implement Workflow builder component
+- [x] Create server actions for workflows
+- [x] Set up events and redis infrastructure
+- [x] Retroactively document phase in GSD format
