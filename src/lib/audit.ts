@@ -1,8 +1,7 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { getTenantDb } from "./db/tenant-db";
+import { getTenantDb, withAdminTenantDb } from "./db/tenant-db";
 import { auditLogs } from "./db/schema";
-import { nanoid } from "nanoid";
 import { lt } from "drizzle-orm";
 import type { TenantTransaction } from "./db/tenant-db";
 
@@ -44,9 +43,9 @@ export async function recordAuditLog(params: {
   const userAgent = h.get("user-agent") || "system";
 
   try {
-    await getTenantDb(userId, params.organizationId, async (tx) => {
+    const insertLog = async (tx: TenantTransaction) => {
       await tx.insert(auditLogs).values({
-        id: `log_${nanoid()}`,
+        id: `log_${crypto.randomUUID()}`,
         userId: userId,
         userName: userName,
         userEmail: userEmail,
@@ -57,10 +56,17 @@ export async function recordAuditLog(params: {
         ipAddress,
         userAgent,
       });
-    });
+    };
+
+    // When actor is explicitly provided, bypass membership check
+    // to avoid race conditions (e.g., logging after member removal)
+    if (params.actor) {
+      await withAdminTenantDb(params.organizationId, insertLog);
+    } else {
+      await getTenantDb(userId!, params.organizationId, insertLog);
+    }
   } catch (error) {
     console.error("Failed to record audit log:", error);
-    // We don't throw here to avoid breaking the main business flow if logging fails
   }
 }
 

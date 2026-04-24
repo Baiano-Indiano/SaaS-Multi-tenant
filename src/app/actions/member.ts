@@ -9,7 +9,7 @@ import { db } from "@/lib/db";
 import { roles as rolesTable, members, organizations, invitations } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { PLANS, PlanType } from "@/lib/billing/plans";
-import { can } from "@/lib/auth/rbac-utils";
+import { can, requirePermission } from "@/lib/auth/rbac-utils";
 import postgres from "postgres";
 import { recordAuditLog } from "@/lib/audit";
 import { emitEvent } from "@/lib/events";
@@ -23,9 +23,12 @@ export async function updateMemberRoleAction(formData: {
   orgSlug: string;
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
+  if (!session?.user) return { success: false, error: "Sessão expirada. Faça login novamente." };
 
   try {
+    // RBAC: Verify user has permission to assign roles
+    await requirePermission(session.user.id, formData.orgId, "roles:assign");
+
     // getTenantDb performs the Membership check (Rule 1)
     await getTenantDb(session.user.id, formData.orgId, async (tx) => {
       // 1. Verify Target Role exists in Tenant Schema
@@ -63,18 +66,18 @@ export async function updateMemberRoleAction(formData: {
     return { success: true };
   } catch (error) {
     console.error("Failed to update member role:", error);
-    throw error;
+    return { success: false, error: error instanceof Error ? error.message : "Falha ao atualizar cargo do membro." };
   }
 }
 
 export async function removeMemberAction(memberId: string, orgId: string, orgSlug: string) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
-
-  const allowed = await can(session.user.id, orgId, "members:remove");
-  if (!allowed) throw new Error("Forbidden");
+  if (!session?.user) return { success: false, error: "Sessão expirada. Faça login novamente." };
 
   try {
+    const allowed = await can(session.user.id, orgId, "members:remove");
+    if (!allowed) return { success: false, error: "Você não tem permissão para remover membros." };
+
     // Prevent removing the last admin (complex check, for now simple delete)
     // In a real app, you'd check if this is the only admin.
 
@@ -100,7 +103,7 @@ export async function removeMemberAction(memberId: string, orgId: string, orgSlu
     return { success: true };
   } catch (error) {
     console.error("Failed to remove member:", error);
-    throw new Error("Failed to remove member");
+    return { success: false, error: "Falha ao remover membro." };
   }
 }
 
@@ -111,9 +114,12 @@ export async function inviteMemberAction(data: {
   orgSlug: string;
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
+  if (!session?.user) return { success: false, error: "Sessão expirada. Faça login novamente." };
 
   try {
+    // RBAC: Verify user has permission to invite members
+    await requirePermission(session.user.id, data.orgId, "members:invite");
+
     const result = await getTenantDb(session.user.id, data.orgId, async (tx) => {
       // 1. Plan validation
       const org = await tx.query.organizations.findFirst({
@@ -157,6 +163,10 @@ export async function inviteMemberAction(data: {
       return { success: true };
     });
 
+    if ("error" in result) {
+      return { success: false, error: result.error === "QUOTA_EXCEEDED" ? "Limite de membros atingido para o seu plano." : "Falha ao convidar." };
+    }
+
     revalidatePath(`/org/${data.orgSlug}/members`);
 
     // Record Audit Log (Phase 11)
@@ -176,18 +186,18 @@ export async function inviteMemberAction(data: {
     return result;
   } catch (error) {
     console.error("Failed to invite member:", error);
-    throw error;
+    return { success: false, error: error instanceof Error ? error.message : "Falha ao convidar membro." };
   }
 }
 
 export async function cancelInvitationAction(id: string, orgId: string, orgSlug: string) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
-
-  const allowed = await can(session.user.id, orgId, "members:invite");
-  if (!allowed) throw new Error("Forbidden");
+  if (!session?.user) return { success: false, error: "Sessão expirada. Faça login novamente." };
 
   try {
+    const allowed = await can(session.user.id, orgId, "members:invite");
+    if (!allowed) return { success: false, error: "Você não tem permissão para cancelar convites." };
+
     await auth.api.cancelInvitation({
       body: {
         invitationId: id,
@@ -209,13 +219,17 @@ export async function cancelInvitationAction(id: string, orgId: string, orgSlug:
     return { success: true };
   } catch (error) {
     console.error("Failed to cancel invitation:", error);
-    throw new Error("Failed to cancel invitation");
+    return { success: false, error: "Falha ao cancelar convite." };
   }
 }
 
 export async function getPendingInvitationsAction(orgId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) throw new Error("Unauthorized");
+
+  // RBAC: Verify membership and read permission
+  const allowed = await can(session.user.id, orgId, "members:read");
+  if (!allowed) throw new Error("Forbidden");
 
   return db.query.invitations.findMany({
     where: and(

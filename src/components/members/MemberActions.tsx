@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { MemberSessionsDialog } from "./MemberSessionsDialog";
 
 interface RoleSelectorProps {
   memberId: string;
@@ -54,7 +55,7 @@ export function RoleSelector({
   const systemRoles = roles.filter(r => ['admin', 'member', 'viewer', 'owner'].includes(r.slug));
   const customRoles = roles.filter(r => !['admin', 'member', 'viewer', 'owner'].includes(r.slug));
 
-  const [value, setValue] = useState(currentRoleId);
+  const [value, setValue] = useState(currentRoleId || "");
 
   // Sync with prop if it changes externally
   useEffect(() => {
@@ -230,6 +231,11 @@ interface MemberActionsProps {
   member: {
     id: string;
     roleId: string | null;
+    user: {
+      id: string;
+      name: string;
+      email: string;
+    };
   };
   roles: { id: string; name: string; slug: string }[];
   orgId: string;
@@ -239,6 +245,7 @@ interface MemberActionsProps {
 export function MemberActions({ member, roles, orgId, orgSlug }: MemberActionsProps) {
   return (
     <div className="flex items-center justify-end gap-2">
+      <MemberSessionsDialog member={member} orgId={orgId} />
       <RoleSelector 
         memberId={member.id} 
         currentRoleId={member.roleId || ''} 
