@@ -4,7 +4,19 @@
 
 A B2B SaaS starter boilerplate focusing on deep organization isolation and premium user experience.
 
-## Current State: v2.0 (Productivity & Scale) - [Shipped]
+## Current State: v3.0 (Enterprise & Scale) - [Shipped]
+
+**Goal Accomplished:** Expanded upon the foundation with enterprise-level features including dynamic analytics, connectivity (API Keys & Webhooks), workflow engines, and member management.
+
+### Shipped Features
+- **Enterprise Landing Page**: GSAP ScrollTrigger features and benefits.
+- **Dynamic Analytics**: Staggered UI dashboards and interactive charts.
+- **Connectivity Ecosystem**: API Keys and Webhook registration.
+- **Core Automations**: Workflow builder UI and background delivery service.
+- **Member Management**: Data tables for members and invites.
+
+<details>
+<summary>Archived State: v2.0 (Productivity & Scale)</summary>
 
 **Goal Accomplished:** Transformed the foundation into a high-engagement, reactive platform with usage transparency and enterprise-ready routing.
 
@@ -14,8 +26,9 @@ A B2B SaaS starter boilerplate focusing on deep organization isolation and premi
 - **Enterprise Domains**: Custom domain support with Vercel Platforms API.
 - **Audit Logging**: Comprehensive, tenant-isolated activity tracking.
 - **Premium UI/UX**: Sub-route based settings navigation with GSAP fade-and-scale transitions.
+</details>
 
-## Current Milestone: v3.0 (Planned)
+## Current Milestone: v4.0 (Planned)
 
 **Goal:** *TBD*
 

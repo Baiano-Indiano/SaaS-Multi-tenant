@@ -22,11 +22,20 @@ This project follows a phased High-level functional requirements for **Milestone
 - Background delivery service for webhooks.
 - Event-based trigger system (e.g., "On Member Joined").
 
-## 🚀 Milestone v3.0 (Enterprise & Scale) - [In Progress]
-- [x] Phase 13: Enterprise Landing Page Expansion (GSAP Focus)
-- [x] Phase 14: Dynamic Analytics & Dashboards (Staggered UI)
-- [x] Phase 15: External Integrations (API Keys & Webhooks)
-- [/] Phase 16: Workflows & Automations (Core Engine)
+### R-17: Member Management
+- Data table for displaying organization members.
+- Interactive modal for inviting new members via email.
+- Integration with Drizzle ORM and existing member schema.
+- UI enhancements using shadcn/ui and Framer Motion.
+
+## 🚀 Milestone v4.0 (TBD) - [Planned]
+*Phases to be defined.*
+
+---
+
+## 🏁 Milestone v3.0 (Enterprise & Scale) - [Complete]
+**Status:** Shipped 2026-04-24
+**Archive:** [v3.0 Roadmap](file:///c:/Users/Bernardo/Desktop/SaaS-Multi-tenant/.planning/milestones/v3.0-ROADMAP.md)
 
 ---
 
@@ -39,4 +48,4 @@ This project follows a phased High-level functional requirements for **Milestone
 **Archive:** [v1.0 Roadmap](file:///c:/Users/Bernardo/Desktop/SaaS-Multi-tenant/.planning/milestones/v1.0-ROADMAP.md)
 
 ---
-*Last update: 2026-04-22*
+*Last update: 2026-04-23*
