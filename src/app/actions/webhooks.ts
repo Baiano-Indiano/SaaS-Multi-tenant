@@ -7,6 +7,7 @@ import { webhooks, webhookDeliveries } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { recordAuditLog } from "@/lib/audit";
+import { requirePermission } from "@/lib/auth/rbac-utils";
 
 /**
  * createWebhookAction
@@ -21,6 +22,9 @@ export async function createWebhookAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // RBAC: Verify permission to manage webhooks
+    await requirePermission(session.user.id, data.orgId, "org:update");
+
     // Basic URL validation
     const url = new URL(data.url);
     if (!['http:', 'https:'].includes(url.protocol)) {
@@ -74,6 +78,9 @@ export async function deleteWebhookAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // RBAC: Verify permission to manage webhooks
+    await requirePermission(session.user.id, data.orgId, "org:update");
+
     await getTenantDb(session.user.id, data.orgId, async (tx) => {
       await tx.delete(webhooks).where(eq(webhooks.id, data.webhookId));
     });

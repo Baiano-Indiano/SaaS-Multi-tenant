@@ -5,7 +5,6 @@ test.describe('Protected Routes', () => {
     await page.goto('/org/demo');
     
     // BetterAuth client redirects to /login if no session is found
-    await page.waitForURL('**/login*');
-    await expect(page).toHaveURL(/.*\/login.*/);
+    await expect(page).toHaveURL(/.*\/login.*/, { timeout: 15000 });
   });
 });

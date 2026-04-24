@@ -9,18 +9,12 @@ import { revalidatePath } from "next/cache";
 import { PLANS } from "@/lib/billing/plans";
 import { db } from "@/lib/db";
 import { organizations } from "@/lib/db/schema";
+import { requirePermission } from "@/lib/auth/rbac-utils";
 
 import { sendNotification } from "@/lib/notifications";
 import { recordAuditLog } from "@/lib/audit";
 import { emitEvent } from "@/lib/events";
 
-/**
- * createProjectAction
- * 
- * Demonstrates hardened isolation:
- * - Uses session validation.
- * - Uses getTenantDb to enforce search_path and membership (Rule 1).
- */
 export async function createProjectAction(data: {
   name: string;
   description?: string;
@@ -28,7 +22,7 @@ export async function createProjectAction(data: {
   orgSlug: string;
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
+  if (!session?.user) return { success: false, error: "Sessão expirada. Faça login novamente." };
 
   try {
     // 1. Check Quota
@@ -36,7 +30,7 @@ export async function createProjectAction(data: {
       where: eq(organizations.id, data.orgId),
     });
 
-    if (!org) throw new Error("Organization not found");
+    if (!org) return { success: false, error: "Organização não encontrada." };
     const currentPlan = PLANS[org.plan.toUpperCase() as keyof typeof PLANS] || PLANS.FREE;
 
     const result = await getTenantDb(session.user.id, data.orgId, async (tenantDb) => {
@@ -58,7 +52,7 @@ export async function createProjectAction(data: {
     });
 
     if ("error" in result) {
-      return result;
+      return { success: false, error: "Limite de projetos atingido para o seu plano." };
     }
 
     // Real-time notification (Collaborative fan-out)
@@ -88,7 +82,7 @@ export async function createProjectAction(data: {
     return result;
   } catch (error) {
     console.error("Failed to create project:", error);
-    throw error;
+    return { success: false, error: "Falha ao criar projeto." };
   }
 }
 
@@ -97,7 +91,7 @@ export async function createProjectAction(data: {
  */
 export async function getProjectsAction(orgId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
+  if (!session?.user) return []; // Return empty list for unauthenticated
 
   try {
     return await getTenantDb(session.user.id, orgId, async (db) => {
@@ -114,9 +108,12 @@ export async function getProjectsAction(orgId: string) {
  */
 export async function deleteProjectAction(projectId: string, orgId: string, orgSlug: string) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
+  if (!session?.user) return { success: false, error: "Sessão expirada. Faça login novamente." };
 
   try {
+    // RBAC: Verify user has permission to delete projects
+    await requirePermission(session.user.id, orgId, "projects:delete");
+
     await getTenantDb(session.user.id, orgId, async (db) => {
       await db.delete(projects).where(eq(projects.id, projectId));
     });
@@ -135,6 +132,6 @@ export async function deleteProjectAction(projectId: string, orgId: string, orgS
     return { success: true };
   } catch (error) {
     console.error("Failed to delete project:", error);
-    throw error;
+    return { success: false, error: error instanceof Error ? error.message : "Falha ao excluir projeto." };
   }
 }

@@ -3,8 +3,9 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
-import { organizations, members } from "@/lib/db/schema";
-import { eq, sql, and } from "drizzle-orm";
+import { organizations } from "@/lib/db/schema";
+import { eq, sql } from "drizzle-orm";
+import { can } from "@/lib/auth/rbac-utils";
 import postgres from "postgres";
 
 import { randomUUID } from "crypto";
@@ -174,17 +175,9 @@ export async function updateOrganizationAction(orgId: string, name: string, slug
   }
 
   try {
-    // 1. Verify Permission (Check if user is admin/owner of this org)
-    // In Better-Auth, the default roles are 'admin' and 'member'. 
-    // We check against the public.member table.
-    const member = await db.query.members.findFirst({
-      where: and(
-        eq(members.organizationId, orgId),
-        eq(members.userId, session.user.id)
-      )
-    });
-
-    if (!member || (member.role !== "admin" && member.role !== "owner")) {
+    // 1. Verify Permission via RBAC
+    const allowed = await can(session.user.id, orgId, "org:update");
+    if (!allowed) {
       return { success: false, error: "Você não tem permissão para editar esta organização." };
     }
 
@@ -193,7 +186,6 @@ export async function updateOrganizationAction(orgId: string, name: string, slug
       .set({ 
         name, 
         slug,
-        // We could also allow logo updates here in the future
       })
       .where(eq(organizations.id, orgId));
 

@@ -10,6 +10,7 @@ import { Redis } from "@upstash/redis";
 import { revalidatePath } from "next/cache";
 import { PLANS, PlanType } from "@/lib/billing/plans";
 import { recordAuditLog } from "@/lib/audit";
+import { can } from "@/lib/auth/rbac-utils";
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || '',
@@ -22,6 +23,12 @@ export async function addDomainAction(orgId: string, domain: string) {
   });
 
   if (!session) throw new Error("Não autorizado");
+
+  // RBAC: Verify permission to manage org settings
+  const allowed = await can(session.user.id, orgId, "org:update");
+  if (!allowed) {
+    return { error: "Você não tem permissão para gerenciar domínios." };
+  }
 
   const [org] = await db
     .select()
@@ -73,6 +80,12 @@ export async function removeDomainAction(orgId: string) {
   });
 
   if (!session) throw new Error("Não autorizado");
+
+  // RBAC: Verify permission to manage org settings
+  const allowed = await can(session.user.id, orgId, "org:update");
+  if (!allowed) {
+    return { error: "Você não tem permissão para gerenciar domínios." };
+  }
 
   const [org] = await db
     .select()

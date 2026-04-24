@@ -22,7 +22,7 @@ interface CreateApiKeyDialogProps {
 export function CreateApiKeyDialog({ orgId, orgSlug, roles, onSuccess }: CreateApiKeyDialogProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [roleId, setRoleId] = useState(roles[0]?.id || "");
+  const [roleId, setRoleId] = useState<string>("");
   const expiresInDays = "0";
   const [isLoading, setIsLoading] = useState(false);
   const [createdKey, setCreatedKey] = useState<string | null>(null);

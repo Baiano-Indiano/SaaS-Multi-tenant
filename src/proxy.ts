@@ -14,6 +14,10 @@ import { hashApiKey } from '@/lib/auth/api-key';
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get('host') || '';
+  
+  // Initialize headers and set x-pathname for layout-based checks
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-pathname', pathname);
 
   // --- 1. API v1 Authentication Interceptor ---
   if (pathname.startsWith('/api/v1')) {
@@ -36,7 +40,6 @@ export async function proxy(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid or expired API Key' }, { status: 401 });
       }
 
-      const requestHeaders = new Headers(request.headers);
       requestHeaders.set('x-tenant-id', keyData.orgId);
       requestHeaders.set('x-tenant-schema', keyData.tenantSchemaName);
       requestHeaders.set('x-role-id', keyData.roleId);
@@ -63,7 +66,11 @@ export async function proxy(request: NextRequest) {
   
   // If it's the main app domain, skip custom domain logic
   if (targetHostname === appDomain) {
-    return NextResponse.next();
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
   }
 
   // Exclude internal Next.js paths
@@ -73,7 +80,11 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/favicon.ico') ||
     pathname.includes('.')
   ) {
-    return NextResponse.next();
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
   }
 
   try {
@@ -83,14 +94,23 @@ export async function proxy(request: NextRequest) {
     if (domainData) {
       console.log(`[Proxy] Rewriting ${targetHostname}${pathname} -> /org/${domainData.slug}${pathname}`);
       return NextResponse.rewrite(
-        new URL(`/org/${domainData.slug}${pathname}`, request.url)
+        new URL(`/org/${domainData.slug}${pathname}`, request.url),
+        {
+          request: {
+            headers: requestHeaders,
+          },
+        }
       );
     }
   } catch (error) {
     console.error('[Proxy] Domain resolution error:', error);
   }
 
-  return NextResponse.next();
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 }
 
 // Next.js 16 Proxy Config
