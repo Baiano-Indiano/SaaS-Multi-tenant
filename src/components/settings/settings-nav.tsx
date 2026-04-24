@@ -25,7 +25,13 @@ export function SettingsNav({ items }: SettingsNavProps) {
   const linkRefs = React.useRef<Record<string, HTMLAnchorElement | null>>({});
 
   const isActive = React.useCallback(
-    (href: string) => pathname === href || pathname.startsWith(`${href}/`),
+    (href: string) => {
+      if (pathname === href) return true;
+      // If this is the "General" tab (base settings path), only highlight on exact match
+      // to avoid overlapping with other specific tabs like /security, /activity, etc.
+      if (href.endsWith("/settings")) return false;
+      return pathname.startsWith(`${href}/`);
+    },
     [pathname]
   );
 
@@ -70,11 +76,11 @@ export function SettingsNav({ items }: SettingsNavProps) {
   );
 
   return (
-    <nav ref={navRef} className="relative flex space-x-2 lg:flex-col lg:space-x-0 lg:space-y-1">
+    <nav ref={navRef} className="relative flex flex-row lg:flex-col gap-1 w-fit min-w-[140px]">
       <div
         ref={indicatorRef}
         aria-hidden
-        className="absolute left-0 w-full rounded-md bg-zinc-800/50 ring-1 ring-zinc-700/40 opacity-0"
+        className="absolute left-0 w-full rounded-lg bg-zinc-800/40 ring-1 ring-zinc-700/30 opacity-0"
       />
       {items.map((item) => (
         <Link

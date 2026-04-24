@@ -7,6 +7,9 @@ export const users = pgTable("user", {
 	email: text("email").notNull().unique(),
 	emailVerified: boolean("emailVerified").notNull(),
 	image: text("image"),
+	twoFactorEnabled: boolean("twoFactorEnabled").notNull().default(false),
+	twoFactorSecret: text("twoFactorSecret"),
+	twoFactorBackupCodes: text("twoFactorBackupCodes"),
 	createdAt: timestamp("createdAt").notNull(),
 	updatedAt: timestamp("updatedAt").notNull()
 });
@@ -60,7 +63,8 @@ export const organizations = pgTable("organization", {
 	stripeSubscriptionId: text("stripeSubscriptionId"),
 	customDomain: text("customDomain").unique(),
 	domainVerified: boolean("domainVerified").notNull().default(false),
-	verificationToken: text("verificationToken")
+	verificationToken: text("verificationToken"),
+	require2FA: boolean("require2FA").notNull().default(false)
 });
 
 export const members = pgTable("member", {

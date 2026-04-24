@@ -62,6 +62,35 @@ export const PERMISSIONS = {
     name: "View Activity Log",
     description: "Ability to view the organization's administrative activity log",
   },
+
+  // Project Management
+  "projects:read": {
+    key: "projects:read",
+    name: "Read Projects",
+    description: "Ability to view projects",
+  },
+  "projects:create": {
+    key: "projects:create",
+    name: "Create Projects",
+    description: "Ability to create new projects",
+  },
+  "projects:update": {
+    key: "projects:update",
+    name: "Update Projects",
+    description: "Ability to update project settings",
+  },
+  "projects:delete": {
+    key: "projects:delete",
+    name: "Delete Projects",
+    description: "Ability to delete projects",
+  },
+
+  // Security Management
+  "security:manage": {
+    key: "security:manage",
+    name: "Manage Security",
+    description: "Ability to enforce 2FA and manage security policies for the organization",
+  },
 } as const;
 
 export type PermissionKey = keyof typeof PERMISSIONS;

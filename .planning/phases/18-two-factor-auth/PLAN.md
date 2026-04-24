@@ -272,32 +272,36 @@ This page:
 
 ### Wave 5: Org-Level 2FA Enforcement
 
-#### Plan 5.1: Create 2FA enforcement toggle in org settings
+#### Plan 5.1: Create Dedicated Security Settings Page
 
-**File:** `src/app/(app)/org/[orgSlug]/settings/general/page.tsx`
-**Action:** MODIFY
+**File:** `src/app/(app)/org/[orgSlug]/settings/security/page.tsx`
+**Action:** NEW
 
-Add a "Security" section with:
-- Toggle switch: "Require 2FA for all members"
-- Only visible to users with `security:manage` permission
-- Calls `toggle2FAEnforcement` server action
-- Shows confirmation dialog: "Members without 2FA will be prompted to set it up on next login"
+A dedicated security page for organization settings:
+- Only visible to users with `security:manage` permission.
+- Features:
+  - Global 2FA Enforcement Toggle.
+  - Explainer on how 2FA enforcement works for members.
+  - Calls `toggle2FAEnforcementAction` from `src/app/actions/security.ts`.
+  - [Phase 18.1 Prep]: Slot for Member Session Management (already built in server actions).
 
-**Verification:** Admin can toggle enforcement. Non-admins don't see the toggle.
+**Verification:** Admin can toggle enforcement. Non-admins are denied access via RBAC.
 
 ---
 
-#### Plan 5.2: Create 2FA enforcement interstitial
+#### Plan 5.2: Create 2FA Enforcement Interstitial (with escape hatches)
 
 **File:** `src/app/(app)/org/[orgSlug]/setup-2fa/page.tsx`
 **Action:** NEW
 
-When a user accesses an org with `require2FA=true` and their `twoFactorEnabled=false`:
-1. Show a full-page interstitial: "This organization requires two-factor authentication"
-2. Embed the same `TwoFactorSetup` component from Wave 3
-3. On successful setup, redirect to the original destination
+When a user is blocked by 2FA enforcement:
+1. Show a professional lockout screen.
+2. Embed `TwoFactorSetup`.
+3. **Escape Hatch 1**: "Switch Organization" button (links to `/selecionar-org`).
+4. **Escape Hatch 2**: "Logout" button (calls `signOut`).
+5. **Mandatory Acknowledgment**: User must confirm they've saved backup codes before they can finish the flow and enter the org.
 
-**Verification:** Member without 2FA accessing an enforced org sees interstitial and can't proceed without setting up 2FA.
+**Verification:** Member can exit to switcher or logout if they refuse to setup 2FA.
 
 ---
 
@@ -306,22 +310,8 @@ When a user accesses an org with `require2FA=true` and their `twoFactorEnabled=f
 **File:** `src/app/(app)/org/[orgSlug]/layout.tsx`
 **Action:** MODIFY
 
-Add a check after auth verification:
-1. Fetch org settings (specifically `require2FA`)
-2. If `require2FA=true` AND user's `twoFactorEnabled=false`
-3. Redirect to `/org/[orgSlug]/setup-2fa`
-
-```typescript
-// In the layout, after existing auth checks:
-const org = await getOrganization(orgSlug);
-const user = await getCurrentUser();
-
-if (org.require2FA && !user.twoFactorEnabled) {
-  redirect(`/org/${orgSlug}/setup-2fa`);
-}
-```
-
-**Verification:** Enforcement redirect works. Users with 2FA enabled pass through normally.
+Ensure the check is robust and respects the `/setup-2fa` path to avoid redirect loops.
+(Implementation already exists but verify logic).
 
 ---
 
@@ -332,15 +322,8 @@ if (org.require2FA && !user.twoFactorEnabled) {
 **File:** `src/app/(app)/org/[orgSlug]/settings/layout.tsx`
 **Action:** MODIFY
 
-Add a "Security" nav item:
-```typescript
-{
-  title: "Security",
-  href: `/org/${orgSlug}/settings/general`, // same page, but section anchor
-}
-```
-
-> **Decision:** Keep security toggle in General settings page (not a separate route) to avoid fragmenting simple settings. If security settings grow in future phases, extract to dedicated route.
+Add a "Security" nav item pointing to `/org/${orgSlug}/settings/security`.
+Ensure it has a distinct icon (e.g., `ShieldCheck` or `Lock`).
 
 ---
 
@@ -360,7 +343,7 @@ Add a "Security" nav item:
 | `src/components/two-factor/two-factor-status.tsx` | NEW | 3 |
 | `src/components/app-sidebar.tsx` | MODIFY | 3 |
 | `src/app/(auth)/verify-2fa/page.tsx` | NEW | 4 |
-| `src/app/(app)/org/[orgSlug]/settings/general/page.tsx` | MODIFY | 5 |
+| `src/app/(app)/org/[orgSlug]/settings/security/page.tsx` | NEW | 5 |
 | `src/app/(app)/org/[orgSlug]/setup-2fa/page.tsx` | NEW | 5 |
 | `src/app/(app)/org/[orgSlug]/layout.tsx` | MODIFY | 5 |
 | `src/app/(app)/org/[orgSlug]/settings/layout.tsx` | MODIFY | 6 |

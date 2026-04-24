@@ -16,7 +16,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, Users, Settings, FolderKanban } from "lucide-react";
+import { LayoutDashboard, Users, Settings, FolderKanban, UserCog } from "lucide-react";
 import { OrgSwitcher } from "@/components/org-switcher";
 import { cn } from "@/lib/utils";
 
@@ -52,12 +52,12 @@ export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarP
     },
     {
       title: "Members",
-      url: `/org/${activeSlug}/settings/members`,
+      url: `/org/${activeSlug}/members`,
       icon: Users,
     },
     {
       title: "Settings",
-      url: `/org/${activeSlug}/settings/general`,
+      url: `/org/${activeSlug}/settings`,
       icon: Settings,
     },
   ];
@@ -68,11 +68,11 @@ export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarP
   const onMouseLeaveRef = React.useRef<(e: React.MouseEvent<HTMLAnchorElement>) => void>(() => {});
 
   const isRouteActive = (url: string) => {
-    // For settings, we want exact match for specific items, but sub-path awareness for the general area
-    if (url.includes("/settings/general")) {
-      return pathname.includes("/settings") && !pathname.includes("/members") && !pathname.includes("/activity");
-    }
-    return pathname === url || pathname.startsWith(url + "/");
+    // Exact match
+    if (pathname === url) return true;
+    
+    // For nested routes, check if the pathname starts with the url + "/"
+    return pathname.startsWith(url + "/");
   };
 
   useGSAP((_, contextSafe) => {
@@ -172,8 +172,40 @@ export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarP
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-4 mb-2">
+            User
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu className="px-2">
+              <SidebarMenuItem className="sidebar-item">
+                <SidebarMenuButton
+                  isActive={pathname.startsWith("/account")}
+                  render={
+                    <Link
+                      href="/account/security"
+                      onMouseEnter={(e) => onMouseEnterRef.current(e)}
+                      onMouseLeave={(e) => onMouseLeaveRef.current(e)}
+                    />
+                  }
+                  className={cn(
+                    "transition-all duration-200",
+                    pathname.startsWith("/account")
+                      ? "bg-zinc-800/50 text-zinc-50 shadow-sm ring-1 ring-zinc-700/50"
+                      : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
+                  )}
+                >
+                  <UserCog className={cn("h-4 w-4", pathname.startsWith("/account") ? "text-zinc-50" : "text-zinc-400")} />
+                  <span className="text-sm font-medium">Account Settings</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
     </Sidebar>
   );
 }
+
 

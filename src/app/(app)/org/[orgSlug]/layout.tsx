@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { organizations, members } from '@/lib/db/schema';
+import { organizations, members, users } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -19,8 +19,9 @@ export default async function OrgLayout({
 }) {
   const { orgSlug } = await params;
   const session = await auth.api.getSession({ headers: await headers() });
-
-  if (!session?.user) redirect('/login');
+  if (!session?.user) {
+    redirect('/login');
+  }
 
   // Fetch org by slug
   const org = await db.query.organizations.findFirst({
@@ -28,7 +29,9 @@ export default async function OrgLayout({
   });
 
   // D-04 (T-05): If org doesn't exist → redirect cleanly, no info leakage
-  if (!org) redirect('/selecionar-org');
+  if (!org) {
+    redirect('/selecionar-org');
+  }
 
   // T-02: Validate user is a member of this org before granting access
   // Manual query since Drizzle relations aren't defined in schema.ts
@@ -45,7 +48,23 @@ export default async function OrgLayout({
 
   if (membership.length === 0) redirect('/selecionar-org');
 
+  // Wave 5: Org-Level 2FA Enforcement
+  const pathname = (await headers()).get("x-pathname") || "";
+  const isSetupPage = pathname.includes("/setup-2fa");
+
+  if (org.require2FA && !isSetupPage) {
+    const dbUser = await db.query.users.findFirst({
+      where: eq(users.id, session.user.id),
+    });
+
+    if (!dbUser?.twoFactorEnabled) {
+      redirect(`/org/${orgSlug}/setup-2fa`);
+    }
+  }
+
+
   // Fetch all orgs the user belongs to (for the switcher)
+
   const userOrgs = await db
     .select({
       id: organizations.id,

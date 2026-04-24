@@ -2,12 +2,14 @@
 
 **Gravity SaaS** é um boilerplate *enterprise-ready* desenhado para acelerar a construção de aplicações SaaS modernas com foco em multilocação B2B (Multi-tenant).
 
-Seu objetivo é ser robusto, seguro e com isolamento profundo de dados, mantendo um design minimalista e premium. O projeto agora se encontra na versão **v2.0**, com toda a base estrutural de autenticação, organização de *tenants*, controle de acesso e um robusto **Módulo de Produto-Led Growth (PLG) com Billing integrando ao Stripe** concluídos.
+Seu objetivo é ser robusto, seguro e com isolamento profundo de dados, mantendo um design minimalista e premium. O projeto encontra-se na versão **v4.0**, focada em Segurança Avançada e Integrações.
 
 ---
 
-## 🚀 Funcionalidades da v2.0
+## 🚀 Funcionalidades Principais (v4.0)
 
+- **Segurança Enterprise (2FA)**: Suporte completo a autenticação de dois fatores (TOTP) com obrigatoriedade configurável por organização. Inclui fluxo de recuperação com códigos de backup.
+- **Gerenciamento de Sessões**: Visibilidade total de dispositivos conectados com capacidade de revogação remota de sessões ativas (Self-service e Admin-facing).
 - **Billing Módular & Webhooks (Stripe)**: Geração de sessoões de checkout (`client_reference_id`) aliada à uma listener server-side 100% blindada para capturar pagamentos da Stripe e espelhar assinaturas no BD.
 - **Paywalls Contextuais (Freemium)**: Limitações integradas no Server Action! Caso uma organização atinja o limite do Payload Free (membros, acessos), um Modal sofisticado de upgrade bloqueia ações da org para converter novos assinantes.
 - **Autenticação com Better-Auth**: Gestão de sessão fluida (E-mail/Senha). 
@@ -15,10 +17,8 @@ Seu objetivo é ser robusto, seguro e com isolamento profundo de dados, mantendo
 - **Engine Dinâmico de RBAC**: Controle rígido e performático de Acesso Baseado em Cargos e Permissões. (Admin/Member).
 - **Gestão de Convites**: Sistema end-to-end seguro para envio, aceitação ou cancelamento de membros em Organizações.
 - **Integrações Assíncronas**: Ganchos de mock/integração preparados nativamente para **Resend** (Disparo de E-mails).
-- **Hardening de UI (Next.js 15)**: Implementação de Boundaries para falhas visuais (`error.tsx`) e interatividade reativa otimizada (`loading.tsx`), prevenindo bloqueios do Client-side.
-- **Real-time Notification Engine (SSE)**: Sistema de notificações persistente e performático utilizando Server-Sent Events e Upstash Redis como message broker. Garante atualizações instantâneas entre abas sem o overhead de WebSockets.
-- **Tenant Analytics & Quota Enforcement**: Dashboards com indicadores de uso em tempo real (Projetos, Membros) e bloqueio preventivo (Soft-Block) baseado no plano contratado.
-- **Playwright Estabilizado**: Ambiente pré-configurado contendo suítes automáticas *End-To-End* protegendo as rotas de acesso e garantindo ausência de regressões críticas.
+- **Real-time Notification Engine (SSE)**: Sistema de notificações persistente e performático utilizando Server-Sent Events e Upstash Redis como message broker.
+- **Playwright Estabilizado**: Ambiente pré-configurado contendo suítes automáticas *End-To-End*.
 
 ---
 

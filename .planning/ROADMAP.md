@@ -46,8 +46,8 @@ This project follows a phased execution plan for **Milestone v4.0 (Security & In
 
 ---
 
-- [ ] Phase 18: Two-Factor Authentication (2FA)
-- [ ] Phase 19: Session Management
+- [x] Phase 18: Two-Factor Authentication (2FA)
+- [x] Phase 19: Session Management
 - [ ] Phase 20: External Connectors (Slack & Discord)
 
 ---

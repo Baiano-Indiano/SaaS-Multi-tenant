@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Security & Integrations
 status: in-progress
-last_updated: "2026-04-24T01:07:00.000Z"
+last_updated: "2026-04-24T09:14:00.000Z"
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 2
   total_plans: 0
   completed_plans: 0
-  percent: 0
+  percent: 66
 ---
 
 # Project State
@@ -19,7 +19,7 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-16)
 
 **Core value:** Secure, tenant-isolated data architecture with flexible organization management that accelerates the launch of enterprise-ready B2B applications.
-**Current focus:** Defining requirements for Milestone v4.0 (Security & Integrations).
+**Current focus:** Phase 20: External Connectors (Slack & Discord).
 
 ## Workflow Context
 
@@ -48,15 +48,16 @@ See: `.planning/PROJECT.md` (updated 2026-04-16)
 | 13 | Enterprise Landing Page Expansion | ✅ Complete |
 | 14 | Dynamic Analytics & Dashboards | ✅ Complete |
 | 15 | External Integrations (API/Webhooks) | ✅ Complete |
-
 | 16 | Workflows & Automations (Core Engine) | ✅ Complete |
 | 16.1 | Auth & App Refinements | ✅ Complete |
 | 16.2 | GSAP Migration | ✅ Complete |
 | 16.3 | Ad-hoc Fixes | ✅ Complete |
 | 17 | Member Management | ✅ Complete |
+| 18 | Two-Factor Authentication (2FA) | ✅ Complete |
+| 19 | Session Management | ✅ Complete |
 
 ## Active Work
 
-**Defining Requirements**
-- Milestone v4.0 (Security & Integrations) scope confirmed.
-- Next: Define REQ-IDs and create roadmap.
+**Phase 20: External Connectors (Slack & Discord)**
+- Milestone v4.0 (Security & Integrations) in progress.
+- Requirements for connectors being defined.
