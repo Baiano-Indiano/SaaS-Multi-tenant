@@ -37,12 +37,11 @@ export function NavDashboardButton() {
   return (
     <Button 
       className="bg-white text-zinc-950 hover:bg-zinc-200 transition-all font-bold"
-      render={
-        <Link href={destination} className="flex items-center gap-2">
-          <LayoutDashboard className="w-4 h-4" />
-          Go to Dashboard
-        </Link>
-      }
-    />
+      render={<Link href={destination} />}
+      nativeButton={false}
+    >
+      <LayoutDashboard className="w-4 h-4" />
+      Go to Dashboard
+    </Button>
   );
 }

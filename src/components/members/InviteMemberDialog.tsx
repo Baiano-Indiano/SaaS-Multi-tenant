@@ -58,6 +58,7 @@ export function InviteMemberDialog({ roles, orgId, orgSlug }: InviteMemberDialog
     register,
     handleSubmit,
     setValue,
+    watch,
     reset,
     formState: { errors },
   } = useForm<InviteFormValues>({
@@ -67,6 +68,8 @@ export function InviteMemberDialog({ roles, orgId, orgSlug }: InviteMemberDialog
       roleId: roles.find(r => r.name.toLowerCase() === 'member')?.id || roles[0]?.id || "",
     },
   });
+
+  const selectedRoleId = watch("roleId");
 
   const onSubmit = async (data: InviteFormValues) => {
     setIsPending(true);
@@ -153,7 +156,7 @@ export function InviteMemberDialog({ roles, orgId, orgSlug }: InviteMemberDialog
           <div className="space-y-2">
             <Label htmlFor="role" className="text-sm font-semibold">Cargo (Role)</Label>
             <Select 
-                defaultValue={roles.find(r => r.name.toLowerCase() === 'member')?.id || roles[0]?.id}
+                value={selectedRoleId}
                 onValueChange={(val) => val && setValue("roleId", val)}
             >
               <SelectTrigger className="bg-muted/50 focus:bg-background transition-colors">

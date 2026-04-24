@@ -2,7 +2,6 @@
 
 import { 
   Table, 
-  TableBody, 
   TableCell, 
   TableHead, 
   TableHeader, 
@@ -12,6 +11,20 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { MemberActions } from "./MemberActions";
 import { Shield, Mail } from "lucide-react";
+import { motion, Variants } from "framer-motion";
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08 }
+  }
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 15 },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+};
 
 interface Member {
   id: string;
@@ -45,9 +58,18 @@ export function MemberList({ members, orgId, orgSlug, roles }: MemberListProps) 
             <TableHead className="text-right text-zinc-400 font-bold uppercase tracking-widest text-[10px] py-4 px-6">Actions</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <motion.tbody 
+          className="[&_tr:last-child]:border-0"
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+        >
           {members.map((member) => (
-            <TableRow key={member.id} className="border-zinc-800/50 hover:bg-zinc-900/30 transition-colors group">
+            <motion.tr 
+              variants={itemVariants}
+              key={member.id} 
+              className="border-b transition-colors data-[state=selected]:bg-muted border-zinc-800/50 hover:bg-zinc-900/30 group"
+            >
               <TableCell className="py-4 px-6">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-9 w-9 border border-zinc-800 group-hover:border-zinc-700 transition-colors">
@@ -84,9 +106,9 @@ export function MemberList({ members, orgId, orgSlug, roles }: MemberListProps) 
                   orgSlug={orgSlug} 
                 />
               </TableCell>
-            </TableRow>
+            </motion.tr>
           ))}
-        </TableBody>
+        </motion.tbody>
       </Table>
     </div>
   );
