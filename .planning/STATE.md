@@ -1,9 +1,9 @@
 ---
 gsd_state_version: 1.0
 milestone: v4.0
-milestone_name: TBD
-status: planned
-last_updated: "2026-04-24T00:54:00.000Z"
+milestone_name: Security & Integrations
+status: defining-requirements
+last_updated: "2026-04-24T01:02:00.000Z"
 progress:
   total_phases: 0
   completed_phases: 0
@@ -19,7 +19,7 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-16)
 
 **Core value:** Secure, tenant-isolated data architecture with flexible organization management that accelerates the launch of enterprise-ready B2B applications.
-**Current focus:** Implementing Milestone v3.0 (Enterprise & Scale) - Core Automations.
+**Current focus:** Defining requirements for Milestone v4.0 (Security & Integrations).
 
 ## Workflow Context
 
@@ -57,6 +57,6 @@ See: `.planning/PROJECT.md` (updated 2026-04-16)
 
 ## Active Work
 
-**None**
-- Milestone v3.0 has been archived.
-- Run `/gsd-new-milestone` to start defining Milestone v4.0.
+**Defining Requirements**
+- Milestone v4.0 (Security & Integrations) scope confirmed.
+- Next: Define REQ-IDs and create roadmap.

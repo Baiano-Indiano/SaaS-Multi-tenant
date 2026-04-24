@@ -28,9 +28,15 @@ A B2B SaaS starter boilerplate focusing on deep organization isolation and premi
 - **Premium UI/UX**: Sub-route based settings navigation with GSAP fade-and-scale transitions.
 </details>
 
-## Current Milestone: v4.0 (Planned)
+## Current Milestone: v4.0 (Security & Integrations)
 
-**Goal:** *TBD*
+**Goal:** Elevar a plataforma a padrão enterprise com 2FA obrigatório, gestão de sessões ativas, e conectores nativos plug-and-play (Slack/Discord) sobre o motor de webhooks existente.
+
+**Target features:**
+- 2FA (TOTP) — Configuração por usuário + enforcement por organização
+- Gestão de Sessões — Listar, revogar remotamente, expiração configurável
+- Conectores Nativos — Slack e Discord com OAuth/Webhook simplificado
+- Notificações de Eventos — Eventos do sistema disparam ações nos conectores
 
 ## Requirements
 
@@ -47,7 +53,10 @@ A B2B SaaS starter boilerplate focusing on deep organization isolation and premi
 
 ### Active
 
-- [ ] *Next milestone requirements to be defined.*
+- [ ] 2FA (TOTP) com enforcement organizacional
+- [ ] Gestão de sessões ativas com revogação remota
+- [ ] Conectores nativos Slack & Discord
+- [ ] Notificações de eventos via conectores
 
 ## Constraints
 
@@ -66,5 +75,22 @@ A B2B SaaS starter boilerplate focusing on deep organization isolation and premi
 | GSAP for route transitions | High-end visual polish with controlled timeline logic. | Validated |
 | Sub-route Settings | Better maintenance, isolation, and shareability of states. | Validated |
 
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd-complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
 ---
-*Last updated: 2026-04-22 after v2.0 shipping*
+*Last updated: 2026-04-24 — Milestone v4.0 started*
