@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { getTenantDb, withAdminTenantDb } from '../tenant-db'
+import { getTenantDb, withAdminTenantDb, type TenantTransaction } from '../tenant-db'
 import { db } from '../index'
 
 // Mock the core database client
@@ -17,6 +17,43 @@ vi.mock('../index', () => ({
   },
 }))
 
+interface MockMember {
+  id: string;
+  userId: string;
+  organizationId: string;
+  role: string;
+  roleId: string | null;
+  createdAt: Date;
+  organization: {
+    id: string;
+    name: string;
+    tenantSchemaName: string;
+    createdAt: Date;
+    plan: string;
+    domainVerified: boolean;
+    require2FA: boolean;
+  };
+}
+
+interface MockOrganization {
+  id: string;
+  name: string;
+  tenantSchemaName: string;
+  createdAt: Date;
+  plan: string;
+  domainVerified: boolean;
+  require2FA: boolean;
+  slug: string | null;
+  logo: string | null;
+  metadata: string | null;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  stripePriceId: string | null;
+  stripeCurrentPeriodEnd: Date | null;
+  customDomain: string | null;
+  verificationToken: string | null;
+}
+
 describe('Tenant Database Isolation (tenant-db.ts)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -25,22 +62,31 @@ describe('Tenant Database Isolation (tenant-db.ts)', () => {
   describe('getTenantDb()', () => {
     it('should isolate connection by setting search_path for valid members', async () => {
       // 1. Mock successful membership check
-      ;(db.query.members.findFirst as any).mockResolvedValue({
+      vi.mocked(db.query.members.findFirst).mockResolvedValue({
+        id: 'member-1',
         userId: 'user-1',
         organizationId: 'org-1',
+        role: 'admin',
+        createdAt: new Date(),
         organization: {
-          tenantSchemaName: 'tenant_org_1'
+          id: 'org-1',
+          name: 'Atomic Inc',
+          tenantSchemaName: 'tenant_org_1',
+          createdAt: new Date(),
+          plan: 'free',
+          domainVerified: false,
+          require2FA: false
         }
-      })
+      } as unknown as MockMember)
 
       // 2. Mock transaction execution
       const mockTx = {
         execute: vi.fn().mockResolvedValue({}),
       }
-      ;(db.transaction as any).mockImplementation(async (cb: any) => cb(mockTx))
+      vi.mocked(db.transaction).mockImplementation(async (cb: (tx: TenantTransaction) => Promise<unknown>) => cb(mockTx as unknown as TenantTransaction))
 
       const mockCallback = vi.fn().mockResolvedValue('data')
-      
+
       const result = await getTenantDb('user-1', 'org-1', mockCallback)
 
       expect(result).toBe('data')
@@ -51,42 +97,56 @@ describe('Tenant Database Isolation (tenant-db.ts)', () => {
     })
 
     it('should reject access if user is not a member of the organization', async () => {
-      ;(db.query.members.findFirst as any).mockResolvedValue(null)
-      
-      await expect(getTenantDb('user-1', 'org-1', async () => {}))
+      vi.mocked(db.query.members.findFirst).mockResolvedValue(undefined)
+
+      await expect(getTenantDb('user-1', 'org-1', async () => { }))
         .rejects.toThrow('Access Denied: You are not a member of this organization.')
-      
+
       expect(db.transaction).not.toHaveBeenCalled()
     })
 
     it('should prevent SQL injection by validating the schema name format', async () => {
       // Malicious schema name that passed through the DB somehow
-      ;(db.query.members.findFirst as any).mockResolvedValue({
+      vi.mocked(db.query.members.findFirst).mockResolvedValue({
+        id: 'member-1',
         userId: 'user-1',
         organizationId: 'org-1',
+        role: 'admin',
+        createdAt: new Date(),
         organization: {
-          tenantSchemaName: 'public"; DROP TABLE users; --'
+          id: 'org-1',
+          name: 'Atomic Inc',
+          tenantSchemaName: 'public"; DROP TABLE users; --',
+          createdAt: new Date(),
+          plan: 'free',
+          domainVerified: false,
+          require2FA: false
         }
-      })
+      } as unknown as MockMember)
 
-      await expect(getTenantDb('user-1', 'org-1', async () => {}))
+      await expect(getTenantDb('user-1', 'org-1', async () => { }))
         .rejects.toThrow('Invalid tenant schema name detected. Aborting.')
-      
+
       expect(db.transaction).not.toHaveBeenCalled()
     })
   })
 
   describe('withAdminTenantDb()', () => {
     it('should allow administrative access to tenant data via organization ID', async () => {
-      ;(db.query.organizations.findFirst as any).mockResolvedValue({
+      vi.mocked(db.query.organizations.findFirst).mockResolvedValue({
         id: 'org-1',
-        tenantSchemaName: 'tenant_org_1'
-      })
+        name: 'Atomic Inc',
+        tenantSchemaName: 'tenant_org_1',
+        createdAt: new Date(),
+        plan: 'free',
+        domainVerified: false,
+        require2FA: false
+      } as unknown as MockOrganization)
 
       const mockTx = {
         execute: vi.fn().mockResolvedValue({}),
       }
-      ;(db.transaction as any).mockImplementation(async (cb: any) => cb(mockTx))
+      vi.mocked(db.transaction).mockImplementation(async (cb: (tx: TenantTransaction) => Promise<unknown>) => cb(mockTx as unknown as TenantTransaction))
 
       const result = await withAdminTenantDb('org-1', async () => 'admin-ok')
 
@@ -95,9 +155,9 @@ describe('Tenant Database Isolation (tenant-db.ts)', () => {
     })
 
     it('should throw if the organization or its schema does not exist', async () => {
-      ;(db.query.organizations.findFirst as any).mockResolvedValue(null)
+      vi.mocked(db.query.organizations.findFirst).mockResolvedValue(undefined)
 
-      await expect(withAdminTenantDb('non-existent', async () => {}))
+      await expect(withAdminTenantDb('non-existent', async () => { }))
         .rejects.toThrow('Organization or tenant schema not found.')
     })
   })

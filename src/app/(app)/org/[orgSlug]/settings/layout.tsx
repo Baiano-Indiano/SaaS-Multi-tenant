@@ -1,5 +1,4 @@
 import { SettingsNav } from "@/components/settings/settings-nav";
-import { Separator } from "@/components/ui/separator";
 
 export default async function SettingsLayout({
   children,
@@ -22,6 +21,14 @@ export default async function SettingsLayout({
     {
       title: "Security",
       href: `/org/${orgSlug}/settings/security`,
+    },
+    {
+      title: "Connectivity",
+      href: `/org/${orgSlug}/settings/connectivity`,
+    },
+    {
+      title: "Integrations",
+      href: `/org/${orgSlug}/settings/integrations`,
     },
   ];
 

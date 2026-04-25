@@ -62,25 +62,31 @@ export function SettingsNav({ items }: SettingsNavProps) {
 
       const activeItem = items.find((item) => isActive(item.href));
       const activeLink = activeItem ? linkRefs.current[activeItem.href] : null;
-      if (!activeLink) return;
+      
+      if (!activeLink) {
+        gsap.to(indicatorRef.current, { autoAlpha: 0, duration: 0.2 });
+        return;
+      }
 
       gsap.to(indicatorRef.current, {
         y: activeLink.offsetTop,
+        x: activeLink.offsetLeft,
+        width: activeLink.offsetWidth,
         height: activeLink.offsetHeight,
         autoAlpha: 1,
-        duration: 0.28,
-        ease: "power2.out",
+        duration: 0.3,
+        ease: "power3.out",
       });
     },
-    { dependencies: [pathname, items, isActive], scope: navRef, revertOnUpdate: true }
+    { dependencies: [pathname, items, isActive], scope: navRef }
   );
 
   return (
-    <nav ref={navRef} className="relative flex flex-row lg:flex-col gap-1 w-fit min-w-[140px]">
+    <nav ref={navRef} className="relative flex flex-row lg:flex-col gap-1 w-fit">
       <div
         ref={indicatorRef}
         aria-hidden
-        className="absolute left-0 w-full rounded-lg bg-zinc-800/40 ring-1 ring-zinc-700/30 opacity-0"
+        className="absolute rounded-lg bg-zinc-800/40 border border-zinc-700/30 opacity-0 z-0 shadow-sm"
       />
       {items.map((item) => (
         <Link
@@ -90,7 +96,7 @@ export function SettingsNav({ items }: SettingsNavProps) {
             linkRefs.current[item.href] = el;
           }}
           className={cn(
-            "settings-nav-item relative z-10 justify-start rounded-md px-3 py-2 text-sm font-medium transition-colors",
+            "settings-nav-item relative z-10 justify-start rounded-md px-4 py-2.5 text-sm font-medium transition-colors",
             isActive(item.href)
               ? "text-zinc-50 font-semibold"
               : "text-zinc-400 hover:text-zinc-200 transition-colors duration-200"

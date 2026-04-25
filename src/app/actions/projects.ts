@@ -77,7 +77,10 @@ export async function createProjectAction(data: {
     });
 
     // Trigger Automations (Phase 16)
-    await emitEvent(data.orgId, "project.created", result.project);
+    await emitEvent(data.orgId, "project.created", {
+      ...result.project,
+      actorName: session.user.name || session.user.email,
+    });
 
     return result;
   } catch (error) {
@@ -114,8 +117,10 @@ export async function deleteProjectAction(projectId: string, orgId: string, orgS
     // RBAC: Verify user has permission to delete projects
     await requirePermission(session.user.id, orgId, "projects:delete");
 
-    await getTenantDb(session.user.id, orgId, async (db) => {
+    const projectToDelete = await getTenantDb(session.user.id, orgId, async (db) => {
+      const p = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
       await db.delete(projects).where(eq(projects.id, projectId));
+      return p[0];
     });
 
     revalidatePath(`/org/${orgSlug}/projects`);
@@ -126,7 +131,14 @@ export async function deleteProjectAction(projectId: string, orgId: string, orgS
       action: "PROJECT_DELETED",
       entityType: "PROJECT",
       entityId: projectId,
-      details: `Deleted project (ID: ${projectId})`
+      details: `Deleted project "${projectToDelete?.name || projectId}"`
+    });
+
+    // Trigger Automations (Phase 16)
+    await emitEvent(orgId, "project.deleted", { 
+      id: projectId,
+      name: projectToDelete?.name,
+      actorName: session.user.name || session.user.email,
     });
 
     return { success: true };

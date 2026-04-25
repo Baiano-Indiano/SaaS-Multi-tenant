@@ -10,7 +10,8 @@ Seu objetivo é ser robusto, seguro e com isolamento profundo de dados, mantendo
 
 - **Segurança Enterprise (2FA)**: Suporte completo a autenticação de dois fatores (TOTP) com obrigatoriedade configurável por organização. Inclui fluxo de recuperação com códigos de backup.
 - **Gerenciamento de Sessões**: Visibilidade total de dispositivos conectados com capacidade de revogação remota de sessões ativas (Self-service e Admin-facing).
-- **Billing Módular & Webhooks (Stripe)**: Geração de sessoões de checkout (`client_reference_id`) aliada à uma listener server-side 100% blindada para capturar pagamentos da Stripe e espelhar assinaturas no BD.
+- **Conectores Externos (Slack & Discord)**: Sistema de notificações ricas ("Rich Notifications") para eventos do sistema. Permite que as organizações mapeiem ações (ex: criação de projetos, novos membros) diretamente para canais do Slack ou Discord via Webhooks.
+- **Workflow & Automation Engine**: Motor assíncrono baseado em **Upstash QStash** para processamento de eventos em segundo plano com suporte a retentativas automáticas e logs de entrega.
 - **Paywalls Contextuais (Freemium)**: Limitações integradas no Server Action! Caso uma organização atinja o limite do Payload Free (membros, acessos), um Modal sofisticado de upgrade bloqueia ações da org para converter novos assinantes.
 - **Autenticação com Better-Auth**: Gestão de sessão fluida (E-mail/Senha). 
 - **Suporte Multi-Tenant 1:1**: Isolamento estrutural de dados com abordagens *schema-per-tenant* através do Drizzle ORM.

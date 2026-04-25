@@ -42,7 +42,7 @@ export async function createOrganizationAction(name: string, slug: string): Prom
     if (!org) throw new Error("Failed to create organization");
 
     // 2. Provision Tenant Schema (Simple logic for now)
-    const tenantSchema = `tenant_${org.slug.replace(/-/g, "_")}`;
+    const tenantSchema = `tenant_${org.slug.replace(/-/g, "_")}`.toLowerCase();
     
     // Update org with schema name in public database
     await db.update(organizations)
@@ -56,19 +56,19 @@ export async function createOrganizationAction(name: string, slug: string): Prom
       
       // I'll define the exact DDL to ensure consistency with Rule 2 & 3
       const ddl = [
-        `CREATE TABLE IF NOT EXISTS ${tenantSchema}.role (
+        `CREATE TABLE IF NOT EXISTS "${tenantSchema}".role (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
           slug TEXT NOT NULL UNIQUE,
           description TEXT,
           "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
         )`,
-        `CREATE TABLE IF NOT EXISTS ${tenantSchema}.role_permission (
-          "roleId" TEXT NOT NULL REFERENCES ${tenantSchema}.role(id) ON DELETE CASCADE,
+        `CREATE TABLE IF NOT EXISTS "${tenantSchema}".role_permission (
+          "roleId" TEXT NOT NULL REFERENCES "${tenantSchema}".role(id) ON DELETE CASCADE,
           "permissionKey" TEXT NOT NULL,
           PRIMARY KEY ("roleId", "permissionKey")
         )`,
-        `CREATE TABLE IF NOT EXISTS ${tenantSchema}.project (
+        `CREATE TABLE IF NOT EXISTS "${tenantSchema}".project (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
           description TEXT,
@@ -77,7 +77,7 @@ export async function createOrganizationAction(name: string, slug: string): Prom
           "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
           "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
         )`,
-        `CREATE TABLE IF NOT EXISTS ${tenantSchema}.audit_log (
+        `CREATE TABLE IF NOT EXISTS "${tenantSchema}".audit_log (
           id TEXT PRIMARY KEY,
           "userId" TEXT NOT NULL,
           "userName" TEXT NOT NULL,

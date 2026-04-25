@@ -30,7 +30,7 @@ export async function updateMemberRoleAction(formData: {
     await requirePermission(session.user.id, formData.orgId, "roles:assign");
 
     // getTenantDb performs the Membership check (Rule 1)
-    await getTenantDb(session.user.id, formData.orgId, async (tx) => {
+    const result = await getTenantDb(session.user.id, formData.orgId, async (tx) => {
       // 1. Verify Target Role exists in Tenant Schema
       const targetRole = await tx.query.roles.findFirst({
         where: eq(rolesTable.id, formData.roleId),
@@ -38,7 +38,16 @@ export async function updateMemberRoleAction(formData: {
       
       if (!targetRole) throw new Error("Target role does not exist in this organization");
 
-      // 2. Update Member in Public Schema (available via the 'public' fallback in search_path)
+      // 3. Get Target User Info for notification
+      const targetMember = await tx.query.members.findFirst({
+        where: and(
+          eq(members.id, formData.memberId),
+          eq(members.organizationId, formData.orgId)
+        ),
+        with: { user: true }
+      });
+
+      // 4. Update Member
       await tx.update(members)
         .set({ 
           roleId: formData.roleId,
@@ -50,6 +59,8 @@ export async function updateMemberRoleAction(formData: {
             eq(members.organizationId, formData.orgId)
           )
         );
+        
+      return { targetMember, targetRole };
     });
 
     revalidatePath(`/org/${formData.orgSlug}/members`);
@@ -60,7 +71,16 @@ export async function updateMemberRoleAction(formData: {
       action: "MEMBER_ROLE_UPDATED",
       entityType: "MEMBER",
       entityId: formData.memberId,
-      details: `Updated member role to ID: ${formData.roleId}`
+      details: `Updated member role to "${result.targetRole.name}"`
+    });
+
+    // Trigger Automations (Phase 16)
+    await emitEvent(formData.orgId, "role.updated", { 
+      memberId: formData.memberId, 
+      roleId: formData.roleId,
+      targetName: result.targetMember?.user?.name || result.targetMember?.user?.email,
+      newRole: result.targetRole.name,
+      actorName: session.user.name || session.user.email,
     });
 
     return { success: true };
@@ -81,6 +101,11 @@ export async function removeMemberAction(memberId: string, orgId: string, orgSlu
     // Prevent removing the last admin (complex check, for now simple delete)
     // In a real app, you'd check if this is the only admin.
 
+    const memberToRemove = await db.query.members.findFirst({
+      where: eq(members.id, memberId),
+      with: { user: true }
+    });
+
     await db.delete(members)
       .where(
         and(
@@ -97,7 +122,14 @@ export async function removeMemberAction(memberId: string, orgId: string, orgSlu
       action: "MEMBER_REMOVED",
       entityType: "MEMBER",
       entityId: memberId,
-      details: `Removed member from organization`
+      details: `Removed member ${memberToRemove?.user?.name || memberToRemove?.user?.email || memberId} from organization`
+    });
+
+    // Trigger Automations (Phase 16)
+    await emitEvent(orgId, "member.removed", { 
+      id: memberId,
+      targetName: memberToRemove?.user?.name || memberToRemove?.user?.email,
+      actorName: session.user.name || session.user.email,
     });
 
     return { success: true };
@@ -180,7 +212,8 @@ export async function inviteMemberAction(data: {
     // Trigger Automations (Phase 16)
     await emitEvent(data.orgId, "member.invited", { 
       email: data.email, 
-      roleId: data.roleId 
+      roleId: data.roleId,
+      actorName: session.user.name || session.user.email,
     });
 
     return result;
@@ -314,6 +347,7 @@ export async function acceptInvitationAction(invitationId: string) {
       email: session.user.email,
       invitationId,
       roleId: invite.roleId,
+      actorName: session.user.name || session.user.email,
     });
 
   } catch (error) {

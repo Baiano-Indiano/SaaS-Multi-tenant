@@ -40,7 +40,7 @@ describe('Organization Server Actions', () => {
 
   describe('updateOrganizationAction()', () => {
     it('should fail if the user is not authenticated', async () => {
-      ;(auth.api.getSession as any).mockResolvedValue(null)
+      vi.mocked(auth.api.getSession).mockResolvedValue(null)
       
       const result = await updateOrganizationAction('org-1', 'New Name', 'new-slug')
       
@@ -51,8 +51,11 @@ describe('Organization Server Actions', () => {
     })
 
     it('should fail if the user lacks "org:update" permission', async () => {
-      ;(auth.api.getSession as any).mockResolvedValue({ user: { id: 'user-1' } })
-      ;(can as any).mockResolvedValue(false)
+      vi.mocked(auth.api.getSession).mockResolvedValue({ 
+        user: { id: 'user-1', twoFactorEnabled: false }, 
+        session: { id: 'session-1' } 
+      } as unknown as Awaited<ReturnType<typeof auth.api.getSession>>)
+      vi.mocked(can).mockResolvedValue(false)
 
       const result = await updateOrganizationAction('org-1', 'New Name', 'new-slug')
 
@@ -64,9 +67,11 @@ describe('Organization Server Actions', () => {
     })
 
     it('should successfully update and log the action if permitted', async () => {
-      ;(auth.api.getSession as any).mockResolvedValue({ user: { id: 'user-1' } })
-      ;(can as any).mockResolvedValue(true)
-
+      vi.mocked(auth.api.getSession).mockResolvedValue({ 
+        user: { id: 'user-1', twoFactorEnabled: false }, 
+        session: { id: 'session-1' } 
+      } as unknown as Awaited<ReturnType<typeof auth.api.getSession>>)
+      vi.mocked(can).mockResolvedValue(true)
       const result = await updateOrganizationAction('org-1', 'New Name', 'new-slug')
 
       expect(result.success).toBe(true)

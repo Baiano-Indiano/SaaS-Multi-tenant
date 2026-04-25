@@ -6,7 +6,7 @@ import type { PgTransaction } from "drizzle-orm/pg-core";
 import type { PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
 import * as schema from "./schema";
 
-const SAFE_SCHEMA_REGEX = /^tenant_[a-z0-9_]+$/;
+const SAFE_SCHEMA_REGEX = /^tenant_[a-zA-Z0-9_]+$/;
 
 export type TenantTransaction = PgTransaction<
   PostgresJsQueryResultHKT, 

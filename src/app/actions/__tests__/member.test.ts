@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { inviteMemberAction } from '../member'
 import { auth } from '@/lib/auth'
 import { requirePermission } from '@/lib/auth/rbac-utils'
-import { getTenantDb } from '@/lib/db/tenant-db'
+import { getTenantDb, type TenantTransaction } from '@/lib/db/tenant-db'
 import { PLANS } from '@/lib/billing/plans'
 
 // Mock dependencies
@@ -57,8 +57,11 @@ describe('Member Server Actions', () => {
 
   describe('inviteMemberAction()', () => {
     it('should fail if user lacks "members:invite" permission', async () => {
-      ;(auth.api.getSession as any).mockResolvedValue({ user: { id: 'user-1' } })
-      ;(requirePermission as any).mockRejectedValue(new Error('Forbidden: Missing required permission'))
+      vi.mocked(auth.api.getSession).mockResolvedValue({ 
+        user: { id: 'user-1', twoFactorEnabled: false }, 
+        session: { id: 'session-1' } 
+      } as unknown as Awaited<ReturnType<typeof auth.api.getSession>>)
+      vi.mocked(requirePermission).mockRejectedValue(new Error('Forbidden: Missing required permission'))
 
       const result = await inviteMemberAction({
         email: 'test@test.com',
@@ -72,8 +75,11 @@ describe('Member Server Actions', () => {
     })
 
     it('should reject invitation if organization member quota is reached', async () => {
-      ;(auth.api.getSession as any).mockResolvedValue({ user: { id: 'user-1' } })
-      ;(requirePermission as any).mockResolvedValue(true)
+      vi.mocked(auth.api.getSession).mockResolvedValue({ 
+        user: { id: 'user-1', twoFactorEnabled: false }, 
+        session: { id: 'session-1' } 
+      } as unknown as Awaited<ReturnType<typeof auth.api.getSession>>)
+      vi.mocked(requirePermission).mockResolvedValue(undefined)
       
       const mockTenantDb = {
         query: {
@@ -82,7 +88,7 @@ describe('Member Server Actions', () => {
           members: { findMany: vi.fn().mockResolvedValue(new Array(PLANS.FREE.maxMembers)) },
         }
       }
-      ;(getTenantDb as any).mockImplementation(async (uid: any, oid: any, cb: any) => cb(mockTenantDb))
+      vi.mocked(getTenantDb).mockImplementation(async (_uid: string, _oid: string, cb: (db: TenantTransaction) => Promise<unknown>) => cb(mockTenantDb as unknown as TenantTransaction))
 
       const result = await inviteMemberAction({
         email: 'new@test.com',
@@ -99,9 +105,12 @@ describe('Member Server Actions', () => {
     })
 
     it('should successfully send invitation when permitted and quota allows', async () => {
-      ;(auth.api.getSession as any).mockResolvedValue({ user: { id: 'user-1' } })
-      ;(requirePermission as any).mockResolvedValue(true)
-      ;(auth.api.createInvitation as any).mockResolvedValue({ id: 'invite-123' })
+      vi.mocked(auth.api.getSession).mockResolvedValue({ 
+        user: { id: 'user-1', twoFactorEnabled: false }, 
+        session: { id: 'session-1' } 
+      } as unknown as Awaited<ReturnType<typeof auth.api.getSession>>)
+      vi.mocked(requirePermission).mockResolvedValue(undefined)
+      vi.mocked(auth.api.createInvitation).mockResolvedValue({ id: 'invite-123' } as unknown as Awaited<ReturnType<typeof auth.api.createInvitation>>)
       
       const mockTenantDb = {
         query: {
@@ -113,7 +122,7 @@ describe('Member Server Actions', () => {
         set: vi.fn().mockReturnThis(),
         where: vi.fn().mockResolvedValue({}),
       }
-      ;(getTenantDb as any).mockImplementation(async (uid: any, oid: any, cb: any) => cb(mockTenantDb))
+      vi.mocked(getTenantDb).mockImplementation(async (_uid: string, _oid: string, cb: (db: TenantTransaction) => Promise<unknown>) => cb(mockTenantDb as unknown as TenantTransaction))
 
       const result = await inviteMemberAction({
         email: 'new@test.com',

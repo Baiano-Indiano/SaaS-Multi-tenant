@@ -82,16 +82,35 @@ export async function createTenantSchema(tenantSchemaName: string): Promise<{ ad
     `;
 
     await sql`
+      CREATE TABLE IF NOT EXISTS ${sql(schemaName)}.connector (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        config TEXT NOT NULL,
+        "isActive" BOOLEAN NOT NULL DEFAULT TRUE,
+        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+    `;
+
+    await sql`
       CREATE TABLE IF NOT EXISTS ${sql(schemaName)}.workflow (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         trigger TEXT NOT NULL,
         "actionType" TEXT NOT NULL DEFAULT 'webhook',
         "actionConfig" TEXT NOT NULL,
+        "connectorId" TEXT,
         "isActive" BOOLEAN NOT NULL DEFAULT TRUE,
         "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
       );
     `;
+    
+    // Add connectorId column if it doesn't exist (Migration for existing workflows table)
+    try {
+      await sql`ALTER TABLE ${sql(schemaName)}.workflow ADD COLUMN IF NOT EXISTS "connectorId" TEXT`;
+    } catch {
+      // Column might already exist
+    }
 
     await sql`
       CREATE TABLE IF NOT EXISTS ${sql(schemaName)}.webhook_delivery (

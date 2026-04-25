@@ -175,6 +175,7 @@ export function WorkflowList({ workflows, orgId, orgSlug }: WorkflowListProps) {
         workflowId={logWorkflow?.id || ""}
         workflowName={logWorkflow?.name || ""}
         orgId={orgId}
+        orgSlug={orgSlug}
       />
     </div>
   );

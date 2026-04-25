@@ -31,6 +31,7 @@ interface Session {
   updatedAt: Date;
   expiresAt: Date;
   token: string;
+  userId: string;
 }
 
 export function SessionsList() {
@@ -48,7 +49,19 @@ export function SessionsList() {
         return;
       }
       if (data) {
-        setSessions(data.map(d => d.session) as unknown as Session[]);
+        // Explicitly map session properties to match our Session interface
+        const mappedSessions: Session[] = data.map(d => ({
+          id: d.session.id,
+          userId: d.session.userId,
+          token: d.session.token,
+          expiresAt: new Date(d.session.expiresAt),
+          createdAt: new Date(d.session.createdAt),
+          updatedAt: new Date(d.session.updatedAt),
+          ipAddress: d.session.ipAddress ?? null,
+          userAgent: d.session.userAgent ?? null,
+        }));
+        
+        setSessions(mappedSessions);
       }
 
       const session = await authClient.getSession();

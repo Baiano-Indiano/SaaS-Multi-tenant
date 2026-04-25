@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { deleteProjectAction } from '../projects'
 import { auth } from '@/lib/auth'
 import { requirePermission } from '@/lib/auth/rbac-utils'
-import { getTenantDb } from '@/lib/db/tenant-db'
+import { getTenantDb, type TenantTransaction } from '@/lib/db/tenant-db'
 
 // Mock dependencies
 vi.mock('@/lib/auth', () => ({
@@ -58,16 +58,37 @@ describe('Projects Server Actions', () => {
 
   describe('deleteProjectAction()', () => {
     it('should fail if user is not authenticated', async () => {
-      ;(auth.api.getSession as any).mockResolvedValue(null)
+      vi.mocked(auth.api.getSession).mockResolvedValue(null)
       
       const result = await deleteProjectAction('proj-1', 'org-1', 'org-slug')
       expect(result).toEqual({ success: false, error: 'Sessão expirada. Faça login novamente.' })
     })
 
     it('should enforce RBAC before deletion', async () => {
-      ;(auth.api.getSession as any).mockResolvedValue({ user: { id: 'user-1' } })
+      vi.mocked(auth.api.getSession).mockResolvedValue({
+        user: { 
+          id: 'user-1', 
+          email: 'test@example.com', 
+          emailVerified: true, 
+          name: 'Test User', 
+          createdAt: new Date(), 
+          updatedAt: new Date(), 
+          twoFactorEnabled: false,
+          image: null 
+        },
+        session: { 
+          id: 'session-1', 
+          userId: 'user-1', 
+          expiresAt: new Date(), 
+          token: 'token', 
+          createdAt: new Date(), 
+          updatedAt: new Date(),
+          ipAddress: '127.0.0.1',
+          userAgent: 'test-agent'
+        }
+      } as unknown as Awaited<ReturnType<typeof auth.api.getSession>>)
       // requirePermission throws if denied, but our action now catches and returns it
-      ;(requirePermission as any).mockRejectedValue(new Error('Forbidden: Missing required permission'))
+      vi.mocked(requirePermission).mockRejectedValue(new Error('Forbidden: Missing required permission'))
 
       const result = await deleteProjectAction('proj-1', 'org-1', 'org-slug')
 
@@ -78,14 +99,35 @@ describe('Projects Server Actions', () => {
     })
 
     it('should successfully delete project when permitted', async () => {
-      ;(auth.api.getSession as any).mockResolvedValue({ user: { id: 'user-1' } })
-      ;(requirePermission as any).mockResolvedValue(true)
+      vi.mocked(auth.api.getSession).mockResolvedValue({
+        user: { 
+          id: 'user-1', 
+          email: 'test@example.com', 
+          emailVerified: true, 
+          name: 'Test User', 
+          createdAt: new Date(), 
+          updatedAt: new Date(), 
+          twoFactorEnabled: false,
+          image: null 
+        },
+        session: { 
+          id: 'session-1', 
+          userId: 'user-1', 
+          expiresAt: new Date(), 
+          token: 'token', 
+          createdAt: new Date(), 
+          updatedAt: new Date(),
+          ipAddress: '127.0.0.1',
+          userAgent: 'test-agent'
+        }
+      } as unknown as Awaited<ReturnType<typeof auth.api.getSession>>)
+      vi.mocked(requirePermission).mockResolvedValue(undefined)
       
       const mockTenantDb = {
         delete: vi.fn().mockReturnThis(),
         where: vi.fn().mockResolvedValue({}),
       }
-      ;(getTenantDb as any).mockImplementation(async (uid: any, oid: any, cb: any) => cb(mockTenantDb))
+      vi.mocked(getTenantDb).mockImplementation(async (_uid: string, _oid: string, cb: (db: TenantTransaction) => Promise<unknown>) => cb(mockTenantDb as unknown as TenantTransaction))
 
       const result = await deleteProjectAction('proj-1', 'org-1', 'org-slug')
 

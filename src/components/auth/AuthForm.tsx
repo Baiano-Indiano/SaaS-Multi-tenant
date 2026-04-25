@@ -33,7 +33,7 @@ interface AuthFormProps {
   type: "login" | "register";
 }
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 
 export function AuthForm({ type }: AuthFormProps) {
   const router = useRouter();
@@ -42,6 +42,19 @@ export function AuthForm({ type }: AuthFormProps) {
   const progressRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const fieldVariants: Variants = {
+    hidden: { opacity: 0, y: 15 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: 0.2 + i * 0.08,
+        duration: 0.6,
+        ease: [0.215, 0.61, 0.355, 1] as const, // power3.out equivalent
+      },
+    }),
+  };
+
   useGSAP(() => {
     // Entrance animation for the whole container
     gsap.to(containerRef.current, {
@@ -49,16 +62,6 @@ export function AuthForm({ type }: AuthFormProps) {
       y: 0,
       duration: 0.5,
       ease: "power2.out"
-    });
-
-    // Initial entrance stagger for fields
-    gsap.from(".auth-field", {
-      opacity: 0,
-      y: 15,
-      duration: 0.6,
-      stagger: 0.08,
-      ease: "power3.out",
-      delay: 0.2
     });
   }, { scope: containerRef });
 
@@ -220,15 +223,16 @@ export function AuthForm({ type }: AuthFormProps) {
 
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-4 relative">
-
-
             <AnimatePresence mode="popLayout">
               {type === "register" && (
                 <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="space-y-2 overflow-hidden auth-field"
+                  key="name-field"
+                  custom={0}
+                  variants={fieldVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="hidden"
+                  className="space-y-2 overflow-hidden"
                 >
                   <Label htmlFor="name" className="text-zinc-300">
                     Nome
@@ -246,7 +250,13 @@ export function AuthForm({ type }: AuthFormProps) {
               )}
             </AnimatePresence>
 
-            <div className="space-y-2 auth-field">
+            <motion.div 
+              custom={type === "register" ? 1 : 0}
+              variants={fieldVariants}
+              initial="hidden"
+              animate="visible"
+              className="space-y-2"
+            >
               <Label htmlFor="email" className="text-zinc-300">
                 E-mail
               </Label>
@@ -260,9 +270,15 @@ export function AuthForm({ type }: AuthFormProps) {
               {errors.email && (
                 <p className="text-xs text-red-500">{errors.email.message}</p>
               )}
-            </div>
+            </motion.div>
 
-            <div className="space-y-2 auth-field">
+            <motion.div 
+              custom={type === "register" ? 2 : 1}
+              variants={fieldVariants}
+              initial="hidden"
+              animate="visible"
+              className="space-y-2"
+            >
               <Label htmlFor="password" className="text-zinc-300">
                 Senha
               </Label>
@@ -275,7 +291,7 @@ export function AuthForm({ type }: AuthFormProps) {
               {errors.password && (
                 <p className="text-xs text-red-500">{errors.password.message}</p>
               )}
-            </div>
+            </motion.div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4 relative">
             <Button

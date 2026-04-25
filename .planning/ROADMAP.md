@@ -2,7 +2,7 @@
 
 This project follows a phased execution plan for **Milestone v4.0 (Security & Integrations)**.
 
-## 🚀 Milestone v4.0 (Security & Integrations) - [In Progress]
+## 🚀 Milestone v4.0 (Security & Integrations) - [Complete]
 
 ### Phase 18: Two-Factor Authentication (2FA)
 **Goal:** Enable TOTP-based 2FA for user accounts with organizational enforcement.
@@ -48,7 +48,7 @@ This project follows a phased execution plan for **Milestone v4.0 (Security & In
 
 - [x] Phase 18: Two-Factor Authentication (2FA)
 - [x] Phase 19: Session Management
-- [ ] Phase 20: External Connectors (Slack & Discord)
+- [x] Phase 20: External Connectors (Slack & Discord)
 
 ---
 

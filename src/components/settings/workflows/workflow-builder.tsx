@@ -20,9 +20,18 @@ import {
   Globe, 
   CheckCircle2,
   Loader2,
-  Settings2
+  Settings2,
+  Link
 } from "lucide-react";
+import { SlackIcon, DiscordIcon } from "@/components/icons";
 import { motion, AnimatePresence } from "framer-motion";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 import { createWorkflowAction } from "@/app/actions/workflows";
 import { toast } from "sonner";
 import { useGSAP } from "@gsap/react";
@@ -30,21 +39,33 @@ import { gsap } from "gsap";
 import { useRef } from "react";
 
 const TRIGGERS = [
-  { id: "project.created", label: "Project Created", description: "Triggered when a new project is created in this org." },
-  { id: "member.invited", label: "Member Invited", description: "Triggered when a new member is invited." },
-  { id: "organization.invitation_accepted", label: "Invitation Accepted", description: "Triggered when a member joins the org." },
+  { id: "project.created", label: "Project Created", description: "Triggered when a new project is created." },
+  { id: "project.deleted", label: "Project Deleted", description: "Triggered when a project is removed." },
+  { id: "member.invited", label: "Member Invited", description: "Triggered when an invitation is sent." },
+  { id: "member.removed", label: "Member Removed", description: "Triggered when a member is removed." },
+  { id: "organization.invitation_accepted", label: "Invitation Accepted", description: "Triggered when a member joins." },
+  { id: "role.updated", label: "Role Updated", description: "Triggered when a member role changes." },
 ];
 
 const ACTIONS = [
   { id: "webhook", label: "Send Webhook", description: "Deliver a POST request with the event payload to a URL.", icon: Globe },
 ];
 
+interface Connector {
+  id: string;
+  name: string;
+  type: string;
+  config: string;
+  isActive: boolean;
+}
+
 interface WorkflowBuilderProps {
   orgId: string;
   orgSlug: string;
+  initialConnectors?: Connector[];
 }
 
-export function WorkflowBuilder({ orgId, orgSlug }: WorkflowBuilderProps) {
+export function WorkflowBuilder({ orgId, orgSlug, initialConnectors = [] }: WorkflowBuilderProps) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -69,17 +90,24 @@ export function WorkflowBuilder({ orgId, orgSlug }: WorkflowBuilderProps) {
   const [name, setName] = useState("");
   const [trigger, setTrigger] = useState("");
   const [targetUrl, setTargetUrl] = useState("");
+  const [connectorId, setConnectorId] = useState<string>("custom");
 
   const reset = () => {
     setStep(1);
     setName("");
     setTrigger("");
     setTargetUrl("");
+    setConnectorId("custom");
   };
 
   const handleSave = async () => {
-    if (!targetUrl) {
+    if (connectorId === "custom" && !targetUrl) {
       toast.error("Please enter a destination URL");
+      return;
+    }
+
+    if (connectorId !== "custom" && !connectorId) {
+      toast.error("Please select a connector");
       return;
     }
 
@@ -88,7 +116,8 @@ export function WorkflowBuilder({ orgId, orgSlug }: WorkflowBuilderProps) {
       const result = await createWorkflowAction({
         name: name || `Automation: ${trigger}`,
         trigger,
-        targetUrl,
+        targetUrl: connectorId === "custom" ? targetUrl : undefined,
+        connectorId: connectorId === "custom" ? undefined : connectorId,
         orgId,
         orgSlug,
       });
@@ -223,18 +252,57 @@ export function WorkflowBuilder({ orgId, orgSlug }: WorkflowBuilderProps) {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="targetUrl">Endpoint URL (POST)</Label>
-                  <Input
-                    id="targetUrl"
-                    placeholder="https://hooks.slack.com/services/..."
-                    value={targetUrl}
-                    onChange={(e) => setTargetUrl(e.target.value)}
-                    className="bg-secondary/30 border-primary/10"
-                  />
-                  <p className="text-[10px] text-muted-foreground">
-                    {"We'll"} send the event data as a JSON payload to this address.
-                  </p>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Destination</Label>
+                    <Select value={connectorId} onValueChange={(val) => val && setConnectorId(val)}>
+                      <SelectTrigger className="bg-secondary/30 border-primary/10">
+                        <SelectValue placeholder="Select destination type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="custom">
+                          <div className="flex items-center gap-2">
+                            <Link className="w-4 h-4" />
+                            <span>Custom Webhook (JSON)</span>
+                          </div>
+                        </SelectItem>
+                        {initialConnectors.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            <div className="flex items-center gap-2">
+                              {c.type === "slack" ? <SlackIcon className="w-4 h-4 text-emerald-500" /> : <DiscordIcon className="w-4 h-4 text-indigo-500" />}
+                              <span>{c.name} ({c.type})</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {connectorId === "custom" ? (
+                    <div className="space-y-2 animate-item">
+                      <Label htmlFor="targetUrl">Endpoint URL (POST)</Label>
+                      <Input
+                        id="targetUrl"
+                        placeholder="https://hooks.slack.com/services/..."
+                        value={targetUrl}
+                        onChange={(e) => setTargetUrl(e.target.value)}
+                        className="bg-secondary/30 border-primary/10"
+                      />
+                      <p className="text-[10px] text-muted-foreground">
+                        {"We'll"} send the event data as a JSON payload to this address.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-lg bg-primary/5 border border-primary/10 space-y-2 animate-item">
+                      <p className="text-xs font-medium flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-primary" />
+                        Managed Integration Active
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        This workflow will use the pre-configured connector. Payloads will be automatically formatted for the destination platform (Slack/Discord).
+                      </p>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}

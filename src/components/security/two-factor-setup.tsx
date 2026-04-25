@@ -39,9 +39,9 @@ export function TwoFactorSetup({ onEnabled }: { onEnabled: () => void }) {
         return;
       }
 
-      if (data) {
-        setQrCodeUri(data.totpURI);
-        setBackupCodes(data.backupCodes);
+      if (data && "totpURI" in data && "backupCodes" in data) {
+        setQrCodeUri(data.totpURI as string);
+        setBackupCodes(data.backupCodes as string[]);
         setStep("verify");
       }
     } catch {

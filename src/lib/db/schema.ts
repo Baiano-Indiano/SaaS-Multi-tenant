@@ -206,6 +206,15 @@ export const webhooks = pgTable("webhook", {
 	createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
 
+export const connectors = pgTable("connector", {
+	id: text("id").primaryKey(),
+	name: text("name").notNull(),
+	type: text("type").notNull(), // 'slack' | 'discord'
+	config: text("config").notNull(), // JSON string for webhook URL
+	isActive: boolean("isActive").notNull().default(true),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
 export const webhookDeliveries = pgTable("webhook_delivery", {
 	id: text("id").primaryKey(),
 	webhookId: text("webhookId").references(() => webhooks.id, { onDelete: 'cascade' }), // Optional if it's a workflow
@@ -224,6 +233,7 @@ export const workflows = pgTable("workflow", {
 	trigger: text("trigger").notNull(), // e.g., 'project.created'
 	actionType: text("actionType").notNull().default("webhook"),
 	actionConfig: text("actionConfig").notNull(), // JSON string for target URL, etc.
+	connectorId: text("connectorId"), // Logical reference to tenant.connector id
 	isActive: boolean("isActive").notNull().default(true),
 	createdAt: timestamp("createdAt").notNull().defaultNow(),
 });

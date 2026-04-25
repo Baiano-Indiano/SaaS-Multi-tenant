@@ -60,6 +60,7 @@ export async function emitEvent(orgId: string, event: string, payload: Record<st
           body: {
             orgId,
             workflowId: workflow.id,
+            connectorId: workflow.connectorId, // Added connectorId
             targetUrl: config.url,
             event,
             payload,
