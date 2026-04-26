@@ -196,7 +196,6 @@ export function AuthForm({ type }: AuthFormProps) {
 
     setLoading(true);
     try {
-      // @ts-expect-error - sso plugin export issue in better-auth
       await authClient.signIn.sso({
         email: ssoEmail,
         callbackURL: "/selecionar-org",

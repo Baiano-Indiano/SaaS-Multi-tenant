@@ -1,8 +1,8 @@
 import { betterAuth } from "better-auth";
 import { createAuthMiddleware } from "better-auth/api";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-// @ts-expect-error - sso plugin export issue in better-auth v1.6.5
-import { organization, twoFactor, multiSession, sso } from "better-auth/plugins";
+import { organization, twoFactor, multiSession } from "better-auth/plugins";
+import { sso } from "@better-auth/sso";
 import { db } from "../db";
 import * as schema from "../db/schema";
 import { and, eq } from "drizzle-orm";
@@ -20,50 +20,19 @@ export const auth = betterAuth({
       organization: schema.organizations,
       member: schema.members,
       invitation: schema.invitations,
+      ssoProvider: schema.ssoProviders,
     },
   }),
   emailAndPassword: {
     enabled: true
   },
   plugins: [
+    sso(),
     organization(),
     twoFactor({
       issuer: "Gravity SaaS",
     }),
     multiSession(),
-    sso({
-      getProvider: async (email: string) => {
-        const domain = email.split("@")[1]?.toLowerCase();
-        if (!domain) return null;
-
-        const domainRecord = await db.query.organizationDomains.findFirst({
-          where: and(
-            eq(schema.organizationDomains.domain, domain),
-            eq(schema.organizationDomains.isVerified, true)
-          ),
-        });
-
-        if (!domainRecord) return null;
-
-        const config = await db.query.ssoConfigs.findFirst({
-          where: and(
-            eq(schema.ssoConfigs.organizationId, domainRecord.organizationId),
-            eq(schema.ssoConfigs.isActive, true)
-          ),
-        });
-
-        if (!config) return null;
-
-        return {
-          id: config.providerId,
-          name: config.providerId === "google" ? "Google Workspace" : "Microsoft Entra ID",
-          clientId: config.clientId,
-          clientSecret: config.clientSecret || undefined,
-          issuer: config.issuer || undefined,
-          type: config.providerId === "google" ? "oidc" : "saml", // Adjust based on your IdP
-        };
-      },
-    })
   ],
   hooks: {
     after: createAuthMiddleware(async (context) => {

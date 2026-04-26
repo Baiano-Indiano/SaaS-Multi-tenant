@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
-import { organizationDomains, ssoConfigs } from "@/lib/db/schema";
+import { organizationDomains, ssoConfigs, organizations } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { verifyDomainTXT, normalizeDomain } from "@/lib/sso/dns";
@@ -29,7 +29,13 @@ export async function addDomainAction(orgId: string, domainRaw: string) {
     isVerified: false,
   });
 
-  revalidatePath(`/org/${session.organization?.slug}/settings/sso`);
+  const org = await db.query.organizations.findFirst({
+    where: eq(organizations.id, session.session.activeOrganizationId!),
+  });
+
+  if (org) {
+    revalidatePath(`/org/${org.slug}/settings/sso`);
+  }
   return { success: true, verificationToken };
 }
 
@@ -62,7 +68,13 @@ export async function verifyDomainAction(orgId: string, domainId: string) {
       .where(eq(organizationDomains.id, domainId));
   }
 
-  revalidatePath(`/org/${session.organization?.slug}/settings/sso`);
+  const org = await db.query.organizations.findFirst({
+    where: eq(organizations.id, session.session.activeOrganizationId!),
+  });
+
+  if (org) {
+    revalidatePath(`/org/${org.slug}/settings/sso`);
+  }
   return { success: isValid };
 }
 
@@ -84,7 +96,13 @@ export async function deleteDomainAction(orgId: string, domainId: string) {
       )
     );
 
-  revalidatePath(`/org/${session.organization?.slug}/settings/sso`);
+  const org = await db.query.organizations.findFirst({
+    where: eq(organizations.id, session.session.activeOrganizationId!),
+  });
+
+  if (org) {
+    revalidatePath(`/org/${org.slug}/settings/sso`);
+  }
   return { success: true };
 }
 
@@ -126,6 +144,12 @@ export async function updateSSOConfigAction(orgId: string, data: {
     });
   }
 
-  revalidatePath(`/org/${session.organization?.slug}/settings/sso`);
+  const org = await db.query.organizations.findFirst({
+    where: eq(organizations.id, session.session.activeOrganizationId!),
+  });
+
+  if (org) {
+    revalidatePath(`/org/${org.slug}/settings/sso`);
+  }
   return { success: true };
 }

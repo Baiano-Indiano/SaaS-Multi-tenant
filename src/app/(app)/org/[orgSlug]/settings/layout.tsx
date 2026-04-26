@@ -34,6 +34,10 @@ export default async function SettingsLayout({
       title: "SSO",
       href: `/org/${orgSlug}/settings/sso`,
     },
+    {
+      title: "Status Page",
+      href: `/org/${orgSlug}/settings/status`,
+    },
   ];
 
   return (

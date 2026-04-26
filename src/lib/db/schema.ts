@@ -91,6 +91,8 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
 	members: many(members),
 	ssoConfigs: many(ssoConfigs),
 	domains: many(organizationDomains),
+	statusComponents: many(statusComponents),
+	statusIncidents: many(statusIncidents),
 }));
 
 /**
@@ -207,6 +209,19 @@ export const organizationDomainsRelations = relations(organizationDomains, ({ on
 	}),
 }));
 
+export const ssoProviders = pgTable("sso_provider", {
+	id: text("id").primaryKey(),
+	issuer: text("issuer").notNull(),
+	oidcConfig: text("oidcConfig"), // JSON string
+	samlConfig: text("samlConfig"), // JSON string
+	userId: text("userId").notNull().references(() => users.id),
+	providerId: text("providerId").notNull(),
+	organizationId: text("organizationId").references(() => organizations.id),
+	domain: text("domain").notNull(),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+	updatedAt: timestamp("updatedAt").notNull().defaultNow()
+});
+
 export const auditLogs = pgTable("audit_log", {
 	id: text("id").primaryKey(),
 	userId: text("userId").notNull(), // Logical reference to public.user id
@@ -275,3 +290,40 @@ export const workflows = pgTable("workflow", {
 	isActive: boolean("isActive").notNull().default(true),
 	createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
+export const statusComponents = pgTable("status_component", {
+	id: text("id").primaryKey(),
+	organizationId: text("organizationId").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+	name: text("name").notNull(),
+	description: text("description"),
+	status: text("status").notNull().default("operational"), // operational, degraded, partial_outage, major_outage
+	order: text("order").notNull().default("0"),
+	isActive: boolean("isActive").notNull().default(true),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+	updatedAt: timestamp("updatedAt").notNull().defaultNow()
+});
+
+export const statusIncidents = pgTable("status_incident", {
+	id: text("id").primaryKey(),
+	organizationId: text("organizationId").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+	title: text("title").notNull(),
+	description: text("description").notNull(),
+	status: text("status").notNull().default("investigating"), // investigating, identified, monitoring, resolved
+	severity: text("severity").notNull().default("minor"), // minor, major, critical
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+	updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+	resolvedAt: timestamp("resolvedAt"),
+});
+
+export const statusComponentsRelations = relations(statusComponents, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [statusComponents.organizationId],
+		references: [organizations.id],
+	}),
+}));
+
+export const statusIncidentsRelations = relations(statusIncidents, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [statusIncidents.organizationId],
+		references: [organizations.id],
+	}),
+}));

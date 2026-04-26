@@ -1,5 +1,6 @@
 import { createAuthClient } from "better-auth/react"
 import { organizationClient, twoFactorClient, multiSessionClient } from "better-auth/client/plugins"
+import { ssoClient } from "@better-auth/sso/client"
 import { PermissionKey } from "./permissions"
 import { PERMISSIONS_METADATA_KEY } from "./rbac-constants"
 
@@ -32,6 +33,7 @@ export const authClient = createAuthClient({
       },
     }),
     multiSessionClient(),
+    ssoClient(),
   ]
 });
 
@@ -45,6 +47,7 @@ export const {
   useActiveOrganization,
   twoFactor,
   multiSession,
+  sso,
 } = authClient;
 
 /**

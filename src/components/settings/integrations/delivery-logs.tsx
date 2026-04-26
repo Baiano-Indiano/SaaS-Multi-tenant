@@ -34,7 +34,6 @@ export function DeliveryLogs({ orgId }: { orgId: string }) {
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     const data = await getDeliveryLogsAction(orgId);
-    // Convert string dates back to Date objects if needed (though usually handled by server action response)
     setLogs(data as Log[]);
     setLoading(false);
   }, [orgId]);
@@ -42,7 +41,7 @@ export function DeliveryLogs({ orgId }: { orgId: string }) {
   useEffect(() => {
     let isMounted = true;
 
-    const loadData = async () => {
+    const load = async () => {
       const data = await getDeliveryLogsAction(orgId);
       if (isMounted) {
         setLogs(data as Log[]);
@@ -50,9 +49,8 @@ export function DeliveryLogs({ orgId }: { orgId: string }) {
       }
     };
 
-    loadData();
-    
-    const interval = setInterval(loadData, 30000);
+    load();
+    const interval = setInterval(load, 30000);
 
     return () => {
       isMounted = false;

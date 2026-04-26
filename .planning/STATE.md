@@ -6,10 +6,10 @@ status: planning
 last_updated: "2026-04-25T14:00:00.000Z"
 progress:
   total_phases: 3
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
+  percent: 33
 ---
 
 # Project State
@@ -56,13 +56,13 @@ See: `.planning/PROJECT.md` (updated 2026-04-16)
 | 18 | Two-Factor Authentication (2FA) | ✅ Complete |
 | 19 | Session Management | ✅ Complete |
 | 20 | External Connectors (Slack & Discord) | ✅ Complete |
-| 21 | Enterprise SSO and JIT Provisioning | ✅ Complete |
+| 21 | Enterprise SSO (SAML/OIDC) | ✅ Complete |
 
 ## Active Work
 
 **Milestone v5.0 (Enterprise Edge & DX)**
-- Finalizing Enterprise SSO & JIT Provisioning.
-- Architecting Public Status Pages for multi-tenant isolation.
-- Evaluating Scalar vs custom UI for API Playground.
+- [Phase 22] Implementing Public Status Pages with incident history.
+- Architecting public route `/status/[orgSlug]` with strict data isolation.
+- Next: Native API Playground (Phase 23).
 
 **Next Immediate Action:** Executor starts Phase 22.

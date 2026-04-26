@@ -16,7 +16,7 @@ export default async function SSOSettingsPage({
     headers: await headers(),
   });
 
-  if (!session || !session.organization || session.organization.slug !== orgSlug) {
+  if (!session?.organization || session.organization.slug !== orgSlug) {
     redirect("/login");
   }
 
@@ -28,7 +28,7 @@ export default async function SSOSettingsPage({
 
   const configs = await db.query.ssoConfigs.findMany({
     where: eq(ssoConfigs.organizationId, orgId),
-  }) as { providerId: string; clientId: string; isActive: boolean; clientSecret?: string | null; issuer?: string | null }[];
+  });
 
   return (
     <SSOSettings 
