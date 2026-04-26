@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v5.0
-milestone_name: Enterprise Edge & DX
-status: planning
-last_updated: "2026-04-26T21:03:00.000Z"
+milestone: v6.0
+milestone_name: Kinetic Brand & UX Refinement
+status: complete
+last_updated: "2026-04-26T23:55:00.000Z"
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
+  total_phases: 2
+  completed_phases: 2
+  total_plans: 2
+  completed_plans: 2
   percent: 100
 ---
 
@@ -59,10 +59,10 @@ See: `.planning/PROJECT.md` (updated 2026-04-16)
 | 21 | Enterprise SSO (SAML/OIDC) | ✅ Complete |
 | 22 | Public Status Pages | ✅ Complete |
 | 23 | Native API Playground | ✅ Complete |
+| 24 | Apple-Style Landing Page Overhaul | ✅ Complete |
+| 25 | Dashboard Kinetic UX | ✅ Complete |
 
-## Active Work
+**Milestone v6.0 (Kinetic Brand & UX Refinement)**
+- Status: 100% Complete.
 
-**Milestone v5.0 (Enterprise Edge & DX)**
-- Next: Custom Branding (Phase 24).
-
-**Next Immediate Action:** Planner to design Phase 24.
+**Next Immediate Action:** Audit all features and prepare for v1.0 Production Launch.
