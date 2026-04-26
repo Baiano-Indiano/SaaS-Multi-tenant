@@ -16,7 +16,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, Users, Settings, FolderKanban, UserCog } from "lucide-react";
+import { LayoutDashboard, Users, Settings, FolderKanban, UserCog, Terminal } from "lucide-react";
 import { OrgSwitcher } from "@/components/org-switcher";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +59,11 @@ export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarP
       title: "Settings",
       url: `/org/${activeSlug}/settings`,
       icon: Settings,
+    },
+    {
+      title: "Playground",
+      url: `/org/${activeSlug}/developers/playground`,
+      icon: Terminal,
     },
   ];
 

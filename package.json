@@ -22,6 +22,7 @@
     "@radix-ui/react-progress": "^1.1.8",
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-toast": "^1.2.15",
+    "@scalar/api-reference-react": "^0.9.27",
     "@upstash/qstash": "^2.10.1",
     "@upstash/redis": "^1.37.0",
     "better-auth": "^1.6.5",
