@@ -2,6 +2,46 @@ import { Client } from "@upstash/qstash";
 import { withAdminTenantDb } from "./db/tenant-db";
 import { workflows } from "./db/schema";
 import { eq, and } from "drizzle-orm";
+// Unused icons removed
+
+export const SUPPORTED_EVENTS = [
+  { 
+    id: "project.created", 
+    label: "Project Created", 
+    description: "Notify when a new project is added",
+    iconName: "rocket"
+  },
+  { 
+    id: "project.deleted", 
+    label: "Project Deleted", 
+    description: "Notify when a project is removed",
+    iconName: "trash"
+  },
+  { 
+    id: "member.invited", 
+    label: "Team Member Invited", 
+    description: "Notify when an invitation is sent",
+    iconName: "user-plus"
+  },
+  { 
+    id: "organization.invitation_accepted", 
+    label: "Member Joined", 
+    description: "Notify when a new member joins",
+    iconName: "shield-check"
+  },
+  { 
+    id: "member.removed", 
+    label: "Member Removed", 
+    description: "Notify when a member is removed",
+    iconName: "user-minus"
+  },
+  { 
+    id: "role.updated", 
+    label: "Permissions Changed", 
+    description: "Notify when a member role is updated",
+    iconName: "settings"
+  },
+] as const;
 
 let qstashClient: Client | null = null;
 

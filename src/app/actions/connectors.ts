@@ -4,9 +4,11 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { getTenantDb } from "@/lib/db/tenant-db";
 import { connectors } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { recordAuditLog } from "@/lib/audit";
+import { workflows } from "@/lib/db/schema";
+import { SUPPORTED_EVENTS } from "@/lib/events";
 
 /**
  * createConnectorAction
@@ -40,6 +42,24 @@ export async function createConnectorAction(data: {
       }).returning();
 
       return newConnector[0];
+    });
+
+    // Auto-subscribe to default events for the "2-click" experience
+    const defaultEvents = ["project.created", "member.invited", "organization.invitation_accepted"];
+    const connectorConfig = JSON.parse(result.config);
+
+    await getTenantDb(session.user.id, data.orgId, async (tx) => {
+      for (const eventId of defaultEvents) {
+        await tx.insert(workflows).values({
+          id: crypto.randomUUID(),
+          name: `Notify ${result.type} for ${eventId}`,
+          trigger: eventId,
+          actionType: "webhook",
+          actionConfig: JSON.stringify({ url: connectorConfig.url }),
+          connectorId: result.id,
+          isActive: true
+        });
+      }
     });
 
     // Record Audit Log
@@ -162,5 +182,114 @@ export async function testConnectorAction(data: {
     console.error("Test connector failed:", error);
     const message = error instanceof Error ? error.message : "Test failed";
     return { error: message };
+  }
+}
+
+/**
+ * getConnectorEventsAction
+ */
+export async function getConnectorEventsAction(data: {
+  connectorId: string;
+  orgId: string;
+}) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) throw new Error("Unauthorized");
+
+  try {
+    const activeWorkflows = await getTenantDb(session.user.id, data.orgId, async (tx) => {
+      return await tx.select()
+        .from(workflows)
+        .where(
+          and(
+            eq(workflows.connectorId, data.connectorId),
+            eq(workflows.isActive, true)
+          )
+        );
+    });
+
+    const activeTriggers = new Set(activeWorkflows.map(w => w.trigger));
+
+    return {
+      success: true,
+      events: SUPPORTED_EVENTS.map(event => ({
+        ...event,
+        isActive: activeTriggers.has(event.id)
+      }))
+    };
+  } catch (error: unknown) {
+    console.error("Failed to fetch connector events:", error);
+    return { error: "Failed to fetch events" };
+  }
+}
+
+/**
+ * toggleConnectorEventAction
+ */
+export async function toggleConnectorEventAction(data: {
+  connectorId: string;
+  orgId: string;
+  orgSlug: string;
+  event: string;
+  isActive: boolean;
+}) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) throw new Error("Unauthorized");
+
+  try {
+    await getTenantDb(session.user.id, data.orgId, async (tx) => {
+      if (data.isActive) {
+        // Fetch connector details for the webhook URL
+        const connector = await tx.select()
+          .from(connectors)
+          .where(eq(connectors.id, data.connectorId))
+          .then(res => res[0]);
+
+        if (!connector) throw new Error("Connector not found");
+
+        const config = JSON.parse(connector.config);
+
+        // Manual check for existing workflow to avoid duplicate triggers for same connector
+        const existing = await tx.select()
+          .from(workflows)
+          .where(
+            and(
+              eq(workflows.connectorId, data.connectorId),
+              eq(workflows.trigger, data.event)
+            )
+          ).then(res => res[0]);
+
+        if (existing) {
+          await tx.update(workflows)
+            .set({ isActive: true })
+            .where(eq(workflows.id, existing.id));
+        } else {
+          await tx.insert(workflows).values({
+            id: crypto.randomUUID(),
+            name: `Notify ${connector.type} for ${data.event}`,
+            trigger: data.event,
+            actionType: "webhook",
+            actionConfig: JSON.stringify({ url: config.url }),
+            connectorId: data.connectorId,
+            isActive: true
+          });
+        }
+      } else {
+        // Disable workflow
+        await tx.update(workflows)
+          .set({ isActive: false })
+          .where(
+            and(
+              eq(workflows.connectorId, data.connectorId),
+              eq(workflows.trigger, data.event)
+            )
+          );
+      }
+    });
+
+    revalidatePath(`/org/${data.orgSlug}/settings/integrations`);
+    return { success: true };
+  } catch (error: unknown) {
+    console.error("Failed to toggle event:", error);
+    return { error: "Failed to update notification setting" };
   }
 }

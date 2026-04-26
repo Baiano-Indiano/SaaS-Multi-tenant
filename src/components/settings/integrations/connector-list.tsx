@@ -5,9 +5,11 @@ import {
   Trash2, 
   Play, 
   AlertCircle,
-  Loader2
+  Loader2,
+  Settings2
 } from "lucide-react";
 import { SlackIcon, DiscordIcon } from "@/components/icons";
+import { EventMappingDialog } from "./event-mapping-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +38,7 @@ interface ConnectorListProps {
 export function ConnectorList({ connectors, orgId, orgSlug }: ConnectorListProps) {
   const [testingId, setTestingId] = React.useState<string | null>(null);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
+  const [mappingConnector, setMappingConnector] = React.useState<{ id: string, name: string } | null>(null);
 
   const handleDelete = async (connectorId: string) => {
     if (!confirm("Are you sure you want to delete this integration?")) return;
@@ -126,6 +129,15 @@ export function ConnectorList({ connectors, orgId, orgSlug }: ConnectorListProps
                 )}
                 Test
               </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMappingConnector({ id: connector.id, name: connector.name })}
+                className="h-8 text-xs text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
+              >
+                <Settings2 className="h-3 w-3 mr-2" />
+                Events
+              </Button>
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -151,6 +163,17 @@ export function ConnectorList({ connectors, orgId, orgSlug }: ConnectorListProps
           )} />
         </Card>
       ))}
+
+      {mappingConnector && (
+        <EventMappingDialog
+          connectorId={mappingConnector.id}
+          connectorName={mappingConnector.name}
+          orgId={orgId}
+          orgSlug={orgSlug}
+          open={!!mappingConnector}
+          onOpenChange={(open) => !open && setMappingConnector(null)}
+        />
+      )}
     </div>
   );
 }

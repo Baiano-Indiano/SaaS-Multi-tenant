@@ -61,8 +61,8 @@ export function WorkflowLogsModal({
     try {
       const data = await getWorkflowLogsAction(orgId, workflowId);
       setLogs(data as Log[]);
-    } catch (error) {
-      console.error("Error loading logs:", error);
+    } catch (err) {
+      console.error("Error loading logs:", err);
     } finally {
       setIsLoading(false);
     }
@@ -88,7 +88,7 @@ export function WorkflowLogsModal({
       } else {
         toast.success("Retry request sent to QStash");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to re-trigger delivery");
     } finally {
       setRetryingId(null);

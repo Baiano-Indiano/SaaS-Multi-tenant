@@ -72,4 +72,15 @@ Uses **Discord Embeds**.
 Environment variables required:
 - `QSTASH_TOKEN`: API key for publishing.
 - `QSTASH_CURRENT_SIGNING_KEY` / `QSTASH_NEXT_SIGNING_KEY`: For signature verification.
-- `NEXT_PUBLIC_APP_URL`: Base URL for the callback handler.
+- NEXT_PUBLIC_APP_URL`: Base URL for the callback handler.
+
+## 🎨 User Interface Components
+
+### 1. `ConnectorList`
+A dashboard card-view for all active integrations. Supports testing, event configuration, and deletion.
+
+### 2. `EventMappingDialog`
+A specialized modal that allows users to toggle specific system events for each connector. This enables granular control (e.g., only Slack for security events, Discord for project events).
+
+### 3. `DeliveryLogs`
+A real-time history of the last 50 deliveries, showing status codes, duration, and formatted response data. Essential for debugging failed integrations.

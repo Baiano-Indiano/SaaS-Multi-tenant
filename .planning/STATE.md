@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v4.0
-milestone_name: Security & Integrations
-status: complete
-last_updated: "2026-04-25T11:00:00.000Z"
+milestone: v5.0
+milestone_name: Enterprise Edge & DX
+status: planning
+last_updated: "2026-04-25T14:00:00.000Z"
 progress:
   total_phases: 3
-  completed_phases: 3
-  total_plans: 1
-  completed_plans: 1
-  percent: 100
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -59,7 +59,9 @@ See: `.planning/PROJECT.md` (updated 2026-04-16)
 
 ## Active Work
 
-**Milestone v4.0 Finalized**
-- Security hardening (2FA, Sessions) implemented and tested.
-- Connectivity ecosystem (Connectors, Workflows, QStash) fully operational.
-- Technical documentation updated.
+**Milestone v5.0 Planning (Enterprise Edge & DX)**
+- Designing SSO (SAML/OIDC) integration strategy with Better-Auth.
+- Architecting Public Status Pages for multi-tenant isolation.
+- Evaluating Scalar vs custom UI for API Playground.
+
+**Next Immediate Action:** Finalize `PLAN.md` for Phase 21.
