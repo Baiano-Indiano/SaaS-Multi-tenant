@@ -45,7 +45,7 @@ export function ScrollReveal({
       duration,
       delay,
       stagger,
-      ease: "power3.out",
+      ease: "expo.out",
       scrollTrigger: {
         trigger: containerRef.current,
         start: "top 85%",

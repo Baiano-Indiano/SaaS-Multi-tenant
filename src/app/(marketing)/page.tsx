@@ -1,4 +1,4 @@
-import { HeroGraphic } from "@/components/marketing/hero-graphic";
+import { HeroAssembly } from "@/components/marketing/HeroAssembly";
 import { Button } from "@/components/ui/button";
 import { BenefitsSection } from "@/components/marketing/BenefitsSection";
 import { PricingSection } from "@/components/marketing/PricingSection";
@@ -9,7 +9,7 @@ export default function LandingPage() {
   return (
     <div className="flex flex-col items-center">
       {/* Hero Section */}
-      <section className="w-full max-w-6xl mx-auto px-6 py-24 md:py-32 flex flex-col items-center text-center">
+      <section className="w-full max-w-6xl mx-auto px-6 pt-24 pb-12 md:pt-32 md:pb-16 flex flex-col items-center text-center">
         <ScrollReveal>
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6">
             The B2B SaaS Foundation <br className="hidden md:block" />
@@ -24,7 +24,7 @@ export default function LandingPage() {
         </ScrollReveal>
 
         <ScrollReveal delay={0.2}>
-          <div className="flex flex-col sm:flex-row items-center gap-4 mb-16 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
             <Button size="lg" className="w-full sm:w-auto text-base" render={<a href="/register" />} nativeButton={false}>
               Get Started
             </Button>
@@ -33,14 +33,12 @@ export default function LandingPage() {
             </Button>
           </div>
         </ScrollReveal>
-        
-        {/* GSAP Hero Graphic */}
-        <ScrollReveal delay={0.3} direction="up" distance={50}>
-          <div className="w-full h-auto max-w-4xl mx-auto rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 shadow-2xl relative overflow-hidden">
-            <HeroGraphic />
-          </div>
-        </ScrollReveal>
       </section>
+
+      {/* Product Reveal Assembly */}
+      <div className="w-full">
+        <HeroAssembly />
+      </div>
 
       {/* Social Proof Section */}
       <section className="w-full border-y border-zinc-800 bg-zinc-900/20 py-12">
