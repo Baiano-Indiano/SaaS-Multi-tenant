@@ -89,6 +89,8 @@ export const membersRelations = relations(members, ({ one }) => ({
 
 export const organizationsRelations = relations(organizations, ({ many }) => ({
 	members: many(members),
+	ssoConfigs: many(ssoConfigs),
+	domains: many(organizationDomains),
 }));
 
 /**
@@ -165,6 +167,42 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
 	}),
 	organization: one(organizations, {
 		fields: [notifications.organizationId],
+		references: [organizations.id],
+	}),
+}));
+
+export const ssoConfigs = pgTable("sso_config", {
+	id: text("id").primaryKey(),
+	organizationId: text("organizationId").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+	providerId: text("providerId").notNull(), // e.g., 'google', 'microsoft-entra-id'
+	clientId: text("clientId").notNull(),
+	clientSecret: text("clientSecret"),
+	issuer: text("issuer"),
+	isActive: boolean("isActive").notNull().default(true),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+	updatedAt: timestamp("updatedAt").notNull().defaultNow()
+});
+
+export const ssoConfigsRelations = relations(ssoConfigs, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [ssoConfigs.organizationId],
+		references: [organizations.id],
+	}),
+}));
+
+export const organizationDomains = pgTable("organization_domain", {
+	id: text("id").primaryKey(),
+	organizationId: text("organizationId").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+	domain: text("domain").notNull().unique(),
+	isVerified: boolean("isVerified").notNull().default(false),
+	verificationToken: text("verificationToken").notNull(),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+	updatedAt: timestamp("updatedAt").notNull().defaultNow()
+});
+
+export const organizationDomainsRelations = relations(organizationDomains, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [organizationDomains.organizationId],
 		references: [organizations.id],
 	}),
 }));

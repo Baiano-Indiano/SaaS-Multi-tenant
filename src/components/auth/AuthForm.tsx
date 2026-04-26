@@ -20,6 +20,7 @@ import { authClient } from "@/lib/auth/client";
 import { toast } from "sonner";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+import { Shield } from "lucide-react";
 
 const authSchema = z.object({
   email: z.string().email("E-mail inválido"),
@@ -39,6 +40,8 @@ export function AuthForm({ type }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
+  const [showSSO, setShowSSO] = useState(false);
+  const [ssoEmail, setSsoEmail] = useState("");
   const progressRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -50,7 +53,7 @@ export function AuthForm({ type }: AuthFormProps) {
       transition: {
         delay: 0.2 + i * 0.08,
         duration: 0.6,
-        ease: [0.215, 0.61, 0.355, 1] as const, // power3.out equivalent
+        ease: "easeOut",
       },
     }),
   };
@@ -187,6 +190,25 @@ export function AuthForm({ type }: AuthFormProps) {
     }
   };
 
+  const onSSOSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ssoEmail) return;
+
+    setLoading(true);
+    try {
+      // @ts-expect-error - sso plugin export issue in better-auth
+      await authClient.signIn.sso({
+        email: ssoEmail,
+        callbackURL: "/selecionar-org",
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erro desconhecido";
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div
       ref={containerRef}
@@ -194,12 +216,12 @@ export function AuthForm({ type }: AuthFormProps) {
     >
       <Card className="w-full border-zinc-800 bg-zinc-950/50 backdrop-blur-sm shadow-2xl relative overflow-hidden group">
         {/* GSAP Progress Bar */}
-        <div 
+        <div
           ref={progressRef}
           className="absolute top-0 left-0 h-[2px] bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)] z-50 w-0"
         />
         <div className="absolute inset-0 bg-gradient-to-br from-zinc-500/5 to-transparent pointer-events-none" />
-        
+
         <CardHeader className="space-y-1 relative">
           <AnimatePresence mode="wait">
             <motion.div
@@ -220,115 +242,196 @@ export function AuthForm({ type }: AuthFormProps) {
             </motion.div>
           </AnimatePresence>
         </CardHeader>
+        <AnimatePresence mode="wait">
+          {!showSSO ? (
+            <motion.div
+              key="standard-form"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <form onSubmit={handleSubmit(onSubmit)}>
+                <CardContent className="space-y-4 relative">
+                  <AnimatePresence mode="popLayout">
+                    {type === "register" && (
+                      <motion.div
+                        key="name-field"
+                        custom={0}
+                        variants={fieldVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="hidden"
+                        className="space-y-2 overflow-hidden"
+                      >
+                        <Label htmlFor="name" className="text-zinc-300">
+                          Nome
+                        </Label>
+                        <Input
+                          id="name"
+                          placeholder="Seu nome"
+                          className="bg-zinc-900 border-zinc-800 text-white focus-visible:ring-zinc-700 h-10 transition-all focus:bg-zinc-900/80"
+                          {...register("name")}
+                        />
+                        {errors.name && (
+                          <p className="text-xs text-red-500">{errors.name.message}</p>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <CardContent className="space-y-4 relative">
-            <AnimatePresence mode="popLayout">
-              {type === "register" && (
-                <motion.div
-                  key="name-field"
-                  custom={0}
-                  variants={fieldVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="hidden"
-                  className="space-y-2 overflow-hidden"
-                >
-                  <Label htmlFor="name" className="text-zinc-300">
-                    Nome
-                  </Label>
-                  <Input
-                    id="name"
-                    placeholder="Seu nome"
-                    className="bg-zinc-900 border-zinc-800 text-white focus-visible:ring-zinc-700 h-10 transition-all focus:bg-zinc-900/80"
-                    {...register("name")}
-                  />
-                  {errors.name && (
-                    <p className="text-xs text-red-500">{errors.name.message}</p>
+                  <motion.div
+                    custom={type === "register" ? 1 : 0}
+                    variants={fieldVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="space-y-2"
+                  >
+                    <Label htmlFor="email" className="text-zinc-300">
+                      E-mail
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="exemplo@email.com"
+                      className="bg-zinc-900 border-zinc-800 text-white focus-visible:ring-zinc-700 h-10 transition-all focus:bg-zinc-900/80"
+                      {...register("email")}
+                    />
+                    {errors.email && (
+                      <p className="text-xs text-red-500">{errors.email.message}</p>
+                    )}
+                  </motion.div>
+
+                  <motion.div
+                    custom={type === "register" ? 2 : 1}
+                    variants={fieldVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="space-y-2"
+                  >
+                    <Label htmlFor="password" className="text-zinc-300">
+                      Senha
+                    </Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      className="bg-zinc-900 border-zinc-800 text-white focus-visible:ring-zinc-700 h-10 transition-all focus:bg-zinc-900/80"
+                      {...register("password")}
+                    />
+                    {errors.password && (
+                      <p className="text-xs text-red-500">{errors.password.message}</p>
+                    )}
+                  </motion.div>
+                </CardContent>
+                <CardFooter className="flex flex-col space-y-4 relative">
+                  <Button
+                    type="submit"
+                    className="w-full bg-white text-black hover:bg-zinc-200 h-11 transition-all active:scale-[0.98]"
+                    isLoading={loading}
+                  >
+                    {type === "login" ? "Entrar" : "Cadastrar"}
+                  </Button>
+
+                  {type === "login" && (
+                    <div className="w-full space-y-4">
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t border-zinc-800" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-zinc-950 px-2 text-zinc-500">Ou use</span>
+                        </div>
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full border-zinc-800 bg-transparent text-zinc-300 hover:bg-zinc-900 hover:text-white h-11"
+                        onClick={() => setShowSSO(true)}
+                      >
+                        <Shield className="mr-2 h-4 w-4" />
+                        Enterprise SSO
+                      </Button>
+                    </div>
                   )}
-                </motion.div>
-              )}
-            </AnimatePresence>
 
-            <motion.div 
-              custom={type === "register" ? 1 : 0}
-              variants={fieldVariants}
-              initial="hidden"
-              animate="visible"
-              className="space-y-2"
-            >
-              <Label htmlFor="email" className="text-zinc-300">
-                E-mail
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="exemplo@email.com"
-                className="bg-zinc-900 border-zinc-800 text-white focus-visible:ring-zinc-700 h-10 transition-all focus:bg-zinc-900/80"
-                {...register("email")}
-              />
-              {errors.email && (
-                <p className="text-xs text-red-500">{errors.email.message}</p>
-              )}
+                  <div className="text-center text-sm text-zinc-500 italic">
+                    {type === "login" ? (
+                      <>
+                        Não tem uma conta?{" "}
+                        <button
+                          type="button"
+                          onClick={() => router.push("/register")}
+                          className="text-zinc-300 hover:text-white hover:underline font-medium transition-colors"
+                        >
+                          Registre-se
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        Já tem uma conta?{" "}
+                        <button
+                          type="button"
+                          onClick={() => router.push("/login")}
+                          className="text-zinc-300 hover:text-white hover:underline font-medium transition-colors"
+                        >
+                          Faça login
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </CardFooter>
+              </form>
             </motion.div>
+          ) : (
+            <motion.div
+              key="sso-form"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <form onSubmit={onSSOSubmit}>
+                <CardContent className="space-y-4 relative">
+                  <div className="space-y-2">
+                    <Label htmlFor="sso-email" className="text-zinc-300">
+                      E-mail Corporativo
+                    </Label>
+                    <Input
+                      id="sso-email"
+                      type="email"
+                      placeholder="nome@empresa.com"
+                      className="bg-zinc-900 border-zinc-800 text-white focus-visible:ring-zinc-700 h-11 transition-all focus:bg-zinc-900/80"
+                      value={ssoEmail}
+                      onChange={(e) => setSsoEmail(e.target.value)}
+                      required
+                    />
+                    <p className="text-xs text-zinc-500">
+                      Nós redirecionaremos você para o provedor de identidade da sua empresa.
+                    </p>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex flex-col space-y-4 relative">
+                  <Button
+                    type="submit"
+                    className="w-full bg-white text-black hover:bg-zinc-200 h-11 transition-all active:scale-[0.98]"
+                    isLoading={loading}
+                  >
+                    Continuar com SSO
+                  </Button>
 
-            <motion.div 
-              custom={type === "register" ? 2 : 1}
-              variants={fieldVariants}
-              initial="hidden"
-              animate="visible"
-              className="space-y-2"
-            >
-              <Label htmlFor="password" className="text-zinc-300">
-                Senha
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                className="bg-zinc-900 border-zinc-800 text-white focus-visible:ring-zinc-700 h-10 transition-all focus:bg-zinc-900/80"
-                {...register("password")}
-              />
-              {errors.password && (
-                <p className="text-xs text-red-500">{errors.password.message}</p>
-              )}
-            </motion.div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4 relative">
-            <Button
-              type="submit"
-              className="w-full bg-white text-black hover:bg-zinc-200 h-11 transition-all active:scale-[0.98]"
-              isLoading={loading}
-            >
-              {type === "login" ? "Entrar" : "Cadastrar"}
-            </Button>
-            
-            <div className="text-center text-sm text-zinc-500 italic">
-              {type === "login" ? (
-                <>
-                  Não tem uma conta?{" "}
                   <button
                     type="button"
-                    onClick={() => router.push("/register")}
-                    className="text-zinc-300 hover:text-white hover:underline font-medium transition-colors"
+                    onClick={() => setShowSSO(false)}
+                    className="text-sm text-zinc-500 hover:text-white transition-colors"
                   >
-                    Registre-se
+                    Voltar para login padrão
                   </button>
-                </>
-              ) : (
-                <>
-                  Já tem uma conta?{" "}
-                  <button
-                    type="button"
-                    onClick={() => router.push("/login")}
-                    className="text-zinc-300 hover:text-white hover:underline font-medium transition-colors"
-                  >
-                    Faça login
-                  </button>
-                </>
-              )}
-            </div>
-          </CardFooter>
-        </form>
+                </CardFooter>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </Card>
     </div>
   );

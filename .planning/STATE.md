@@ -56,12 +56,13 @@ See: `.planning/PROJECT.md` (updated 2026-04-16)
 | 18 | Two-Factor Authentication (2FA) | ✅ Complete |
 | 19 | Session Management | ✅ Complete |
 | 20 | External Connectors (Slack & Discord) | ✅ Complete |
+| 21 | Enterprise SSO and JIT Provisioning | ✅ Complete |
 
 ## Active Work
 
-**Milestone v5.0 Planning (Enterprise Edge & DX)**
-- Designing SSO (SAML/OIDC) integration strategy with Better-Auth.
+**Milestone v5.0 (Enterprise Edge & DX)**
+- Finalizing Enterprise SSO & JIT Provisioning.
 - Architecting Public Status Pages for multi-tenant isolation.
 - Evaluating Scalar vs custom UI for API Playground.
 
-**Next Immediate Action:** Finalize `PLAN.md` for Phase 21.
+**Next Immediate Action:** Executor starts Phase 22.

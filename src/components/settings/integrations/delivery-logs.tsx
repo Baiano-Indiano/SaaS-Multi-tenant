@@ -42,10 +42,11 @@ export function DeliveryLogs({ orgId }: { orgId: string }) {
   useEffect(() => {
     let isMounted = true;
 
-    // We use a small delay or Promise.resolve to avoid synchronous setState warning
     const loadData = async () => {
+      const data = await getDeliveryLogsAction(orgId);
       if (isMounted) {
-        await fetchLogs();
+        setLogs(data as Log[]);
+        setLoading(false);
       }
     };
 
@@ -57,7 +58,7 @@ export function DeliveryLogs({ orgId }: { orgId: string }) {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [fetchLogs]);
+  }, [orgId]);
 
   if (loading && logs.length === 0) {
     return (

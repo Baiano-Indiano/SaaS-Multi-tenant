@@ -30,6 +30,10 @@ export default async function SettingsLayout({
       title: "Integrations",
       href: `/org/${orgSlug}/settings/integrations`,
     },
+    {
+      title: "SSO",
+      href: `/org/${orgSlug}/settings/sso`,
+    },
   ];
 
   return (
