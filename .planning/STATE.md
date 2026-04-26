@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Enterprise Edge & DX
 status: planning
-last_updated: "2026-04-25T14:00:00.000Z"
+last_updated: "2026-04-26T21:03:00.000Z"
 progress:
   total_phases: 3
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
-  percent: 33
+  completed_phases: 2
+  total_plans: 2
+  completed_plans: 2
+  percent: 66
 ---
 
 # Project State
@@ -57,12 +57,12 @@ See: `.planning/PROJECT.md` (updated 2026-04-16)
 | 19 | Session Management | ✅ Complete |
 | 20 | External Connectors (Slack & Discord) | ✅ Complete |
 | 21 | Enterprise SSO (SAML/OIDC) | ✅ Complete |
+| 22 | Public Status Pages | ✅ Complete |
 
 ## Active Work
 
 **Milestone v5.0 (Enterprise Edge & DX)**
-- [Phase 22] Implementing Public Status Pages with incident history.
-- Architecting public route `/status/[orgSlug]` with strict data isolation.
-- Next: Native API Playground (Phase 23).
+- [Phase 23] Native API Playground.
+- Next: Custom Branding (Phase 24).
 
-**Next Immediate Action:** Executor starts Phase 22.
+**Next Immediate Action:** Planner to design Phase 23.

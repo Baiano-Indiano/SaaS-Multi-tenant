@@ -34,7 +34,9 @@ import { toast } from "sonner";
 import { 
   upsertStatusComponentAction, 
   deleteStatusComponentAction, 
-  createStatusIncidentAction 
+  createStatusIncidentAction,
+  updateStatusIncidentAction,
+  deleteStatusIncidentAction
 } from "@/app/actions/status";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -72,6 +74,8 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
 
   // Form states
   const [editingComponent, setEditingComponent] = useState<Partial<Component> | null>(null);
+  const [editingIncident, setEditingIncident] = useState<Partial<Incident> | null>(null);
+
   const [newIncident, setNewIncident] = useState<{
     title: string;
     description: string;
@@ -122,19 +126,44 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
     }
   };
 
-  const onCreateIncident = async (e: React.FormEvent) => {
+  const onSaveIncident = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await createStatusIncidentAction({
-        organizationId,
-        ...newIncident,
-      });
-      toast.success("Incidente registrado");
+      if (editingIncident?.id) {
+        await updateStatusIncidentAction({
+          organizationId,
+          id: editingIncident.id,
+          status: editingIncident.status || "investigating",
+          description: editingIncident.description || undefined,
+        });
+        toast.success("Incidente atualizado");
+      } else {
+        await createStatusIncidentAction({
+          organizationId,
+          ...newIncident,
+        });
+        toast.success("Incidente registrado");
+      }
       setIsIncidentDialogOpen(false);
+      setEditingIncident(null);
       setNewIncident({ title: "", description: "", status: "investigating", severity: "minor" });
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Erro ao criar");
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onDeleteIncident = async (id: string) => {
+    if (!confirm("Tem certeza que deseja remover este registro de incidente?")) return;
+
+    setLoading(true);
+    try {
+      await deleteStatusIncidentAction({ organizationId, id });
+      toast.success("Incidente removido");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro ao remover");
     } finally {
       setLoading(false);
     }
@@ -240,7 +269,7 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
                     </Select>
                   </div>
                   <DialogFooter>
-                    <Button type="submit" className="bg-white text-black hover:bg-zinc-200 w-full" isLoading={loading}>
+                    <Button type="submit" className="bg-white text-black hover:bg-zinc-200 w-full" disabled={loading}>
                       Salvar Componente
                     </Button>
                   </DialogFooter>
@@ -303,61 +332,82 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
             <h4 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Incidentes Atuais</h4>
             <Dialog open={isIncidentDialogOpen} onOpenChange={setIsIncidentDialogOpen}>
               <DialogTrigger render={
-                <Button size="sm" variant="outline" className="border-zinc-800 text-zinc-300">
+                <Button size="sm" variant="outline" className="border-zinc-800 text-zinc-300" onClick={() => {
+                  setEditingIncident(null);
+                  setNewIncident({ title: "", description: "", status: "investigating", severity: "minor" });
+                }}>
                   <Plus className="w-4 h-4 mr-2" />
                   Novo
                 </Button>
               } />
               <DialogContent className="bg-zinc-950 border-zinc-800 text-white">
                 <DialogHeader>
-                  <DialogTitle>Reportar Incidente</DialogTitle>
+                  <DialogTitle>{editingIncident?.id ? "Atualizar Incidente" : "Reportar Incidente"}</DialogTitle>
                   <DialogDescription className="text-zinc-400">
-                    Isso aparecerá imediatamente no histórico da sua página de status.
+                    {editingIncident?.id 
+                      ? "Adicione um update sobre o estado atual deste incidente."
+                      : "Isso aparecerá imediatamente no histórico da sua página de status."}
                   </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={onCreateIncident} className="space-y-4 py-4">
+                <form onSubmit={onSaveIncident} className="space-y-4 py-4">
+                  {!editingIncident?.id && (
+                    <div className="space-y-2">
+                      <Label>Título do Incidente</Label>
+                      <Input 
+                        placeholder="Ex: Instabilidade no processamento de pagamentos" 
+                        className="bg-zinc-900 border-zinc-800"
+                        value={newIncident.title}
+                        onChange={(e) => setNewIncident(prev => ({ ...prev, title: e.target.value }))}
+                        required
+                      />
+                    </div>
+                  )}
                   <div className="space-y-2">
-                    <Label>Título do Incidente</Label>
-                    <Input 
-                      placeholder="Ex: Instabilidade no processamento de pagamentos" 
-                      className="bg-zinc-900 border-zinc-800"
-                      value={newIncident.title}
-                      onChange={(e) => setNewIncident(prev => ({ ...prev, title: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Descrição / Update Inicial</Label>
+                    <Label>{editingIncident?.id ? "Update da Situação" : "Descrição / Update Inicial"}</Label>
                     <Textarea 
                       placeholder="Estamos investigando um problema..." 
                       className="bg-zinc-900 border-zinc-800 min-h-[100px]"
-                      value={newIncident.description}
-                      onChange={(e) => setNewIncident(prev => ({ ...prev, description: e.target.value }))}
+                      value={editingIncident?.id ? (editingIncident.description || "") : newIncident.description}
+                      onChange={(e) => {
+                        if (editingIncident?.id) {
+                          setEditingIncident(prev => ({ ...prev, description: e.target.value }));
+                        } else {
+                          setNewIncident(prev => ({ ...prev, description: e.target.value }));
+                        }
+                      }}
                       required
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Gravidade</Label>
-                      <Select 
-                        value={newIncident.severity} 
-                        onValueChange={(val) => val && setNewIncident(prev => ({ ...prev, severity: val as Incident["severity"] }))}
-                      >
-                        <SelectTrigger className="bg-zinc-900 border-zinc-800">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
-                          <SelectItem value="minor">Menor</SelectItem>
-                          <SelectItem value="major">Maior</SelectItem>
-                          <SelectItem value="critical">Crítica</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
+                    {!editingIncident?.id && (
+                      <div className="space-y-2">
+                        <Label>Gravidade</Label>
+                        <Select 
+                          value={newIncident.severity} 
+                          onValueChange={(val) => val && setNewIncident(prev => ({ ...prev, severity: val as Incident["severity"] }))}
+                        >
+                          <SelectTrigger className="bg-zinc-900 border-zinc-800">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                            <SelectItem value="minor">Menor</SelectItem>
+                            <SelectItem value="major">Maior</SelectItem>
+                            <SelectItem value="critical">Crítica</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    <div className={cn("space-y-2", editingIncident?.id ? "col-span-2" : "")}>
                       <Label>Status</Label>
                       <Select 
-                        value={newIncident.status} 
-                        onValueChange={(val) => val && setNewIncident(prev => ({ ...prev, status: val as Incident["status"] }))}
+                        value={editingIncident?.id ? editingIncident.status : newIncident.status} 
+                        onValueChange={(val) => {
+                          if (editingIncident?.id) {
+                            setEditingIncident(prev => ({ ...prev, status: val as Incident["status"] }));
+                          } else {
+                            setNewIncident(prev => ({ ...prev, status: val as Incident["status"] }));
+                          }
+                        }}
                       >
                         <SelectTrigger className="bg-zinc-900 border-zinc-800">
                           <SelectValue />
@@ -372,8 +422,8 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button type="submit" className="bg-red-600 text-white hover:bg-red-700 w-full" isLoading={loading}>
-                      Publicar Incidente
+                    <Button type="submit" className="bg-red-600 text-white hover:bg-red-700 w-full" disabled={loading}>
+                      {editingIncident?.id ? "Salvar Update" : "Publicar Incidente"}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -389,7 +439,7 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
               </div>
             ) : (
               incidents.map((incident) => (
-                <div key={incident.id} className="p-4 bg-zinc-900/40 border border-zinc-800 rounded-xl space-y-3">
+                <div key={incident.id} className="group p-4 bg-zinc-900/40 border border-zinc-800 rounded-xl space-y-3 relative">
                   <div className="flex items-start justify-between">
                     <div>
                       <h5 className="text-sm font-semibold text-white leading-tight">{incident.title}</h5>
@@ -400,9 +450,32 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
                         </span>
                       </div>
                     </div>
-                    <Badge variant="secondary" className="text-[9px] bg-zinc-800 text-zinc-400 border-none">
-                      {incident.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-[9px] bg-zinc-800 text-zinc-400 border-none capitalize">
+                        {incident.status}
+                      </Badge>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6 text-zinc-500 hover:text-white"
+                          onClick={() => {
+                            setEditingIncident(incident);
+                            setIsIncidentDialogOpen(true);
+                          }}
+                        >
+                          <Settings2 className="w-3 h-3" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6 text-zinc-500 hover:text-red-400"
+                          onClick={() => onDeleteIncident(incident.id)}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                   <p className="text-xs text-zinc-400 line-clamp-2">{incident.description}</p>
                 </div>

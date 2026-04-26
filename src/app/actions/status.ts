@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createId } from "@paralleldrive/cuid2";
+import { requirePermission } from "@/lib/auth/rbac-utils";
 
 // --- SCHEMAS ---
 
@@ -47,7 +48,11 @@ export const upsertStatusComponentAction = async (data: z.infer<typeof UpsertCom
     headers: await headers(),
   });
 
-  if (!session) throw new Error("Não autorizado");
+  if (!session || session.session.activeOrganizationId !== data.organizationId) {
+    throw new Error("Não autorizado");
+  }
+
+  await requirePermission(session.user.id, data.organizationId, "org:update");
 
   const { id, organizationId, ...rest } = data;
 
@@ -72,7 +77,11 @@ export const deleteStatusComponentAction = async (data: z.infer<typeof DeleteCom
     headers: await headers(),
   });
 
-  if (!session) throw new Error("Não autorizado");
+  if (!session || session.session.activeOrganizationId !== data.organizationId) {
+    throw new Error("Não autorizado");
+  }
+
+  await requirePermission(session.user.id, data.organizationId, "org:update");
 
   await db.delete(statusComponents)
     .where(and(eq(statusComponents.id, data.id), eq(statusComponents.organizationId, data.organizationId)));
@@ -85,12 +94,57 @@ export const createStatusIncidentAction = async (data: z.infer<typeof CreateInci
     headers: await headers(),
   });
 
-  if (!session) throw new Error("Não autorizado");
+  if (!session || session.session.activeOrganizationId !== data.organizationId) {
+    throw new Error("Não autorizado");
+  }
+
+  await requirePermission(session.user.id, data.organizationId, "org:update");
 
   await db.insert(statusIncidents).values({
     id: createId(),
     ...data,
   });
+
+  revalidatePath(`/org/${data.organizationId}/settings/status`);
+};
+
+export const updateStatusIncidentAction = async (data: z.infer<typeof UpdateIncidentSchema>) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session || session.session.activeOrganizationId !== data.organizationId) {
+    throw new Error("Não autorizado");
+  }
+
+  await requirePermission(session.user.id, data.organizationId, "org:update");
+
+  const { id, organizationId, ...rest } = data;
+
+  await db.update(statusIncidents)
+    .set({ 
+      ...rest, 
+      updatedAt: new Date(),
+      resolvedAt: rest.status === "resolved" ? new Date() : null
+    })
+    .where(and(eq(statusIncidents.id, id), eq(statusIncidents.organizationId, organizationId)));
+
+  revalidatePath(`/org/${organizationId}/settings/status`);
+};
+
+export const deleteStatusIncidentAction = async (data: { organizationId: string, id: string }) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session || session.session.activeOrganizationId !== data.organizationId) {
+    throw new Error("Não autorizado");
+  }
+
+  await requirePermission(session.user.id, data.organizationId, "org:update");
+
+  await db.delete(statusIncidents)
+    .where(and(eq(statusIncidents.id, data.id), eq(statusIncidents.organizationId, data.organizationId)));
 
   revalidatePath(`/org/${data.organizationId}/settings/status`);
 };

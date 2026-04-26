@@ -8,6 +8,32 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Image from "next/image";
+import * as motion from "framer-motion/client";
+
+import { Metadata } from "next";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ orgSlug: string }>;
+}): Promise<Metadata> {
+  const { orgSlug } = await params;
+  const org = await db.query.organizations.findFirst({
+    where: eq(organizations.slug, orgSlug),
+  });
+
+  if (!org) return { title: "Organization Not Found" };
+
+  return {
+    title: `Status do Sistema - ${org.name}`,
+    description: `Acompanhe o status e a disponibilidade dos serviços da ${org.name}.`,
+    openGraph: {
+      title: `Status do Sistema - ${org.name}`,
+      description: `Acompanhe o status e a disponibilidade dos serviços da ${org.name}.`,
+      images: org.logo ? [org.logo] : [],
+    },
+  };
+}
 
 export default async function PublicStatusPage({
   params,
@@ -88,7 +114,11 @@ export default async function PublicStatusPage({
         </header>
 
         {/* Hero Status */}
-        <section className={cn(
+        <motion.section 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className={cn(
           "mb-12 p-8 rounded-3xl border transition-all duration-700",
           allOperational 
             ? "bg-emerald-500/5 border-emerald-500/20 shadow-[0_0_50px_-12px_rgba(16,185,129,0.1)]" 
@@ -118,7 +148,7 @@ export default async function PublicStatusPage({
               </p>
             </div>
           </div>
-        </section>
+        </motion.section>
 
         {/* Components Grid */}
         <section className="mb-16 space-y-6">
@@ -132,8 +162,14 @@ export default async function PublicStatusPage({
                 <p className="text-zinc-500 italic">Nenhum componente monitorado no momento.</p>
               </div>
             ) : (
-              components.map(comp => (
-                <div key={comp.id} className="group p-5 bg-zinc-900/40 border border-zinc-800 rounded-2xl flex items-center justify-between hover:border-zinc-700 transition-colors">
+              components.map((comp, idx) => (
+                <motion.div 
+                  key={comp.id} 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 + (idx * 0.05) }}
+                  className="group p-5 bg-zinc-900/40 border border-zinc-800 rounded-2xl flex items-center justify-between hover:border-zinc-700 transition-colors"
+                >
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold text-zinc-100 group-hover:text-white transition-colors">{comp.name}</span>
                     {comp.description && <span className="text-xs text-zinc-500 mt-0.5">{comp.description}</span>}
@@ -147,7 +183,7 @@ export default async function PublicStatusPage({
                     </span>
                     {getStatusIcon(comp.status)}
                   </div>
-                </div>
+                </motion.div>
               ))
             )}
           </div>
@@ -163,8 +199,15 @@ export default async function PublicStatusPage({
             </div>
           ) : (
             <div className="relative pl-8 space-y-12 before:absolute before:left-[11px] before:top-2 before:bottom-0 before:w-[2px] before:bg-zinc-800">
-              {incidents.map(incident => (
-                <div key={incident.id} className="relative">
+              {incidents.map((incident, idx) => (
+                <motion.div 
+                  key={incident.id} 
+                  initial={{ opacity: 0, x: -10 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="relative"
+                >
                   <div className={cn(
                     "absolute left-[-28px] top-1.5 w-[14px] h-[14px] rounded-full border-2 border-zinc-950",
                     incident.status === "resolved" ? "bg-emerald-500" : "bg-red-500 animate-pulse"
@@ -186,7 +229,7 @@ export default async function PublicStatusPage({
                       {incident.description}
                     </p>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           )}

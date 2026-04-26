@@ -56,17 +56,41 @@ describe('SSO Server Actions', () => {
   describe('addDomainAction()', () => {
     it('should fail if user is not authorized for the organization', async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue({
-        session: { activeOrganizationId: 'other-org' }
-      } as any)
+        user: { id: 'user-1', twoFactorEnabled: false },
+        session: { 
+          id: 's1', userId: 'u1', token: 't1', expiresAt: new Date(), createdAt: new Date(), updatedAt: new Date(),
+          activeOrganizationId: 'other-org' 
+        }
+      })
 
       await expect(addDomainAction('org-1', 'example.com')).rejects.toThrow('Unauthorized')
     })
 
     it('should successfully add a domain and return verification token', async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue({
-        session: { activeOrganizationId: 'org-1' }
-      } as any)
-      vi.mocked(db.query.organizations.findFirst).mockResolvedValue({ id: 'org-1', slug: 'org-slug' } as any)
+        user: { id: 'user-1', twoFactorEnabled: false },
+        session: { 
+          id: 's1', userId: 'u1', token: 't1', expiresAt: new Date(), createdAt: new Date(), updatedAt: new Date(),
+          activeOrganizationId: 'org-1' 
+        }
+      })
+      vi.mocked(db.query.organizations.findFirst).mockResolvedValue({ 
+        id: 'org-1', 
+        slug: 'org-slug',
+        name: 'Org 1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        metadata: null,
+        logo: null,
+        tenantSchemaName: 'org_1',
+        plan: 'free',
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        customDomain: null,
+        domainVerified: false,
+        verificationToken: null,
+        require2FA: false
+      })
 
       const result = await addDomainAction('org-1', 'Example.com ')
 
@@ -79,14 +103,38 @@ describe('SSO Server Actions', () => {
   describe('verifyDomainAction()', () => {
     it('should verify domain if TXT record matches', async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue({
-        session: { activeOrganizationId: 'org-1' }
-      } as any)
+        user: { id: 'user-1', twoFactorEnabled: false },
+        session: { 
+          id: 's1', userId: 'u1', token: 't1', expiresAt: new Date(), createdAt: new Date(), updatedAt: new Date(),
+          activeOrganizationId: 'org-1' 
+        }
+      })
       vi.mocked(db.query.organizationDomains.findFirst).mockResolvedValue({
         id: 'dom-1',
         domain: 'example.com',
-        verificationToken: 'token-123'
-      } as any)
-      vi.mocked(db.query.organizations.findFirst).mockResolvedValue({ id: 'org-1', slug: 'org-slug' } as any)
+        verificationToken: 'token-123',
+        organizationId: 'org-1',
+        isVerified: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      vi.mocked(db.query.organizations.findFirst).mockResolvedValue({ 
+        id: 'org-1', 
+        slug: 'org-slug',
+        name: 'Org 1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        metadata: null,
+        logo: null,
+        tenantSchemaName: 'org_1',
+        plan: 'free',
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        customDomain: null,
+        domainVerified: false,
+        verificationToken: null,
+        require2FA: false
+      })
       vi.mocked(verifyDomainTXT).mockResolvedValue(true)
 
       const result = await verifyDomainAction('org-1', 'dom-1')
@@ -97,13 +145,21 @@ describe('SSO Server Actions', () => {
 
     it('should return success false if TXT record does not match', async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue({
-        session: { activeOrganizationId: 'org-1' }
-      } as any)
+        user: { id: 'user-1', twoFactorEnabled: false },
+        session: { 
+          id: 's1', userId: 'u1', token: 't1', expiresAt: new Date(), createdAt: new Date(), updatedAt: new Date(),
+          activeOrganizationId: 'org-1' 
+        }
+      })
       vi.mocked(db.query.organizationDomains.findFirst).mockResolvedValue({
         id: 'dom-1',
         domain: 'example.com',
-        verificationToken: 'token-123'
-      } as any)
+        verificationToken: 'token-123',
+        organizationId: 'org-1',
+        isVerified: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
       vi.mocked(verifyDomainTXT).mockResolvedValue(false)
 
       const result = await verifyDomainAction('org-1', 'dom-1')
