@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -21,22 +21,15 @@ import { toast } from "sonner";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { Shield } from "lucide-react";
-
-const authSchema = z.object({
-  email: z.string().email("E-mail inválido"),
-  password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
-  name: z.string().min(2, "Nome é obrigatório").optional(),
-});
-
-type AuthValues = z.infer<typeof authSchema>;
+import { useTranslations } from "next-intl";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 
 interface AuthFormProps {
   type: "login" | "register";
 }
 
-import { motion, AnimatePresence, type Variants } from "framer-motion";
-
 export function AuthForm({ type }: AuthFormProps) {
+  const t = useTranslations("Auth");
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -44,6 +37,14 @@ export function AuthForm({ type }: AuthFormProps) {
   const [ssoEmail, setSsoEmail] = useState("");
   const progressRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const authSchema = useMemo(() => z.object({
+    email: z.string().email(t("invalidEmail")),
+    password: z.string().min(6, t("passwordTooShort")),
+    name: z.string().min(2, t("nameRequired")).optional(),
+  }), [t]);
+
+  type AuthValues = z.infer<typeof authSchema>;
 
   const fieldVariants: Variants = {
     hidden: { opacity: 0, y: 15 },
@@ -115,13 +116,13 @@ export function AuthForm({ type }: AuthFormProps) {
     const mapAuthError = (raw: string) => {
       const lowered = raw.toLowerCase();
       if (type === "login" && lowered.includes("user not found")) {
-        return "Nenhuma conta encontrada com este e-mail. Clique em \"Registre-se\" para criar sua conta.";
+        return t("userNotFound");
       }
       if (type === "login" && (lowered.includes("invalid") || lowered.includes("credentials"))) {
-        return "E-mail ou senha inválidos.";
+        return t("invalidCredentials");
       }
       if (type === "register" && lowered.includes("already exists")) {
-        return "Este e-mail já está cadastrado. Faça login.";
+        return t("emailAlreadyRegistered");
       }
       return raw;
     };
@@ -145,15 +146,15 @@ export function AuthForm({ type }: AuthFormProps) {
         const raw =
           typeof response.error === "string"
             ? response.error
-            : response.error.message || response.error.code || "Falha na autenticação.";
+            : response.error.message || response.error.code || t("authFailed");
         const mapped = mapAuthError(raw);
         throw new Error(mapped);
       }
 
       if (!response?.data?.user?.id) {
         const msg = type === "login"
-          ? "Não foi possível entrar. Verifique suas credenciais."
-          : "Não foi possível criar a conta. Tente novamente.";
+          ? t("couldNotSignIn")
+          : t("couldNotCreateAccount");
         throw new Error(msg);
       }
 
@@ -161,18 +162,18 @@ export function AuthForm({ type }: AuthFormProps) {
     })();
 
     toast.promise(authPromise, {
-      loading: type === "login" ? "Verificando credenciais..." : "Criando sua conta...",
+      loading: type === "login" ? t("verifyingCredentials") : t("creatingAccount"),
       success: () => {
         router.push("/selecionar-org");
-        return type === "login" ? "Bem-vindo de volta!" : "Conta criada com sucesso!";
+        return type === "login" ? t("welcomeBackToast") : t("accountCreatedToast");
       },
       error: (err) => {
         const message = err.message;
-        if (type === "login" && message.includes("Nenhuma conta encontrada")) {
+        if (type === "login" && message === t("userNotFound")) {
           return {
             description: message,
             action: {
-              label: "Registrar",
+              label: t("registerLink"),
               onClick: () => router.push(`/register?email=${encodeURIComponent(values.email)}`),
             },
           };
@@ -201,7 +202,7 @@ export function AuthForm({ type }: AuthFormProps) {
         callbackURL: "/selecionar-org",
       });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Erro desconhecido";
+      const message = err instanceof Error ? err.message : t("authFailed");
       toast.error(message);
     } finally {
       setLoading(false);
@@ -231,12 +232,12 @@ export function AuthForm({ type }: AuthFormProps) {
               transition={{ duration: 0.2 }}
             >
               <CardTitle className="text-2xl font-bold tracking-tight text-white">
-                {type === "login" ? "Entrar na conta" : "Criar uma conta"}
+                {type === "login" ? t("loginTitle") : t("registerTitle")}
               </CardTitle>
               <CardDescription className="text-zinc-400 mt-1.5">
                 {type === "login"
-                  ? "Digite seu e-mail e senha para acessar sua conta."
-                  : "Preencha os dados abaixo para começar sua jornada."}
+                  ? t("loginDescription")
+                  : t("registerDescription")}
               </CardDescription>
             </motion.div>
           </AnimatePresence>
@@ -264,11 +265,11 @@ export function AuthForm({ type }: AuthFormProps) {
                         className="space-y-2 overflow-hidden"
                       >
                         <Label htmlFor="name" className="text-zinc-300">
-                          Nome
+                          {t("nameLabel")}
                         </Label>
                         <Input
                           id="name"
-                          placeholder="Seu nome"
+                          placeholder={t("namePlaceholder")}
                           className="bg-zinc-900 border-zinc-800 text-white focus-visible:ring-zinc-700 h-10 transition-all focus:bg-zinc-900/80"
                           {...register("name")}
                         />
@@ -287,12 +288,12 @@ export function AuthForm({ type }: AuthFormProps) {
                     className="space-y-2"
                   >
                     <Label htmlFor="email" className="text-zinc-300">
-                      E-mail
+                      {t("emailLabel")}
                     </Label>
                     <Input
                       id="email"
                       type="email"
-                      placeholder="exemplo@email.com"
+                      placeholder={t("emailPlaceholder")}
                       className="bg-zinc-900 border-zinc-800 text-white focus-visible:ring-zinc-700 h-10 transition-all focus:bg-zinc-900/80"
                       {...register("email")}
                     />
@@ -309,7 +310,7 @@ export function AuthForm({ type }: AuthFormProps) {
                     className="space-y-2"
                   >
                     <Label htmlFor="password" className="text-zinc-300">
-                      Senha
+                      {t("passwordLabel")}
                     </Label>
                     <Input
                       id="password"
@@ -328,7 +329,7 @@ export function AuthForm({ type }: AuthFormProps) {
                     className="w-full bg-white text-black hover:bg-zinc-200 h-11 transition-all active:scale-[0.98]"
                     isLoading={loading}
                   >
-                    {type === "login" ? "Entrar" : "Cadastrar"}
+                    {type === "login" ? t("signInButton") : t("signUpButton")}
                   </Button>
 
                   {type === "login" && (
@@ -338,7 +339,7 @@ export function AuthForm({ type }: AuthFormProps) {
                           <span className="w-full border-t border-zinc-800" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-zinc-950 px-2 text-zinc-500">Ou use</span>
+                          <span className="bg-zinc-950 px-2 text-zinc-500">{t("orUse")}</span>
                         </div>
                       </div>
 
@@ -349,7 +350,7 @@ export function AuthForm({ type }: AuthFormProps) {
                         onClick={() => setShowSSO(true)}
                       >
                         <Shield className="mr-2 h-4 w-4" />
-                        Enterprise SSO
+                        {t("enterpriseSSO")}
                       </Button>
                     </div>
                   )}
@@ -357,24 +358,24 @@ export function AuthForm({ type }: AuthFormProps) {
                   <div className="text-center text-sm text-zinc-500 italic">
                     {type === "login" ? (
                       <>
-                        Não tem uma conta?{" "}
+                        {t("noAccount")}{" "}
                         <button
                           type="button"
                           onClick={() => router.push("/register")}
                           className="text-zinc-300 hover:text-white hover:underline font-medium transition-colors"
                         >
-                          Registre-se
+                          {t("registerLink")}
                         </button>
                       </>
                     ) : (
                       <>
-                        Já tem uma conta?{" "}
+                        {t("hasAccount")}{" "}
                         <button
                           type="button"
                           onClick={() => router.push("/login")}
                           className="text-zinc-300 hover:text-white hover:underline font-medium transition-colors"
                         >
-                          Faça login
+                          {t("loginLink")}
                         </button>
                       </>
                     )}
@@ -394,19 +395,19 @@ export function AuthForm({ type }: AuthFormProps) {
                 <CardContent className="space-y-4 relative">
                   <div className="space-y-2">
                     <Label htmlFor="sso-email" className="text-zinc-300">
-                      E-mail Corporativo
+                      {t("corporateEmail")}
                     </Label>
                     <Input
                       id="sso-email"
                       type="email"
-                      placeholder="nome@empresa.com"
+                      placeholder={t("corporateEmailPlaceholder")}
                       className="bg-zinc-900 border-zinc-800 text-white focus-visible:ring-zinc-700 h-11 transition-all focus:bg-zinc-900/80"
                       value={ssoEmail}
                       onChange={(e) => setSsoEmail(e.target.value)}
                       required
                     />
                     <p className="text-xs text-zinc-500">
-                      Nós redirecionaremos você para o provedor de identidade da sua empresa.
+                      {t("ssoRedirectNotice")}
                     </p>
                   </div>
                 </CardContent>
@@ -416,7 +417,7 @@ export function AuthForm({ type }: AuthFormProps) {
                     className="w-full bg-white text-black hover:bg-zinc-200 h-11 transition-all active:scale-[0.98]"
                     isLoading={loading}
                   >
-                    Continuar com SSO
+                    {t("continueSSO")}
                   </Button>
 
                   <button
@@ -424,7 +425,7 @@ export function AuthForm({ type }: AuthFormProps) {
                     onClick={() => setShowSSO(false)}
                     className="text-sm text-zinc-500 hover:text-white transition-colors"
                   >
-                    Voltar para login padrão
+                    {t("backToLogin")}
                   </button>
                 </CardFooter>
               </form>

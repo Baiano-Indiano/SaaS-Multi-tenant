@@ -27,7 +27,6 @@ import {
   revokeMemberSessionsAction 
 } from "@/app/actions/security";
 import { toast } from "sonner";
-import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -35,6 +34,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useTranslations, useFormatter } from "next-intl";
 
 
 interface Session {
@@ -60,6 +60,8 @@ interface MemberSessionsDialogProps {
 }
 
 export function MemberSessionsDialog({ member, orgId }: MemberSessionsDialogProps) {
+  const t = useTranslations("Members.sessions");
+  const formatter = useFormatter();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -76,11 +78,11 @@ export function MemberSessionsDialog({ member, orgId }: MemberSessionsDialogProp
       }
       setSessions(result.sessions as unknown as Session[]);
     } catch {
-      toast.error("Erro ao carregar sessões");
+      toast.error(t("loadError"));
     } finally {
       setIsLoading(false);
     }
-  }, [orgId, member.user.id]);
+  }, [orgId, member.user.id, t]);
 
   useEffect(() => {
     if (isOpen) {
@@ -103,10 +105,10 @@ export function MemberSessionsDialog({ member, orgId }: MemberSessionsDialogProp
         return;
       }
 
-      toast.success("Sessão revogada");
+      toast.success(t("revokeSuccess"));
       setSessions(prev => prev.filter(s => s.id !== sessionId));
     } catch {
-      toast.error("Erro ao revogar sessão");
+      toast.error(t("revokeError"));
     } finally {
       setIsRevoking(null);
     }
@@ -126,10 +128,10 @@ export function MemberSessionsDialog({ member, orgId }: MemberSessionsDialogProp
         return;
       }
 
-      toast.success("Todas as sessões revogadas");
+      toast.success(t("revokeAllSuccess"));
       setSessions([]);
     } catch {
-      toast.error("Erro ao revogar sessões");
+      toast.error(t("revokeAllError"));
     } finally {
       setIsRevokingAll(false);
     }
@@ -145,10 +147,10 @@ export function MemberSessionsDialog({ member, orgId }: MemberSessionsDialogProp
   };
 
   const parseUserAgent = (userAgent: string | null) => {
-    if (!userAgent) return "Unknown Device";
-    if (userAgent.includes("Chrome")) return "Chrome on Desktop";
-    if (userAgent.includes("Firefox")) return "Firefox on Desktop";
-    if (userAgent.includes("Safari") && !userAgent.includes("Chrome")) return "Safari on Desktop";
+    if (!userAgent) return t("unknownDevice");
+    if (userAgent.includes("Chrome")) return t("chromeDesktop");
+    if (userAgent.includes("Firefox")) return t("firefoxDesktop");
+    if (userAgent.includes("Safari") && !userAgent.includes("Chrome")) return t("safariDesktop");
     return userAgent.split(" ").slice(0, 2).join(" ");
   };
 
@@ -161,7 +163,7 @@ export function MemberSessionsDialog({ member, orgId }: MemberSessionsDialogProp
           className="h-9 px-3 text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 transition-all group"
         >
           <History className="h-4 w-4 group-hover:scale-110 transition-transform" />
-          <span className="ml-2 hidden sm:inline">Sessions</span>
+          <span className="ml-2 hidden sm:inline">{t("title")}</span>
         </Button>
       } />
       <DialogContent className="bg-zinc-950 border-zinc-800 shadow-2xl max-w-lg p-0 gap-0 overflow-hidden">
@@ -170,10 +172,10 @@ export function MemberSessionsDialog({ member, orgId }: MemberSessionsDialogProp
             <div className="space-y-1">
               <DialogTitle className="text-xl font-bold text-zinc-100 flex items-center gap-2">
                 <ShieldAlert className="h-5 w-5 text-amber-500" />
-                Manage Sessions
+                {t("manageTitle")}
               </DialogTitle>
               <DialogDescription className="text-zinc-400">
-                Viewing active device sessions for <span className="text-zinc-200 font-medium">{member.user.name}</span>.
+                {t("description", { name: member.user.name })}
               </DialogDescription>
             </div>
             {sessions.length > 0 && (
@@ -185,7 +187,7 @@ export function MemberSessionsDialog({ member, orgId }: MemberSessionsDialogProp
                 className="h-8 text-xs font-bold"
               >
                 {isRevokingAll ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <LogOut className="h-3 w-3 mr-2" />}
-                Revoke All
+                {t("revokeAll")}
               </Button>
             )}
           </div>
@@ -195,7 +197,7 @@ export function MemberSessionsDialog({ member, orgId }: MemberSessionsDialogProp
           {isLoading ? (
             <div className="p-12 flex flex-col items-center justify-center gap-3">
               <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
-              <p className="text-xs text-zinc-500 animate-pulse font-medium">Fetching active devices...</p>
+              <p className="text-xs text-zinc-500 animate-pulse font-medium">{t("fetching")}</p>
             </div>
           ) : sessions.length > 0 ? (
             <div className="divide-y divide-zinc-900">
@@ -211,11 +213,11 @@ export function MemberSessionsDialog({ member, orgId }: MemberSessionsDialogProp
                           {parseUserAgent(session.userAgent)}
                         </span>
                         <Badge className="bg-zinc-800 text-zinc-400 border-zinc-700 text-[10px] py-0 px-1.5 font-normal">
-                          {session.ipAddress || "Unknown IP"}
+                          {session.ipAddress || t("unknownIp")}
                         </Badge>
                       </div>
                       <div className="text-[10px] text-zinc-500 font-medium">
-                        Last seen {formatDistanceToNow(new Date(session.updatedAt))} ago
+                        {t("lastSeen", { time: formatter.relativeTime(new Date(session.updatedAt)) })}
                       </div>
                     </div>
                   </div>
@@ -237,7 +239,7 @@ export function MemberSessionsDialog({ member, orgId }: MemberSessionsDialogProp
                         ) : (
                           <LogOut className="h-3.5 w-3.5 mr-2" />
                         )}
-                        Terminate Session
+                        {t("terminate")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -250,8 +252,8 @@ export function MemberSessionsDialog({ member, orgId }: MemberSessionsDialogProp
                 <XCircle className="h-6 w-6 text-zinc-700" />
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-zinc-400 font-medium">No active sessions</p>
-                <p className="text-xs text-zinc-600">This member is not currently logged in on any device.</p>
+                <p className="text-sm text-zinc-400 font-medium">{t("noSessions")}</p>
+                <p className="text-xs text-zinc-600">{t("noSessionsDesc")}</p>
               </div>
             </div>
           )}
@@ -259,8 +261,7 @@ export function MemberSessionsDialog({ member, orgId }: MemberSessionsDialogProp
 
         <div className="p-4 bg-zinc-900/30 border-t border-zinc-900/50">
           <p className="text-[10px] text-zinc-500 text-center leading-relaxed">
-            Revoking a session will immediately sign the member out of that device. 
-            All unsaved progress on that device will be lost.
+            {t("revokeWarning")}
           </p>
         </div>
       </DialogContent>

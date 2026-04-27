@@ -5,18 +5,20 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 interface BackupCodesDisplayProps {
   codes: string[];
 }
 
 export function BackupCodesDisplay({ codes }: BackupCodesDisplayProps) {
+  const t = useTranslations("Security");
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(codes.join("\n"));
     setCopied(true);
-    toast.success("Backup codes copied to clipboard");
+    toast.success(t("backupCodesCopied"));
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -28,16 +30,16 @@ export function BackupCodesDisplay({ codes }: BackupCodesDisplayProps) {
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
-    toast.success("Backup codes downloaded");
+    toast.success(t("backupCodesDownloaded"));
   };
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <Alert variant="destructive" className="bg-amber-500/10 text-amber-500 border-amber-500/20">
         <ShieldAlert className="h-4 w-4 text-amber-500" />
-        <AlertTitle className="font-bold">Save your backup codes!</AlertTitle>
+        <AlertTitle className="font-bold">{t("saveBackupCodes")}</AlertTitle>
         <AlertDescription className="text-zinc-400">
-          If you lose access to your authenticator app, these codes are the ONLY way to access your account.
+          {t("backupCodesWarning")}
         </AlertDescription>
       </Alert>
 
@@ -57,7 +59,7 @@ export function BackupCodesDisplay({ codes }: BackupCodesDisplayProps) {
           className="flex-1 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-zinc-100"
         >
           {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
-          Copy
+          {t("copy")}
         </Button>
         <Button 
           variant="outline" 
@@ -66,7 +68,7 @@ export function BackupCodesDisplay({ codes }: BackupCodesDisplayProps) {
           className="flex-1 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-zinc-100"
         >
           <Download className="mr-2 h-4 w-4" />
-          Download
+          {t("download")}
         </Button>
       </div>
     </div>

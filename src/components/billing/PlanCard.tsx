@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 
 interface PlanCardProps {
   name: string;
@@ -27,6 +28,8 @@ export function PlanCard({
   onSelect,
   isLoading,
 }: PlanCardProps) {
+  const t = useTranslations("Billing");
+
   return (
     <motion.div
       whileHover={{ y: -5 }}
@@ -40,7 +43,7 @@ export function PlanCard({
       )}>
         {isPopular && (
           <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">
-            Mais Popular
+            {t("popular")}
           </div>
         )}
 
@@ -52,7 +55,7 @@ export function PlanCard({
         <CardContent className="flex-grow space-y-6">
           <div className="flex items-baseline gap-1">
             <span className="text-4xl font-extrabold tracking-tight">{price}</span>
-            <span className="text-muted-foreground text-sm font-medium">/mês</span>
+            <span className="text-muted-foreground text-sm font-medium">{t("perMonth")}</span>
           </div>
 
           <ul className="space-y-3">
@@ -75,7 +78,7 @@ export function PlanCard({
             disabled={isCurrentPlan}
             isLoading={isLoading}
           >
-            {isCurrentPlan ? "Seu Plano Atual" : "Assinar agora"}
+            {isCurrentPlan ? t("currentPlan") : t("subscribeNow")}
           </Button>
         </CardFooter>
       </Card>

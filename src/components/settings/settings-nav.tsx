@@ -1,8 +1,7 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, usePathname } from "@/i18n/routing";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { cn } from "@/lib/utils";
@@ -26,11 +25,14 @@ export function SettingsNav({ items }: SettingsNavProps) {
 
   const isActive = React.useCallback(
     (href: string) => {
+      // Exact match for the current link
       if (pathname === href) return true;
-      // If this is the "General" tab (base settings path), only highlight on exact match
-      // to avoid overlapping with other specific tabs like /security, /activity, etc.
-      if (href.endsWith("/settings")) return false;
-      return pathname.startsWith(`${href}/`);
+      
+      // If it's a sub-page, check if the pathname starts with the href followed by a slash
+      // But only if href is not just the base settings path
+      if (!href.endsWith("/settings") && pathname.startsWith(`${href}/`)) return true;
+      
+      return false;
     },
     [pathname]
   );

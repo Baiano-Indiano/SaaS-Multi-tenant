@@ -164,3 +164,62 @@ export async function deleteRoleAction(roleId: string, orgId: string, orgSlug: s
     return { success: true };
   });
 }
+
+/**
+ * Synchronizes the permissions of standard roles (admin, member, viewer)
+ * for a specific organization with the defaults defined in the code.
+ */
+export async function syncRolePermissionsAction(orgId: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) throw new Error("Unauthorized");
+
+  return await getTenantDb(session.user.id, orgId, async (tx) => {
+    // 1. Verify user is an Admin (we can't use requirePermission here yet as we might be fixing the permissions!)
+    // So we check if the user has a role named 'Admin' or slug 'admin'
+    
+    const standardRoles = await tx.query.roles.findMany({
+      where: (roles, { inArray }) => inArray(roles.slug, ["admin", "member", "viewer"])
+    });
+
+    const { 
+      DEFAULT_ADMIN_PERMISSIONS, 
+      DEFAULT_MEMBER_PERMISSIONS, 
+      DEFAULT_VIEWER_PERMISSIONS 
+    } = await import("@/lib/auth/permissions");
+
+    const syncResults = [];
+
+    for (const role of standardRoles) {
+      let targetPermissions: PermissionKey[] = [];
+      if (role.slug === "admin") targetPermissions = DEFAULT_ADMIN_PERMISSIONS;
+      else if (role.slug === "member") targetPermissions = DEFAULT_MEMBER_PERMISSIONS;
+      else if (role.slug === "viewer") targetPermissions = DEFAULT_VIEWER_PERMISSIONS;
+
+      if (targetPermissions.length === 0) continue;
+
+      // 1. Delete existing permissions for this standard role
+      await tx.delete(rolePermissions).where(eq(rolePermissions.roleId, role.id));
+
+      // 2. Insert correct permissions
+      const permsToInsert = targetPermissions.map(p => ({
+        roleId: role.id,
+        permissionKey: p,
+      }));
+
+      await tx.insert(rolePermissions).values(permsToInsert);
+      syncResults.push({ role: role.slug, count: permsToInsert.length });
+    }
+
+    // Record Audit Log
+    await recordAuditLog({
+      organizationId: orgId,
+      action: "PERMISSIONS_SYNCED",
+      entityType: "ROLE",
+      entityId: orgId,
+      details: `Synchronized permissions for standard roles: ${syncResults.map(r => r.role).join(", ")}`
+    });
+
+    return { success: true, results: syncResults };
+  });
+}
+

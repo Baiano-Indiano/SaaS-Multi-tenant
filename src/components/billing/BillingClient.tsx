@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { PLANS } from "@/lib/billing/plans";
 import { PlanCard } from "./PlanCard";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 interface BillingClientProps {
   orgSlug: string;
@@ -12,6 +13,7 @@ interface BillingClientProps {
 
 export function BillingClient({ orgSlug, currentPlanId }: BillingClientProps) {
   const [isPending, startTransition] = useTransition();
+  const t = useTranslations("Billing");
 
   const handleUpgrade = async (priceId: string) => {
     const action = async () => {
@@ -28,7 +30,7 @@ export function BillingClient({ orgSlug, currentPlanId }: BillingClientProps) {
 
       if (!res.ok) {
         const errorData = await res.text();
-        throw new Error(errorData || "Falha ao iniciar checkout");
+        throw new Error(errorData || t("checkoutError"));
       }
 
       const { url } = await res.json();
@@ -47,9 +49,9 @@ export function BillingClient({ orgSlug, currentPlanId }: BillingClientProps) {
         });
       }),
       {
-        loading: "Preparando checkout seguro do Stripe...",
-        success: "Redirecionando...",
-        error: (err) => err instanceof Error ? err.message : "Não foi possível iniciar o checkout.",
+        loading: t("loadingCheckout"),
+        success: t("redirecting"),
+        error: (err) => err instanceof Error ? err.message : t("checkoutError"),
       }
     );
   };
@@ -60,10 +62,10 @@ export function BillingClient({ orgSlug, currentPlanId }: BillingClientProps) {
         {Object.values(PLANS).map((plan) => (
           <PlanCard
             key={plan.id}
-            name={plan.name}
-            description={plan.description || ""}
-            price={plan.price}
-            features={plan.features ? [...plan.features] : []}
+            name={t(`plans.${plan.id}.name`)}
+            description={t(`plans.${plan.id}.description`)}
+            price={t(`plans.${plan.id}.price`)}
+            features={t.raw(`plans.${plan.id}.features`)}
             isPopular={plan.id === "starter"} 
             isCurrentPlan={currentPlanId === plan.id}
             isLoading={isPending}

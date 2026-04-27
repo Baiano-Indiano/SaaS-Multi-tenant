@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ChevronsUpDown, Check, Plus, Building2 } from 'lucide-react';
@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { CreateOrgDialog } from '@/components/create-org-dialog';
+import { useTranslations } from 'next-intl';
 
 gsap.registerPlugin(useGSAP);
 
@@ -32,6 +33,7 @@ interface OrgSwitcherProps {
 
 export function OrgSwitcher({ organizations, activeOrgId }: OrgSwitcherProps) {
   const router = useRouter();
+  const t = useTranslations('Organization');
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
   const triggerRef = React.useRef<HTMLButtonElement | null>(null);
   const reduceMotionRef = React.useRef(false);
@@ -42,7 +44,9 @@ export function OrgSwitcher({ organizations, activeOrgId }: OrgSwitcherProps) {
     organizations.find((o) => o.id === activeOrgId) ?? organizations[0];
 
   const handleSwitch = (org: Organization) => {
-    router.push(`/org/${org.slug}/dashboard`);
+    if (org.slug) {
+      router.push(`/org/${org.slug}/dashboard`);
+    }
   };
 
   useGSAP((_, contextSafe) => {
@@ -131,11 +135,10 @@ export function OrgSwitcher({ organizations, activeOrgId }: OrgSwitcherProps) {
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate font-semibold">
-              {activeOrg?.name ?? 'Select Organization'}
+              {activeOrg?.name ?? t('selectOrganization')}
             </span>
             <span className="truncate text-xs text-muted-foreground">
-              {organizations.length} organization
-              {organizations.length !== 1 ? 's' : ''}
+              {t('organizationsCount', { count: organizations.length })}
             </span>
           </div>
           <ChevronsUpDown className="org-switcher-chevron ml-auto size-4" />
@@ -148,7 +151,7 @@ export function OrgSwitcher({ organizations, activeOrgId }: OrgSwitcherProps) {
         >
           <DropdownMenuGroup>
             <DropdownMenuLabel className="text-xs text-muted-foreground">
-              Organizations
+              {t('organizations')}
             </DropdownMenuLabel>
             {organizations.map((org) => (
               <DropdownMenuItem
@@ -168,7 +171,7 @@ export function OrgSwitcher({ organizations, activeOrgId }: OrgSwitcherProps) {
             className="cursor-pointer text-muted-foreground hover:text-foreground"
           >
             <Plus className="mr-2 size-4" />
-            Create Organization
+            {t('createOrganization')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -180,3 +183,4 @@ export function OrgSwitcher({ organizations, activeOrgId }: OrgSwitcherProps) {
     </>
   );
 }
+

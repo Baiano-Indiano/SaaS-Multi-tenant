@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { createOrganizationAction } from '@/lib/actions/organization';
 import {
   Dialog,
@@ -21,6 +22,8 @@ interface CreateOrgDialogProps {
 }
 
 export function CreateOrgDialog({ open, onOpenChange }: CreateOrgDialogProps) {
+  const t = useTranslations('Organization');
+  const tCommon = useTranslations('Common');
   const [isPending, setIsPending] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -34,8 +37,8 @@ export function CreateOrgDialog({ open, onOpenChange }: CreateOrgDialogProps) {
     });
 
     toast.promise(promise, {
-      loading: 'Creating organization...',
-      success: 'Organization created successfully!',
+      loading: t('creating'),
+      success: t('createdSuccess'),
       error: (err) => err.message,
     });
 
@@ -53,19 +56,19 @@ export function CreateOrgDialog({ open, onOpenChange }: CreateOrgDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create Organization</DialogTitle>
+          <DialogTitle>{t('createTitle')}</DialogTitle>
           <DialogDescription>
-            Give your workspace a name. You can invite members after creation.
+            {t('createDescription')}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="org-name">Organization Name</Label>
+              <Label htmlFor="org-name">{t('orgNameLabel')}</Label>
               <Input
                 id="org-name"
                 name="name"
-                placeholder="Acme Corp"
+                placeholder={t('orgNamePlaceholder')}
                 required
                 minLength={2}
                 maxLength={64}
@@ -80,10 +83,10 @@ export function CreateOrgDialog({ open, onOpenChange }: CreateOrgDialogProps) {
               onClick={() => onOpenChange(false)}
               disabled={isPending}
             >
-              Cancel
+              {tCommon('cancel')}
             </Button>
             <Button type="submit" isLoading={isPending}>
-              Create Organization
+              {t('createOrganization')}
             </Button>
           </DialogFooter>
         </form>

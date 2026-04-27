@@ -110,30 +110,28 @@ export async function createOrganizationAction(name: string, slug: string): Prom
         ON CONFLICT DO NOTHING
       `;
 
-      // 5. Seed Permissions for Default Roles
-      const adminPermissions = [
-        "org:update", "org:delete", "members:read", "members:invite", 
-        "members:remove", "roles:manage", "roles:assign", "billing:read", "billing:manage",
-        "projects:create", "projects:delete", "projects:view", "audit_logs:read"
-      ];
-      const memberPermissions = ["members:read", "members:invite", "billing:read", "projects:create", "projects:view"];
-      const viewerPermissions = ["members:read", "billing:read", "projects:view"];
+      // 5. Seed Permissions for Default Roles (Using constants from permissions.ts)
+      const { 
+        DEFAULT_ADMIN_PERMISSIONS, 
+        DEFAULT_MEMBER_PERMISSIONS, 
+        DEFAULT_VIEWER_PERMISSIONS 
+      } = await import("@/lib/auth/permissions");
 
       const permissionInserts = [
-        ...adminPermissions.map(p => ({ roleId: adminId, permissionKey: p })),
-        ...memberPermissions.map(p => ({ roleId: memberId, permissionKey: p })),
-        ...viewerPermissions.map(p => ({ roleId: viewerId, permissionKey: p })),
+        ...DEFAULT_ADMIN_PERMISSIONS.map(p => ({ roleId: adminId, permissionKey: p })),
+        ...DEFAULT_MEMBER_PERMISSIONS.map(p => ({ roleId: memberId, permissionKey: p })),
+        ...DEFAULT_VIEWER_PERMISSIONS.map(p => ({ roleId: viewerId, permissionKey: p })),
       ];
 
       for (const item of permissionInserts) {
         await client`
           INSERT INTO ${client(tenantSchema)}.role_permission ("roleId", "permissionKey")
           VALUES (${item.roleId}, ${item.permissionKey})
+          ON CONFLICT DO NOTHING
         `;
       }
 
       // Assign first user (admin) to the admin role in the public.member table
-      // Better-Auth 'organization' plugin creates a member entry. We need to link it to our Role.
       await db.execute(sql`
         UPDATE member 
         SET "roleId" = ${adminId} 

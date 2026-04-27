@@ -1,13 +1,13 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
+import { Link, usePathname } from "@/i18n/routing";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
-import { usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -18,7 +18,9 @@ import {
 } from "@/components/ui/sidebar";
 import { LayoutDashboard, Users, Settings, FolderKanban, UserCog, Terminal } from "lucide-react";
 import { OrgSwitcher } from "@/components/org-switcher";
+import { LocaleSwitcher } from "@/components/layout/locale-switcher";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 gsap.registerPlugin(useGSAP);
 
@@ -36,32 +38,33 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 
 export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarProps) {
   const pathname = usePathname();
+  const t = useTranslations("Navigation");
   const activeOrg = organizations.find((o) => o.id === activeOrgId);
   const activeSlug = activeOrg?.slug || "";
 
   const menuItems = [
     {
-      title: "Dashboard",
+      title: t("dashboard"),
       url: `/org/${activeSlug}/dashboard`,
       icon: LayoutDashboard,
     },
     {
-      title: "Projects",
+      title: t("projects"),
       url: `/org/${activeSlug}/projects`,
       icon: FolderKanban,
     },
     {
-      title: "Members",
+      title: t("members"),
       url: `/org/${activeSlug}/members`,
       icon: Users,
     },
     {
-      title: "Settings",
+      title: t("settings"),
       url: `/org/${activeSlug}/settings`,
       icon: Settings,
     },
     {
-      title: "Playground",
+      title: t("playground"),
       url: `/org/${activeSlug}/developers/playground`,
       icon: Terminal,
     },
@@ -144,14 +147,14 @@ export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarP
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-4 mb-2">
-            Organization
+            {t("organization")}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="px-2">
               {menuItems.map((item) => {
                 const active = isRouteActive(item.url);
                 return (
-                  <SidebarMenuItem key={item.title} className="sidebar-item">
+                  <SidebarMenuItem key={item.url} className="sidebar-item">
                     <SidebarMenuButton
                       isActive={active}
                       render={
@@ -180,7 +183,7 @@ export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarP
 
         <SidebarGroup className="mt-auto">
           <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-4 mb-2">
-            User
+            {t("user")}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="px-2">
@@ -189,7 +192,7 @@ export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarP
                   isActive={pathname.startsWith("/account")}
                   render={
                     <Link
-                      href="/account/security"
+                      href="/account"
                       onMouseEnter={(e) => onMouseEnterRef.current(e)}
                       onMouseLeave={(e) => onMouseLeaveRef.current(e)}
                     />
@@ -202,13 +205,16 @@ export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarP
                   )}
                 >
                   <UserCog className={cn("h-4 w-4", pathname.startsWith("/account") ? "text-zinc-50" : "text-zinc-400")} />
-                  <span className="text-sm font-medium">Account Settings</span>
+                  <span className="text-sm font-medium">{t("accountSettings")}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter className="border-t border-sidebar-border/50 p-4">
+        <LocaleSwitcher />
+      </SidebarFooter>
     </Sidebar>
   );
 }

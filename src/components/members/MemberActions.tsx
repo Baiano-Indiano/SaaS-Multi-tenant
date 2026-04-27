@@ -10,6 +10,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { useTranslations } from "next-intl";
 import { updateMemberRoleAction, removeMemberAction } from "@/app/actions/member";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -49,6 +50,7 @@ export function RoleSelector({
   orgId,
   orgSlug
 }: RoleSelectorProps) {
+  const t = useTranslations("Members");
   const router = useRouter();
   const [updating, setUpdating] = useState(false);
 
@@ -75,12 +77,12 @@ export function RoleSelector({
     });
 
     toast.promise(promise, {
-      loading: "Atualizando nível de acesso...",
+      loading: t("updatingRole"),
       success: () => {
         router.refresh();
-        return "Nível de acesso atualizado";
+        return t("roleUpdated");
       },
-      error: "Falha ao atualizar nível de acesso",
+      error: t("roleUpdateFailed"),
     });
 
     try {
@@ -103,13 +105,13 @@ export function RoleSelector({
         <SelectTrigger className="w-[180px] bg-zinc-900/50 border-zinc-800 text-zinc-100 h-9 transition-all hover:bg-zinc-900 hover:border-zinc-700 focus:ring-1 focus:ring-zinc-700">
           <div className="flex items-center gap-2 overflow-hidden">
             <UserCog className="h-3.5 w-3.5 text-zinc-500" />
-            <SelectValue placeholder="Select access level" />
+            <SelectValue placeholder={t("selectAccessLevel")} />
           </div>
         </SelectTrigger>
         <SelectContent className="bg-zinc-950 border-zinc-800 text-zinc-300 shadow-2xl">
           {systemRoles.length > 0 && (
             <SelectGroup>
-              <SelectLabel className="text-[10px] uppercase tracking-widest text-zinc-600 font-bold py-2">System Standards</SelectLabel>
+              <SelectLabel className="text-[10px] uppercase tracking-widest text-zinc-600 font-bold py-2">{t("systemStandards")}</SelectLabel>
               {systemRoles.map((role) => (
                 <SelectItem 
                   key={role.id} 
@@ -118,7 +120,7 @@ export function RoleSelector({
                 >
                   <div className="flex items-center gap-2">
                     <Shield className="h-3 w-3 text-zinc-600" />
-                    {role.name}
+                    {t(`roles.${role.slug}`)}
                   </div>
                 </SelectItem>
               ))}
@@ -129,7 +131,7 @@ export function RoleSelector({
             <>
               <SelectSeparator className="bg-zinc-900" />
               <SelectGroup>
-                <SelectLabel className="text-[10px] uppercase tracking-widest text-zinc-600 font-bold py-2">Organization Custom</SelectLabel>
+                <SelectLabel className="text-[10px] uppercase tracking-widest text-zinc-600 font-bold py-2">{t("organizationCustom")}</SelectLabel>
                 {customRoles.map((role) => (
                   <SelectItem 
                     key={role.id} 
@@ -157,6 +159,7 @@ export function RemoveMemberButton({
   orgId: string, 
   orgSlug: string 
 }) {
+  const t = useTranslations("Members");
   const router = useRouter();
   const [isRemoving, setIsRemoving] = useState(false);
 
@@ -165,12 +168,12 @@ export function RemoveMemberButton({
     const promise = removeMemberAction(memberId, orgId, orgSlug);
 
     toast.promise(promise, {
-      loading: "Removendo membro...",
+      loading: t("removingMember"),
       success: () => {
         router.refresh();
-        return "Membro removido com sucesso";
+        return t("memberRemoved");
       },
-      error: "Falha ao remover membro",
+      error: t("removeFailed"),
     });
 
     try {
@@ -193,7 +196,7 @@ export function RemoveMemberButton({
             className="h-9 px-3 text-zinc-500 hover:text-red-400 hover:bg-red-500/5 transition-all group"
           >
             <UserMinus className="h-4 w-4 group-hover:scale-110 transition-transform" />
-            <span className="ml-2 hidden sm:inline">Offboard</span>
+            <span className="ml-2 hidden sm:inline">{t("offboard")}</span>
           </Button>
         }
       />
@@ -203,15 +206,15 @@ export function RemoveMemberButton({
             <div className="p-2 rounded-full bg-red-500/10">
               <AlertTriangle className="h-5 w-5 text-red-500" />
             </div>
-            <AlertDialogTitle className="text-zinc-100 font-bold">Remove Member?</AlertDialogTitle>
+            <AlertDialogTitle className="text-zinc-100 font-bold">{t("removeConfirmTitle")}</AlertDialogTitle>
           </div>
           <AlertDialogDescription className="text-zinc-400 text-sm leading-relaxed">
-            This will immediately revoke all access to this organization. This action is logged and can only be undone by a new invitation.
+            {t("removeConfirmDescription")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="bg-zinc-900/10 p-2 sm:p-0 mt-4">
           <AlertDialogCancel className="bg-transparent border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100 rounded-lg h-10 px-6 font-medium">
-            Cancel
+            {t("cancel")}
           </AlertDialogCancel>
           <AlertDialogAction 
             onClick={(e) => {
@@ -220,7 +223,7 @@ export function RemoveMemberButton({
             }}
             className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20 rounded-lg h-10 px-6 font-bold transition-all"
           >
-            Revoke Access
+            {t("revokeAccess")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

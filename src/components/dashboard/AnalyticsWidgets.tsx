@@ -15,6 +15,7 @@ import {
   Shield,
   Zap
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 gsap.registerPlugin(useGSAP);
 
@@ -32,6 +33,7 @@ interface AnalyticsWidgetsProps {
 }
 
 export function AnalyticsWidgets({ stats }: AnalyticsWidgetsProps) {
+  const t = useTranslations("Dashboard");
   const containerRef = React.useRef<HTMLDivElement>(null);
   const reduceMotionRef = React.useRef(false);
   const onCardMouseEnterRef = React.useRef<(e: React.MouseEvent<HTMLDivElement>) => void>(() => {});
@@ -195,7 +197,7 @@ export function AnalyticsWidgets({ stats }: AnalyticsWidgetsProps) {
           </div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">
-              Active Projects
+              {t("activeProjects")}
             </CardTitle>
             <LayoutGrid className="widget-icon h-4 w-4 text-zinc-400" />
           </CardHeader>
@@ -217,7 +219,7 @@ export function AnalyticsWidgets({ stats }: AnalyticsWidgetsProps) {
                  />
               </div>
               <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">
-                {Math.round((stats.totalProjects / stats.quotas.maxProjects) * 100)}% Capacity used
+                {t("capacityUsed", { percent: Math.round((stats.totalProjects / stats.quotas.maxProjects) * 100) })}
               </p>
             </div>
           </CardContent>
@@ -235,7 +237,7 @@ export function AnalyticsWidgets({ stats }: AnalyticsWidgetsProps) {
           </div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">
-              Total Members
+              {t("totalMembers")}
             </CardTitle>
             <Users className="widget-icon h-4 w-4 text-zinc-400" />
           </CardHeader>
@@ -258,7 +260,7 @@ export function AnalyticsWidgets({ stats }: AnalyticsWidgetsProps) {
               </div>
               <div className="flex justify-between items-center">
                 <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">
-                  {stats.pendingInvites > 0 ? `+${stats.pendingInvites} Pending` : "Active seats"}
+                  {stats.pendingInvites > 0 ? t("pending", { count: stats.pendingInvites }) : t("activeSeats")}
                 </p>
                 <p className="text-[10px] text-zinc-400 font-bold">
                   {Math.round((stats.totalMembers / stats.quotas.maxMembers) * 100)}%
@@ -280,7 +282,7 @@ export function AnalyticsWidgets({ stats }: AnalyticsWidgetsProps) {
           </div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">
-              Custom Roles
+              {t("customRoles")}
             </CardTitle>
             <Shield className="widget-icon h-4 w-4 text-zinc-400" />
           </CardHeader>
@@ -292,7 +294,7 @@ export function AnalyticsWidgets({ stats }: AnalyticsWidgetsProps) {
               0
             </div>
             <p className="text-xs text-zinc-500 mt-1 font-medium">
-              Access profiles defined
+              {t("accessProfiles")}
             </p>
             <div className="mt-4 flex gap-1">
                {[...Array(stats.totalRoles)].map((_, i) => (
@@ -314,7 +316,7 @@ export function AnalyticsWidgets({ stats }: AnalyticsWidgetsProps) {
           </div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">
-              API Usage
+              {t("apiUsage")}
             </CardTitle>
             <Zap className="widget-icon h-4 w-4 text-amber-500" />
           </CardHeader>
@@ -331,7 +333,7 @@ export function AnalyticsWidgets({ stats }: AnalyticsWidgetsProps) {
                  />
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Plan Limit</span>
+                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">{t("planLimit")}</span>
                 <span className="text-[10px] text-zinc-400 font-black">1.2M/5M</span>
               </div>
             </div>

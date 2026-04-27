@@ -3,7 +3,6 @@
 import { withAdminTenantDb } from "@/lib/db/tenant-db";
 import { webhookDeliveries, workflows, connectors } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
-export const runtime = 'nodejs';
 
 export async function getDeliveryLogsAction(orgId: string) {
   try {

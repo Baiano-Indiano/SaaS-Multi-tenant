@@ -15,12 +15,15 @@ interface AcceptInviteButtonProps {
   currentEmail?: string;
 }
 
+import { useTranslations } from "next-intl";
+
 export function AcceptInviteButton({ 
   invitationId, 
   isEmailMismatch, 
   targetEmail, 
   currentEmail 
 }: AcceptInviteButtonProps) {
+  const t = useTranslations("InviteFlow");
   const cardRef = useRef<HTMLDivElement>(null);
   const [isPending, setIsPending] = useState(false);
 
@@ -50,9 +53,9 @@ export function AcceptInviteButton({
     const promise = acceptInvitationAction(invitationId);
 
     toast.promise(promise, {
-      loading: "Processando seu acesso...",
-      success: "Acesso confirmado à organização!",
-      error: (error) => error instanceof Error ? error.message : "Falha ao aceitar convite",
+      loading: t("processing"),
+      success: t("success"),
+      error: (error) => error instanceof Error ? error.message : t("error"),
     });
 
     try {
@@ -80,10 +83,9 @@ export function AcceptInviteButton({
             <LogOut className="w-8 h-8 text-red-500" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-zinc-100 tracking-tight">Conflito de Identidade</h1>
+            <h1 className="text-2xl font-bold text-zinc-100 tracking-tight">{t("identityConflict")}</h1>
             <p className="text-zinc-400 text-sm leading-relaxed">
-              Este convite é restrito ao e-mail <span className="text-zinc-200 font-medium">{targetEmail}</span>. 
-              Você está logado atualmente como <span className="text-zinc-200 font-medium">{currentEmail}</span>.
+              {t("conflictDescription", { targetEmail, currentEmail: currentEmail ?? "" })}
             </p>
           </div>
           
@@ -92,11 +94,11 @@ export function AcceptInviteButton({
             className="w-full h-12 text-base font-medium transition-all hover:scale-[1.02]"
             onClick={handleLogout}
           >
-            Sair e Trocar de Conta
+            {t("logoutAndSwitch")}
           </Button>
           
           <p className="text-xs text-zinc-500">
-            A proteção de dados da organização exige que o e-mail seja idêntico ao convidado.
+            {t("securityNotice")}
           </p>
         </div>
       </div>
@@ -114,9 +116,9 @@ export function AcceptInviteButton({
         </div>
         
         <div className="space-y-4">
-          <h1 className="text-3xl font-bold text-zinc-100 tracking-tight">Convite Recebido</h1>
+          <h1 className="text-3xl font-bold text-zinc-100 tracking-tight">{t("title")}</h1>
           <p className="text-zinc-400 text-sm">
-            Clique no botão abaixo para ingressar e começar a colaborar com sua equipe.
+            {t("description")}
           </p>
         </div>
 
@@ -125,7 +127,7 @@ export function AcceptInviteButton({
           onClick={handleAccept}
           isLoading={isPending}
         >
-          Aceitar e Ingressar no Dashboard
+          {t("acceptButton")}
         </Button>
         
         <p className="text-[10px] text-zinc-600 uppercase tracking-widest font-bold">

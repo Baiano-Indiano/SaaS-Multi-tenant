@@ -30,7 +30,12 @@ export function OrgRouteTransition({ children }: OrgRouteTransitionProps) {
         roles: 2,
         billing: 3,
         activity: 4,
-        domains: 5,
+        security: 5,
+        connectivity: 6,
+        integrations: 7,
+        sso: 8,
+        status: 9,
+        domains: 10,
       };
       return 100 + (settingsOrder[leaf] ?? 0);
     }

@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Trash2, ExternalLink, Settings } from "lucide-react";
 import { deleteProjectAction } from "@/app/actions/projects";
@@ -23,6 +24,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import { useTranslations } from "next-intl";
+
 interface ProjectActionsProps {
   projectId: string;
   orgId: string;
@@ -30,6 +33,7 @@ interface ProjectActionsProps {
 }
 
 export function ProjectActions({ projectId, orgId, orgSlug }: ProjectActionsProps) {
+  const t = useTranslations("Projects");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -38,16 +42,16 @@ export function ProjectActions({ projectId, orgId, orgSlug }: ProjectActionsProp
 
     const promise = deleteProjectAction(projectId, orgId, orgSlug).then(result => {
       if (!result.success) {
-        throw new Error("Falha ao excluir projeto.");
+        throw new Error(t("deleteError"));
       }
       return result;
     });
 
     toast.promise(promise, {
-      loading: "Excluindo projeto...",
+      loading: t("deleting"),
       success: () => {
         setShowDeleteDialog(false);
-        return "Projeto excluído com sucesso!";
+        return t("deletedSuccess");
       },
       error: (err) => err.message,
     });
@@ -68,26 +72,36 @@ export function ProjectActions({ projectId, orgId, orgSlug }: ProjectActionsProp
           render={
             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted">
               <MoreHorizontal className="h-4 w-4" />
-              <span className="sr-only">Actions</span>
+              <span className="sr-only">{t("actions")}</span>
             </Button>
           }
         />
         <DropdownMenuContent align="end" className="w-[160px]">
-          <DropdownMenuItem className="cursor-pointer">
-            <ExternalLink className="mr-2 h-4 w-4" />
-            Open
-          </DropdownMenuItem>
-          <DropdownMenuItem className="cursor-pointer">
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
-          </DropdownMenuItem>
+          <DropdownMenuItem 
+            className="cursor-pointer"
+            render={
+              <Link href={`/org/${orgSlug}/projects/${projectId}`}>
+                <ExternalLink className="mr-2 h-4 w-4" />
+                {t("open")}
+              </Link>
+            }
+          />
+          <DropdownMenuItem 
+            className="cursor-pointer"
+            render={
+              <Link href={`/org/${orgSlug}/projects/${projectId}/settings`}>
+                <Settings className="mr-2 h-4 w-4" />
+                {t("settingsLabel")}
+              </Link>
+            }
+          />
           <DropdownMenuSeparator />
           <DropdownMenuItem 
             className="text-destructive focus:text-destructive cursor-pointer font-medium"
             onSelect={() => setShowDeleteDialog(true)}
           >
             <Trash2 className="mr-2 h-4 w-4" />
-            Delete
+            {t("delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -95,13 +109,13 @@ export function ProjectActions({ projectId, orgId, orgSlug }: ProjectActionsProp
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t("deleteConfirmTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This project will be permanently deleted from this organization&apos;s schema. This action cannot be undone.
+              {t("deleteConfirmDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction 
               onClick={(e: React.MouseEvent) => {
                 e.preventDefault();
@@ -110,7 +124,7 @@ export function ProjectActions({ projectId, orgId, orgSlug }: ProjectActionsProp
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={isDeleting}
             >
-              {isDeleting ? "Deleting..." : "Delete Project"}
+              {isDeleting ? t("deleting") : t("deleteProjectTitle")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

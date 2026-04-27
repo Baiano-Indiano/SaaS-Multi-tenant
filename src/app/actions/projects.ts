@@ -147,3 +147,81 @@ export async function deleteProjectAction(projectId: string, orgId: string, orgS
     return { success: false, error: error instanceof Error ? error.message : "Falha ao excluir projeto." };
   }
 }
+
+/**
+ * getProjectAction
+ */
+export async function getProjectAction(orgId: string, projectId: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) return null;
+
+  try {
+    return await getTenantDb(session.user.id, orgId, async (db) => {
+      const result = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
+      return result[0] || null;
+    });
+  } catch (error) {
+    console.error("Failed to fetch project:", error);
+    return null;
+  }
+}
+
+/**
+ * updateProjectAction
+ */
+export async function updateProjectAction(
+  orgId: string,
+  projectId: string,
+  orgSlug: string,
+  data: {
+    name?: string;
+    description?: string;
+    status?: string;
+  }
+) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) return { success: false, error: "Sessão expirada." };
+
+  try {
+    // RBAC: Verify user has permission to edit projects
+    await requirePermission(session.user.id, orgId, "projects:update");
+
+    const updatedProject = await getTenantDb(session.user.id, orgId, async (db) => {
+      const result = await db.update(projects)
+        .set({
+          ...data,
+          updatedAt: new Date(),
+        })
+        .where(eq(projects.id, projectId))
+        .returning();
+      
+      return result[0];
+    });
+
+    if (!updatedProject) return { success: false, error: "Projeto não encontrado." };
+
+    revalidatePath(`/org/${orgSlug}/projects`);
+    revalidatePath(`/org/${orgSlug}/projects/${projectId}`);
+    revalidatePath(`/org/${orgSlug}/projects/${projectId}/settings`);
+
+    // Record Audit Log
+    await recordAuditLog({
+      organizationId: orgId,
+      action: "PROJECT_UPDATED",
+      entityType: "PROJECT",
+      entityId: projectId,
+      details: `Updated project fields: ${Object.keys(data).join(", ")}`
+    });
+
+    // Trigger Automations
+    await emitEvent(orgId, "project.updated", { 
+      ...updatedProject,
+      actorName: session.user.name || session.user.email,
+    });
+
+    return { success: true, project: updatedProject };
+  } catch (error) {
+    console.error("Failed to update project:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Falha ao atualizar projeto." };
+  }
+}

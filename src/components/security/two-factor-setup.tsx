@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { authClient } from "@/lib/auth/client";
@@ -16,9 +14,12 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { BackupCodesDisplay } from "./backup-codes-display";
-import { Loader2, ShieldCheck, ShieldX } from "lucide-react";
+import { Loader2, ShieldCheck, ShieldAlert, ShieldX, Smartphone, Key, RefreshCw } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function TwoFactorSetup({ onEnabled }: { onEnabled: () => void }) {
+  const t = useTranslations("Security");
   const [step, setStep] = useState<"initial" | "verify" | "backup">("initial");
   const [password, setPassword] = useState("");
   const [totpCode, setTotpCode] = useState("");
@@ -35,7 +36,7 @@ export function TwoFactorSetup({ onEnabled }: { onEnabled: () => void }) {
       });
 
       if (error) {
-        toast.error(error.message || "Failed to start 2FA setup");
+        toast.error(error.message || t("failedStartSetup"));
         return;
       }
 
@@ -45,7 +46,7 @@ export function TwoFactorSetup({ onEnabled }: { onEnabled: () => void }) {
         setStep("verify");
       }
     } catch {
-      toast.error("An unexpected error occurred");
+      toast.error(t("unexpectedError"));
     } finally {
       setIsLoading(false);
     }
@@ -59,15 +60,14 @@ export function TwoFactorSetup({ onEnabled }: { onEnabled: () => void }) {
       });
 
       if (error) {
-        toast.error(error.message || "Invalid verification code");
+        toast.error(error.message || t("invalidCode"));
         return;
       }
 
-      toast.success("Two-factor authentication verified!");
+      toast.success(t("verifiedSuccess"));
       setStep("backup");
-      // onEnabled() is now called after backup code acknowledgment
     } catch {
-      toast.error("Failed to verify code");
+      toast.error(t("failedVerify"));
     } finally {
       setIsLoading(false);
     }
@@ -76,7 +76,8 @@ export function TwoFactorSetup({ onEnabled }: { onEnabled: () => void }) {
   const finishSetup = () => {
     onEnabled();
     setIsOpen(false);
-    reset();
+    // Delay reset to allow exit animation to complete
+    setTimeout(reset, 300);
   };
 
   const reset = () => {
@@ -88,97 +89,161 @@ export function TwoFactorSetup({ onEnabled }: { onEnabled: () => void }) {
     setIsLoading(false);
   };
 
+  const containerVariants = {
+    initial: { opacity: 0, x: 20 },
+    animate: { opacity: 1, x: 0, transition: { staggerChildren: 0.1 } },
+    exit: { opacity: 0, x: -20 },
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
       setIsOpen(open);
       if (!open) reset();
     }}>
-      <DialogTrigger render={
-        <Button className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200 transition-all duration-300">
-          Enable 2FA
+      <DialogTrigger>
+        <Button className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200 transition-all duration-300 gap-2 group overflow-hidden relative">
+          <Smartphone className="w-4 h-4 transition-transform group-hover:scale-110" />
+          <span>{t("enable2FA")}</span>
         </Button>
-      } />
-      <DialogContent className="sm:max-w-[425px] bg-zinc-900 border-zinc-800 text-zinc-100">
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[440px] bg-zinc-950 border-zinc-800 text-zinc-100 overflow-hidden shadow-2xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-emerald-500" />
-            Set up Two-Factor Authentication
+            <ShieldCheck className="h-5 w-5 text-primary" />
+            {t("setup2FA")}
           </DialogTitle>
           <DialogDescription className="text-zinc-400">
-            Secure your account with TOTP (Time-based One-Time Password).
+            {t("setup2FADescription")}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-4">
-          {step === "initial" && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="password">Confirm your password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter your current password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="bg-zinc-950 border-zinc-800 text-zinc-100"
-                />
-              </div>
-              <Button 
-                onClick={startSetup} 
-                disabled={isLoading || !password} 
-                className="w-full bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
+        <div className="relative min-h-[360px] mt-4">
+          <AnimatePresence mode="wait">
+            {step === "initial" && (
+              <motion.div
+                key="initial"
+                variants={containerVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                className="space-y-6"
               >
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Continue
-              </Button>
-            </div>
-          )}
+                <div className="flex flex-col items-center justify-center p-8 bg-zinc-900/50 rounded-2xl border border-dashed border-zinc-800">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <Smartphone className="w-8 h-8 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-center mb-2">{t("confirmPassword")}</h3>
+                  <p className="text-sm text-zinc-400 text-center max-w-[280px]">
+                    {t("enterCurrentPassword")}
+                  </p>
+                </div>
 
-          {step === "verify" && (
-            <div className="space-y-6 flex flex-col items-center">
-              <div className="p-4 bg-white rounded-lg">
-                <QRCodeSVG value={qrCodeUri} size={200} />
-              </div>
-              <p className="text-sm text-center text-zinc-400 px-4">
-                Scan the QR code with your authenticator app (like Google Authenticator or 1Password) and enter the 6-digit code below.
-              </p>
-              <div className="w-full space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="totp">Verification Code</Label>
-                  <Input
-                    id="totp"
-                    placeholder="000000"
-                    value={totpCode}
-                    onChange={(e) => setTotpCode(e.target.value)}
-                    className="bg-zinc-950 border-zinc-800 text-zinc-100 tracking-widest text-center text-lg"
-                    maxLength={6}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-zinc-400">{t("confirmPassword")}</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="bg-zinc-900 border-zinc-800 text-zinc-100 h-11 focus:ring-primary/20"
+                    />
+                  </div>
+                  <Button 
+                    onClick={startSetup} 
+                    disabled={isLoading || !password} 
+                    className="w-full h-11 bg-zinc-100 text-zinc-900 hover:bg-zinc-200 shadow-lg"
+                  >
+                    {isLoading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {t("continue")}
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+
+            {step === "verify" && (
+              <motion.div
+                key="verify"
+                variants={containerVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                className="space-y-6 flex flex-col items-center"
+              >
+                <div className="relative group p-4 bg-white rounded-2xl border-2 border-primary/10 shadow-2xl overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/20 to-transparent h-1/4 w-full top-0 animate-scan pointer-events-none" />
+                  
+                  <QRCodeSVG
+                    value={qrCodeUri}
+                    size={180}
+                    level="H"
+                    className="relative z-10"
                   />
                 </div>
-                <Button 
-                  onClick={verifyAndEnable} 
-                  disabled={isLoading || totpCode.length < 6} 
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
-                >
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Verify and Enable
-                </Button>
-              </div>
-            </div>
-          )}
+                
+                <p className="text-sm text-center text-zinc-400 px-8">
+                  {t("scanQRCode")}
+                </p>
 
-          {step === "backup" && (
-            <div className="space-y-6">
-              <BackupCodesDisplay codes={backupCodes} />
-              <div className="pt-2">
-                <Button 
-                  onClick={finishSetup}
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.2)]"
-                >
-                  I have saved my backup codes
-                </Button>
-              </div>
-            </div>
-          )}
+                <div className="w-full space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="totp" className="flex items-center gap-2 text-zinc-400">
+                      <Key className="w-4 h-4 text-primary" />
+                      {t("verificationCode")}
+                    </Label>
+                    <Input
+                      id="totp"
+                      placeholder="000 000"
+                      value={totpCode}
+                      onChange={(e) => setTotpCode(e.target.value)}
+                      className="bg-zinc-900 border-zinc-800 text-zinc-100 h-12 text-center text-2xl tracking-[0.5em] font-mono focus:ring-primary/20"
+                      maxLength={6}
+                    />
+                  </div>
+                  <Button 
+                    onClick={verifyAndEnable} 
+                    disabled={isLoading || totpCode.length < 6} 
+                    className="w-full h-11 bg-primary text-primary-foreground hover:opacity-90 shadow-lg"
+                  >
+                    {isLoading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {t("verifyAndEnable")}
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+
+            {step === "backup" && (
+              <motion.div
+                key="backup"
+                variants={containerVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                className="space-y-6"
+              >
+                <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex gap-3">
+                  <ShieldAlert className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-sm text-amber-200/80 leading-relaxed">
+                    {t("TwoFactor.BackupCodesWarning") || "Save these backup codes in a secure place. They are the only way to access your account if you lose your authentication device."}
+                  </p>
+                </div>
+                
+                <div className="relative group">
+                  <BackupCodesDisplay codes={backupCodes} />
+                </div>
+
+                <div className="pt-2">
+                  <Button 
+                    onClick={finishSetup}
+                    className="w-full h-11 bg-primary text-primary-foreground hover:opacity-90 shadow-[0_0_20px_rgba(var(--primary),0.3)]"
+                  >
+                    {t("savedBackupCodes")}
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </DialogContent>
     </Dialog>
@@ -186,6 +251,7 @@ export function TwoFactorSetup({ onEnabled }: { onEnabled: () => void }) {
 }
 
 export function DisableTwoFactor({ onDisabled }: { onDisabled: () => void }) {
+  const t = useTranslations("Security");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -198,15 +264,15 @@ export function DisableTwoFactor({ onDisabled }: { onDisabled: () => void }) {
       });
 
       if (error) {
-        toast.error(error.message || "Failed to disable 2FA");
+        toast.error(error.message || t("failedDisable"));
         return;
       }
 
-      toast.success("Two-factor authentication disabled");
+      toast.success(t("disabledSuccess"));
       onDisabled();
       setIsOpen(false);
     } catch {
-      toast.error("Failed to disable 2FA");
+      toast.error(t("failedDisable"));
     } finally {
       setIsLoading(false);
     }
@@ -214,24 +280,24 @@ export function DisableTwoFactor({ onDisabled }: { onDisabled: () => void }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger render={
+      <DialogTrigger>
         <Button variant="destructive" className="bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20">
-          Disable 2FA
+          {t("disable2FA")}
         </Button>
-      } />
+      </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] bg-zinc-900 border-zinc-800 text-zinc-100">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <ShieldX className="h-5 w-5 text-red-500" />
-            Disable 2FA
+            {t("disable2FA")}
           </DialogTitle>
           <DialogDescription className="text-zinc-400">
-            This will make your account less secure. Please enter your password to confirm.
+            {t("disable2FADescription")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="disable-password">Password</Label>
+            <Label htmlFor="disable-password">{t("password")}</Label>
             <Input
               id="disable-password"
               type="password"
@@ -247,7 +313,7 @@ export function DisableTwoFactor({ onDisabled }: { onDisabled: () => void }) {
             className="w-full"
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Disable 2FA
+            {t("disable2FA")}
           </Button>
         </div>
       </DialogContent>

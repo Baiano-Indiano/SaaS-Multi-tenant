@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import createMiddleware from 'next-intl/middleware';
+import { routing } from './i18n/routing';
 import { redis } from '@/lib/redis';
 import { getApiKeyFromRedis } from '@/lib/redis';
 import { hashApiKey } from '@/lib/auth/api-key';
+
+const intlMiddleware = createMiddleware(routing);
 
 /**
  * Proxy / Middleware (Next.js 16 Proxy Convention)
@@ -10,8 +14,9 @@ import { hashApiKey } from '@/lib/auth/api-key';
  * Handles:
  * 1. API v1 Authentication (Bearer Token via Redis)
  * 2. Custom Domain Resolution (Hostname via Redis)
+ * 3. Internationalization (next-intl)
  */
-export async function proxy(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get('host') || '';
   
@@ -106,22 +111,14 @@ export async function proxy(request: NextRequest) {
     console.error('[Proxy] Domain resolution error:', error);
   }
 
-  return NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
+  // --- 3. Internationalization (next-intl) ---
+  // For standard app routes, run the i18n middleware
+  return intlMiddleware(request);
 }
 
 // Next.js 16 Proxy Config
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)',
-  ],
+  // Matcher for everything except internal Next.js paths and static assets
+  // This combines patterns from both old middleware and new proxy conventions
+  matcher: ['/((?!_next|_vercel|favicon.ico|robots.txt|sitemap.xml|.*\\..*).*)'],
 };

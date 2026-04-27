@@ -10,6 +10,7 @@ import { createApiKeyAction } from "@/app/actions/api-keys";
 import { Key, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { useTranslations, useFormatter } from "next-intl";
 
 interface PlaygroundClientProps {
   orgId: string;
@@ -18,18 +19,20 @@ interface PlaygroundClientProps {
 }
 
 export function PlaygroundClient({ orgId, orgSlug, adminRoleId }: PlaygroundClientProps) {
+  const t = useTranslations("Playground");
+  const format = useFormatter();
   const [apiKey, setApiKey] = useState<string>("");
   const [isPending, startTransition] = useTransition();
 
   const handleGenerateKey = () => {
     if (!adminRoleId) {
-      toast.error("No suitable role found for API key generation.");
+      toast.error(t("noRoleError"));
       return;
     }
 
     startTransition(async () => {
       const result = await createApiKeyAction({
-        name: `Playground Key (${new Date().toLocaleDateString()})`,
+        name: t("keyName", { date: format.dateTime(new Date(), { month: 'short', day: 'numeric', year: 'numeric' }) }),
         orgId,
         orgSlug,
         roleId: adminRoleId,
@@ -38,9 +41,9 @@ export function PlaygroundClient({ orgId, orgSlug, adminRoleId }: PlaygroundClie
 
       if (result.success && result.rawKey) {
         setApiKey(result.rawKey);
-        toast.success("Test API Key generated and injected!");
+        toast.success(t("keyInjected"));
       } else {
-        toast.error("Failed to generate API Key");
+        toast.error(t("failedToGenerate"));
       }
     });
   };
@@ -54,8 +57,8 @@ export function PlaygroundClient({ orgId, orgSlug, adminRoleId }: PlaygroundClie
         className="flex items-center justify-between"
       >
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-100">API Playground</h1>
-          <p className="text-zinc-400">Test our endpoints in real-time with zero friction.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-100">{t("title")}</h1>
+          <p className="text-zinc-400">{t("description")}</p>
         </div>
 
         {!apiKey ? (
@@ -70,12 +73,12 @@ export function PlaygroundClient({ orgId, orgSlug, adminRoleId }: PlaygroundClie
             ) : (
               <Sparkles className="h-4 w-4 text-amber-400" />
             )}
-            Create Test Key
+            {t("createKey")}
           </Button>
         ) : (
           <div className="flex items-center gap-3 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-sm font-mono">
             <Key className="h-3.5 w-3.5" />
-            {apiKey.substring(0, 10)}... injected
+            {apiKey.substring(0, 10)}... {t("injected")}
           </div>
         )}
       </motion.div>

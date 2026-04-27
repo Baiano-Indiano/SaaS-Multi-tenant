@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { MemberActions } from "./MemberActions";
 import { Shield, Mail } from "lucide-react";
 import { motion, Variants } from "framer-motion";
+import { useTranslations, useFormatter } from "next-intl";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -47,15 +48,26 @@ interface MemberListProps {
 }
 
 export function MemberList({ members, orgId, orgSlug, roles }: MemberListProps) {
+  const t = useTranslations("Members");
+  const formatter = useFormatter();
+
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-950 overflow-hidden shadow-2xl shadow-black/40">
       <Table>
         <TableHeader className="bg-zinc-900/50">
           <TableRow className="border-zinc-800 hover:bg-transparent">
-            <TableHead className="text-zinc-400 font-bold uppercase tracking-widest text-[10px] py-4 px-6">Member</TableHead>
-            <TableHead className="text-zinc-400 font-bold uppercase tracking-widest text-[10px] py-4">Role</TableHead>
-            <TableHead className="text-zinc-400 font-bold uppercase tracking-widest text-[10px] py-4">Joined</TableHead>
-            <TableHead className="text-right text-zinc-400 font-bold uppercase tracking-widest text-[10px] py-4 px-6">Actions</TableHead>
+            <TableHead className="text-zinc-400 font-bold uppercase tracking-widest text-[10px] py-4 px-6">
+              {t("table.member")}
+            </TableHead>
+            <TableHead className="text-zinc-400 font-bold uppercase tracking-widest text-[10px] py-4">
+              {t("table.role")}
+            </TableHead>
+            <TableHead className="text-zinc-400 font-bold uppercase tracking-widest text-[10px] py-4">
+              {t("table.joinedAt")}
+            </TableHead>
+            <TableHead className="text-right text-zinc-400 font-bold uppercase tracking-widest text-[10px] py-4 px-6">
+              {t("table.actions")}
+            </TableHead>
           </TableRow>
         </TableHeader>
         <motion.tbody 
@@ -92,11 +104,15 @@ export function MemberList({ members, orgId, orgSlug, roles }: MemberListProps) 
               <TableCell className="py-4">
                 <Badge variant="outline" className="bg-zinc-900/50 border-zinc-800 text-zinc-300 font-medium px-2 py-0.5 capitalize">
                   <Shield className="h-3 w-3 mr-1.5 text-zinc-500" />
-                  {member.role}
+                  {t(`roles.${member.role.toLowerCase()}`)}
                 </Badge>
               </TableCell>
               <TableCell className="py-4 text-xs text-zinc-500 font-medium">
-                {new Date(member.createdAt).toLocaleDateString()}
+                {formatter.dateTime(new Date(member.createdAt), {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric"
+                })}
               </TableCell>
               <TableCell className="text-right py-4 px-6">
                 <MemberActions 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -20,13 +20,7 @@ import { createProjectAction } from "@/app/actions/projects";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { usePaywall } from "@/components/billing/PaywallProvider";
-
-const projectSchema = z.object({
-  name: z.string().min(3, "O nome deve ter pelo menos 3 caracteres"),
-  description: z.string().optional(),
-});
-
-type ProjectFormValues = z.infer<typeof projectSchema>;
+import { useTranslations } from "next-intl";
 
 interface CreateProjectDialogProps {
   orgId: string;
@@ -35,9 +29,17 @@ interface CreateProjectDialogProps {
 }
 
 export function CreateProjectDialog({ orgId, orgSlug, trigger }: CreateProjectDialogProps) {
+  const t = useTranslations("Projects");
   const [open, setOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const { openPaywall } = usePaywall();
+
+  const projectSchema = useMemo(() => z.object({
+    name: z.string().min(3, t("validation.nameMin")),
+    description: z.string().optional(),
+  }), [t]);
+
+  type ProjectFormValues = z.infer<typeof projectSchema>;
 
   const {
     register,
@@ -62,24 +64,24 @@ export function CreateProjectDialog({ orgId, orgSlug, trigger }: CreateProjectDi
         if ('error' in result && result.error === "QUOTA_EXCEEDED") {
           throw new Error("QUOTA_EXCEEDED");
         }
-        throw new Error('error' in result ? result.error : "Falha ao criar projeto.");
+        throw new Error('error' in result ? result.error : t("errorDefault"));
       }
 
       return result;
     })();
 
     toast.promise(promise, {
-      loading: "Criando projeto...",
+      loading: t("creating"),
       success: () => {
         setOpen(false);
         reset();
-        return "Projeto criado com sucesso!";
+        return t("createdSuccess");
       },
       error: (error) => {
         if (error instanceof Error && error.message === "QUOTA_EXCEEDED") {
-          return "Limite de projetos atingido.";
+          return t("limitReached");
         }
-        return error instanceof Error ? error.message : "Falha ao criar projeto.";
+        return error instanceof Error ? error.message : t("errorDefault");
       },
     });
 
@@ -89,8 +91,8 @@ export function CreateProjectDialog({ orgId, orgSlug, trigger }: CreateProjectDi
       if (error instanceof Error && error.message === "QUOTA_EXCEEDED") {
         setOpen(false);
         openPaywall({
-          title: "Limite de Projetos Atingido",
-          reason: "Seu plano atual atingiu o limite de projetos. Faça o upgrade para continuar criando novos espaços de trabalho.",
+          title: t("limitReachedTitle"),
+          reason: t("limitReachedReason"),
         });
       }
     } finally {
@@ -105,24 +107,24 @@ export function CreateProjectDialog({ orgId, orgSlug, trigger }: CreateProjectDi
           trigger || (
             <Button className="font-semibold shadow-sm transition-all hover:shadow-md">
               <Plus className="mr-2 h-4 w-4" />
-              New Project
+              {t("newProject")}
             </Button>
           )
         }
       />
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold tracking-tight">Create New Project</DialogTitle>
+          <DialogTitle className="text-2xl font-bold tracking-tight">{t("createTitle")}</DialogTitle>
           <DialogDescription className="text-muted-foreground pt-2">
-            This project will be stored in your organization&apos;s isolated schema.
+            {t("createDesc")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pt-4">
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-sm font-semibold">Project Name</Label>
+            <Label htmlFor="name" className="text-sm font-semibold">{t("nameLabel")}</Label>
             <Input
               id="name"
-              placeholder="E.g. Mobile App Redesign"
+              placeholder={t("namePlaceholder")}
               {...register("name")}
               className={`bg-muted/50 focus:bg-background transition-colors ${errors.name ? 'border-destructive' : ''}`}
             />
@@ -131,10 +133,10 @@ export function CreateProjectDialog({ orgId, orgSlug, trigger }: CreateProjectDi
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description" className="text-sm font-semibold">Description (Optional)</Label>
+            <Label htmlFor="description" className="text-sm font-semibold">{t("descLabel")}</Label>
             <Textarea
               id="description"
-              placeholder="What is this project about?"
+              placeholder={t("descPlaceholder")}
               {...register("description")}
               className="bg-muted/50 focus:bg-background transition-colors min-h-[100px]"
             />
@@ -146,14 +148,14 @@ export function CreateProjectDialog({ orgId, orgSlug, trigger }: CreateProjectDi
                 onClick={() => setOpen(false)}
                 disabled={isPending}
             >
-                Cancel
+                {t("cancel")}
             </Button>
             <Button 
                 type="submit" 
                 isLoading={isPending}
                 className="min-w-[140px] font-semibold"
             >
-                Create Project
+                {t("createButton")}
             </Button>
           </div>
         </form>

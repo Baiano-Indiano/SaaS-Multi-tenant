@@ -26,8 +26,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import type { InferSelectModel } from "drizzle-orm";
-import { invitations } from "@/lib/db/schema";
+import { useTranslations } from "next-intl";
+import { type InferSelectModel } from "drizzle-orm";
+import { type invitations } from "@/lib/db/schema";
 
 type Invitation = InferSelectModel<typeof invitations>;
 
@@ -57,6 +58,8 @@ interface InvitationsTableProps {
  * Shows email, role (slug), days remaining until expiry, and a revoke action.
  */
 export function InvitationsTable({ invitations, orgId, orgSlug }: InvitationsTableProps) {
+  const t = useTranslations("Members.invitations");
+  const tRoles = useTranslations("Members.roles");
   const router = useRouter();
   const [currentTimestamp] = useState(Date.now);
   const [cancelingId, setCancelingId] = useState<string | null>(null);
@@ -65,12 +68,12 @@ export function InvitationsTable({ invitations, orgId, orgSlug }: InvitationsTab
     const promise = cancelInvitationAction(id, orgId, orgSlug);
 
     toast.promise(promise, {
-      loading: "Cancelando convite...",
+      loading: t("canceling"),
       success: () => {
         router.refresh();
-        return "Convite cancelado com sucesso";
+        return t("cancelSuccess");
       },
-      error: "Falha ao cancelar convite",
+      error: t("cancelError"),
     });
 
     try {
@@ -86,17 +89,17 @@ export function InvitationsTable({ invitations, orgId, orgSlug }: InvitationsTab
     <div className="space-y-4 pt-4 border-t border-zinc-800 mt-8">
       <div className="flex items-center gap-2 px-1">
         <Mail className="h-4 w-4 text-zinc-400" />
-        <h2 className="text-lg font-semibold tracking-tight text-zinc-100">Convites Pendentes</h2>
+        <h2 className="text-lg font-semibold tracking-tight text-zinc-100">{t("title")}</h2>
       </div>
       
       <div className="rounded-xl border border-zinc-800 bg-zinc-950 overflow-hidden shadow-2xl shadow-black/40">
         <Table>
           <TableHeader className="bg-zinc-900/50">
             <TableRow className="border-zinc-800 hover:bg-transparent">
-              <TableHead className="text-zinc-400 font-bold uppercase tracking-widest text-[10px] py-4 px-6 w-[300px]">E-mail</TableHead>
-              <TableHead className="text-zinc-400 font-bold uppercase tracking-widest text-[10px] py-4">Cargo (Role)</TableHead>
-              <TableHead className="text-zinc-400 font-bold uppercase tracking-widest text-[10px] py-4">Expira em</TableHead>
-              <TableHead className="text-right text-zinc-400 font-bold uppercase tracking-widest text-[10px] py-4 px-6">Ações</TableHead>
+              <TableHead className="text-zinc-400 font-bold uppercase tracking-widest text-[10px] py-4 px-6 w-[300px]">{t("email")}</TableHead>
+              <TableHead className="text-zinc-400 font-bold uppercase tracking-widest text-[10px] py-4">{t("role")}</TableHead>
+              <TableHead className="text-zinc-400 font-bold uppercase tracking-widest text-[10px] py-4">{t("expiresAt")}</TableHead>
+              <TableHead className="text-right text-zinc-400 font-bold uppercase tracking-widest text-[10px] py-4 px-6">{t("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <motion.tbody 
@@ -119,14 +122,14 @@ export function InvitationsTable({ invitations, orgId, orgSlug }: InvitationsTab
                     {invite.email}
                   </TableCell>
                   <TableCell className="py-4">
-                    <Badge variant="outline" className="bg-zinc-900/50 border-zinc-800 text-zinc-300 font-medium px-2 py-0.5 capitalize">
-                        {invite.role}
-                    </Badge>
+                      <Badge variant="outline" className="bg-zinc-900/50 border-zinc-800 text-zinc-300 font-medium px-2 py-0.5 capitalize">
+                        {tRoles.has(invite.role ?? "") ? tRoles(invite.role ?? "") : invite.role}
+                      </Badge>
                   </TableCell>
                   <TableCell className="py-4 text-xs text-zinc-500 font-medium">
                     <div className="flex items-center gap-1.5">
                         <Clock className="h-3.5 w-3.5 opacity-70" />
-                        <span>{daysRemaining === 0 ? "Hoje" : `${daysRemaining} dias`}</span>
+                        <span>{daysRemaining === 0 ? t("expiresToday") : t("expiresInDays", { days: daysRemaining })}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-right py-4 px-6">
@@ -137,7 +140,7 @@ export function InvitationsTable({ invitations, orgId, orgSlug }: InvitationsTab
                       className="opacity-0 group-hover:opacity-100 transition-all text-red-400 hover:text-red-300 hover:bg-red-950/30 h-8 font-semibold px-3"
                     >
                       <Trash2 className="mr-2 h-3.5 w-3.5" />
-                      Revogar
+                      {t("revoke")}
                     </Button>
                   </TableCell>
                 </motion.tr>
@@ -149,13 +152,13 @@ export function InvitationsTable({ invitations, orgId, orgSlug }: InvitationsTab
       <AlertDialog open={!!cancelingId} onOpenChange={(open) => !open && setCancelingId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancelar convite?</AlertDialogTitle>
+            <AlertDialogTitle>{t("cancelConfirmTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              A pessoa convidada não poderá mais usar este link para entrar na organização.
+              {t("cancelConfirmDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogCancel>{t("back")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
@@ -164,7 +167,7 @@ export function InvitationsTable({ invitations, orgId, orgSlug }: InvitationsTab
                 }
               }}
             >
-              Confirmar cancelamento
+              {t("confirmCancel")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

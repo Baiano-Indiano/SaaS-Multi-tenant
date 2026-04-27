@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef, useLayoutEffect } from "react";
+import { useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { cn } from "@/lib/utils";
-import { BarChart3, Users, Activity, Terminal, ShieldCheck, Zap } from "lucide-react";
+import { BarChart3, Activity, Zap } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
 

@@ -26,16 +26,12 @@ import { inviteMemberAction } from "@/app/actions/member";
 import { toast } from "sonner";
 import { UserPlus } from "lucide-react";
 import { usePaywall } from "@/components/billing/PaywallProvider";
+import { useTranslations } from "next-intl";
 
-/**
- * Zod schema for invitation form validation
- */
-const inviteSchema = z.object({
-  email: z.string().email("Endereço de e-mail inválido"),
-  roleId: z.string().min(1, "Por favor, selecione um cargo"),
-});
-
-type InviteFormValues = z.infer<typeof inviteSchema>;
+type InviteFormValues = {
+  email: string;
+  roleId: string;
+};
 
 interface InviteMemberDialogProps {
   roles: { id: string; name: string }[];
@@ -50,9 +46,16 @@ interface InviteMemberDialogProps {
  * Fetches dynamic roles from the organization's tenant context.
  */
 export function InviteMemberDialog({ roles, orgId, orgSlug }: InviteMemberDialogProps) {
+  const t = useTranslations("Members");
+  const tCommon = useTranslations("Common");
   const [open, setOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const { openPaywall } = usePaywall();
+
+  const inviteSchema = z.object({
+    email: z.string().email(t("validation.emailInvalid")),
+    roleId: z.string().min(1, t("validation.roleRequired")),
+  });
 
   const {
     register,
@@ -85,24 +88,24 @@ export function InviteMemberDialog({ roles, orgId, orgSlug }: InviteMemberDialog
         if (result.error === "QUOTA_EXCEEDED") {
           throw new Error("QUOTA_EXCEEDED");
         }
-        throw new Error(result.error || "Falha ao enviar convite.");
+        throw new Error(result.error || t("failedInvite"));
       }
 
       return result;
     })();
 
     toast.promise(promise, {
-      loading: "Enviando convite...",
+      loading: t("inviting"),
       success: () => {
         setOpen(false);
         reset();
-        return `Convite enviado para ${data.email}`;
+        return t("invitedSuccess");
       },
       error: (error) => {
         if (error instanceof Error && error.message === "QUOTA_EXCEEDED") {
-          return "Limite de membros atingido.";
+          return t("limitReached");
         }
-        return error instanceof Error ? error.message : "Falha ao enviar convite.";
+        return error instanceof Error ? error.message : t("failedInvite");
       },
     });
 
@@ -112,9 +115,9 @@ export function InviteMemberDialog({ roles, orgId, orgSlug }: InviteMemberDialog
       if (error instanceof Error && (error.message === "QUOTA_EXCEEDED" || error.message.includes("plan only allows up to"))) {
         setOpen(false);
         openPaywall({
-          title: "Limite de Membros Atingido",
+          title: t("limitReachedTitle"),
           reason: error.message === "QUOTA_EXCEEDED" 
-            ? "Você atingiu o limite de membros do seu plano atual. Faça o upgrade para convidar mais pessoas." 
+            ? t("limitReachedReason") 
             : error.message,
         });
       }
@@ -125,27 +128,25 @@ export function InviteMemberDialog({ roles, orgId, orgSlug }: InviteMemberDialog
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button className="font-semibold shadow-sm transition-all hover:shadow-md">
-            <UserPlus className="mr-2 h-4 w-4" />
-            Convidar Membro
-          </Button>
-        }
-      />
+      <DialogTrigger>
+        <Button className="font-semibold shadow-sm transition-all hover:shadow-md">
+          <UserPlus className="mr-2 h-4 w-4" />
+          {t("inviteMember")}
+        </Button>
+      </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold tracking-tight">Convidar para o Time</DialogTitle>
+          <DialogTitle className="text-2xl font-bold tracking-tight">{t("inviteMember")}</DialogTitle>
           <DialogDescription className="text-muted-foreground pt-2">
-            O novo membro receberá os detalhes para participar da sua organização.
+            {t("inviteDescription")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pt-4">
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-semibold">E-mail</Label>
+            <Label htmlFor="email" className="text-sm font-semibold">{t("emailLabel")}</Label>
             <Input
               id="email"
-              placeholder="exemplo@empresa.com"
+              placeholder={t("emailPlaceholder")}
               {...register("email")}
               className={`bg-muted/50 focus:bg-background transition-colors ${errors.email ? 'border-destructive' : ''}`}
             />
@@ -154,18 +155,18 @@ export function InviteMemberDialog({ roles, orgId, orgSlug }: InviteMemberDialog
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="role" className="text-sm font-semibold">Cargo (Role)</Label>
+            <Label htmlFor="role" className="text-sm font-semibold">{t("roleLabel")}</Label>
             <Select 
                 value={selectedRoleId}
                 onValueChange={(val) => val && setValue("roleId", val)}
             >
               <SelectTrigger className="bg-muted/50 focus:bg-background transition-colors">
-                <SelectValue placeholder="Selecione um cargo" />
+                <SelectValue placeholder={t("selectRole")} />
               </SelectTrigger>
               <SelectContent>
                 {roles.map((role) => (
                   <SelectItem key={role.id} value={role.id}>
-                    {role.name}
+                    {t.has(`roles.${(role as { slug?: string }).slug}`) ? t(`roles.${(role as { slug?: string }).slug}`) : role.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -181,14 +182,14 @@ export function InviteMemberDialog({ roles, orgId, orgSlug }: InviteMemberDialog
                 onClick={() => setOpen(false)}
                 disabled={isPending}
             >
-                Cancelar
+                {tCommon("cancel")}
             </Button>
             <Button 
                 type="submit" 
                 isLoading={isPending}
                 className="min-w-[120px]"
             >
-                Enviar Convite
+                {t("sendInvitation")}
             </Button>
           </div>
         </form>

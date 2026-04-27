@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { authClient } from "@/lib/auth/client";
 import { 
   Monitor, 
@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { ptBR, enUS } from "date-fns/locale";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { useTranslations, useLocale } from "next-intl";
 
 interface Session {
   id: string;
@@ -35,21 +37,24 @@ interface Session {
 }
 
 export function SessionsList() {
+  const t = useTranslations("Security");
+  const locale = useLocale();
+  const dateLocale = locale === "pt" ? ptBR : enUS;
+
   const [sessions, setSessions] = useState<Session[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRevoking, setIsRevoking] = useState<string | null>(null);
 
-  const fetchSessions = async () => {
+  const fetchSessions = useCallback(async () => {
     setIsLoading(true);
     try {
       const { data, error } = await authClient.multiSession.listDeviceSessions();
       if (error) {
-        toast.error("Failed to load active sessions");
+        toast.error(t("failedLoad"));
         return;
       }
       if (data) {
-        // Explicitly map session properties to match our Session interface
         const mappedSessions: Session[] = data.map(d => ({
           id: d.session.id,
           userId: d.session.userId,
@@ -69,15 +74,15 @@ export function SessionsList() {
         setCurrentSessionId(session.data.session.id);
       }
     } catch {
-      // Error is silently handled — sessions will remain empty
+      // Error is silently handled
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     fetchSessions();
-  }, []);
+  }, [fetchSessions]);
 
   const revokeSession = async (token: string, sessionId: string) => {
     setIsRevoking(sessionId);
@@ -87,14 +92,13 @@ export function SessionsList() {
       });
       
       if (error) {
-        toast.error(error.message || "Failed to revoke session");
+        toast.error(error.message || t("failedRevoke"));
         return;
       }
 
-      toast.success("Session revoked successfully");
       setSessions(sessions.filter(s => s.id !== sessionId));
     } catch {
-      toast.error("An error occurred");
+      toast.error(t("genericError"));
     } finally {
       setIsRevoking(null);
     }
@@ -106,14 +110,14 @@ export function SessionsList() {
       const { error } = await authClient.revokeOtherSessions();
       
       if (error) {
-        toast.error(error.message || "Failed to revoke sessions");
+        toast.error(error.message || t("failedRevoke"));
         return;
       }
 
-      toast.success("All other sessions revoked");
+      toast.success(t("sessionsRevoked"));
       await fetchSessions();
     } catch {
-      toast.error("An error occurred");
+      toast.error(t("unexpectedError"));
     } finally {
       setIsLoading(false);
     }
@@ -129,12 +133,11 @@ export function SessionsList() {
   };
 
   const parseUserAgent = (userAgent: string | null) => {
-    if (!userAgent) return "Unknown Device";
-    // Simple parser
-    if (userAgent.includes("Chrome")) return "Chrome on Desktop";
-    if (userAgent.includes("Firefox")) return "Firefox on Desktop";
-    if (userAgent.includes("Safari") && !userAgent.includes("Chrome")) return "Safari on Desktop";
-    if (userAgent.includes("Postman")) return "Postman Runtime";
+    if (!userAgent) return t("unknownDevice");
+    if (userAgent.includes("Chrome")) return t("chrome");
+    if (userAgent.includes("Firefox")) return t("firefox");
+    if (userAgent.includes("Safari") && !userAgent.includes("Chrome")) return t("safari");
+    if (userAgent.includes("Postman")) return t("postman");
     return userAgent.split(" ").slice(0, 2).join(" ");
   };
 
@@ -154,10 +157,10 @@ export function SessionsList() {
         <div className="space-y-1">
           <CardTitle className="text-lg font-bold text-zinc-100 flex items-center gap-2">
             <Monitor className="h-5 w-5 text-zinc-400" />
-            Active Sessions
+            {t("sessions")}
           </CardTitle>
           <CardDescription className="text-zinc-400">
-            Manage your active sessions across different devices and browsers.
+            {t("sessionsDescription")}
           </CardDescription>
         </div>
         {sessions.length > 1 && (
@@ -168,7 +171,7 @@ export function SessionsList() {
             disabled={isLoading}
             className="border-red-500/20 text-red-500 hover:bg-red-500/10 text-xs"
           >
-            Revoke all others
+            {t("revokeAllOthers")}
           </Button>
         )}
       </CardHeader>
@@ -187,14 +190,14 @@ export function SessionsList() {
                     </span>
                     {session.id === currentSessionId && (
                       <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] py-0 px-1.5">
-                        THIS DEVICE
+                        {t("thisDevice")}
                       </Badge>
                     )}
                   </div>
                   <div className="flex items-center gap-2 text-xs text-zinc-500">
-                    <span>{session.ipAddress || "Unknown IP"}</span>
+                    <span>{session.ipAddress || t("unknownIP")}</span>
                     <span>•</span>
-                    <span>Started {formatDistanceToNow(new Date(session.createdAt))} ago</span>
+                    <span>{t("started")} {formatDistanceToNow(new Date(session.createdAt), { addSuffix: true, locale: dateLocale })}</span>
                   </div>
                 </div>
               </div>
@@ -202,11 +205,11 @@ export function SessionsList() {
               <div className="flex items-center gap-2">
                 {session.id !== currentSessionId && (
                   <DropdownMenu>
-                    <DropdownMenuTrigger render={
+                    <DropdownMenuTrigger>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500">
                         <MoreVertical className="h-4 w-4" />
                       </Button>
-                    } />
+                    </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800 text-zinc-100">
                       <DropdownMenuItem 
                         onClick={() => revokeSession(session.token, session.id)}
@@ -218,7 +221,7 @@ export function SessionsList() {
                         ) : (
                           <LogOut className="h-4 w-4 mr-2" />
                         )}
-                        Sign out of this device
+                        {t("signOutDevice")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -231,7 +234,7 @@ export function SessionsList() {
         {sessions.length === 0 && (
           <div className="p-12 text-center space-y-2">
             <XCircle className="h-8 w-8 text-zinc-700 mx-auto" />
-            <p className="text-sm text-zinc-500">No active sessions found.</p>
+            <p className="text-sm text-zinc-500">{t("noneFound")}</p>
           </div>
         )}
       </CardContent>

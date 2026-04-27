@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { toggle2FAEnforcementAction } from "@/app/actions/security";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { useTranslations } from "next-intl";
 
 interface SecuritySettingsFormProps {
   organizationId: string;
@@ -18,6 +19,7 @@ export function SecuritySettingsForm({
   organizationId, 
   require2FA: initialRequire2FA 
 }: SecuritySettingsFormProps) {
+  const t = useTranslations("Settings.security");
   const [isEnforced, setIsEnforced] = useState(initialRequire2FA);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -29,14 +31,14 @@ export function SecuritySettingsForm({
         setIsEnforced(checked);
         toast.success(
           checked 
-            ? "2FA enforcement enabled for all members." 
-            : "2FA enforcement disabled."
+            ? t("enabledSuccess") 
+            : t("disabledSuccess")
         );
       } else {
         toast.error(result.error);
       }
     } catch {
-      toast.error("An error occurred while updating settings.");
+      toast.error(t("updateError"));
     } finally {
       setIsLoading(false);
     }
@@ -49,14 +51,14 @@ export function SecuritySettingsForm({
           <div className="space-y-1">
             <CardTitle className="text-lg font-bold text-zinc-100 flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-emerald-500" />
-              Security Policies
+              {t("title")}
             </CardTitle>
             <CardDescription className="text-zinc-400">
-              Manage organization-wide security requirements and access controls.
+              {t("description")}
             </CardDescription>
           </div>
           <Badge variant="outline" className="bg-emerald-500/5 text-emerald-500 border-emerald-500/20 font-mono text-[10px]">
-            ENTERPRISE
+            {t("badge")}
           </Badge>
         </div>
       </CardHeader>
@@ -64,11 +66,10 @@ export function SecuritySettingsForm({
         <div className="flex items-center justify-between space-x-4">
           <div className="flex flex-col space-y-1">
             <Label htmlFor="2fa-enforcement" className="text-zinc-200 font-semibold">
-              Mandatory Two-Factor Authentication
+              {t("twoFactorTitle")}
             </Label>
             <p className="text-sm text-zinc-500 max-w-[400px]">
-              When enabled, all members must have 2FA active to access organization data.
-              Users without 2FA will be prompted to set it up before proceeding.
+              {t("twoFactorDescription")}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -87,8 +88,8 @@ export function SecuritySettingsForm({
           <div className="mt-6 p-4 rounded-lg bg-amber-500/5 border border-amber-500/10 flex gap-3">
             <ShieldAlert className="h-5 w-5 text-amber-500 shrink-0" />
             <div className="text-xs text-amber-500/80 leading-relaxed">
-              <p className="font-bold uppercase tracking-wider mb-1">Security Warning</p>
-              Your organization is currently not enforcing 2FA. This increases the risk of unauthorized access via compromised credentials.
+              <p className="font-bold uppercase tracking-wider mb-1">{t("warningTitle")}</p>
+              {t("warningDescription")}
             </div>
           </div>
         )}

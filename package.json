@@ -10,7 +10,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "db:migrate-tenants": "npx tsx --env-file=.env.local src/scripts/migrate-tenants.ts"
+    "db:migrate-tenants": "npx tsx --env-file=.env.local src/scripts/migrate-tenants.ts",
+    "db:sync-permissions": "npx tsx --env-file=.env.local src/scripts/sync-permissions.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.0",
@@ -34,6 +35,7 @@
     "gsap": "^3.15.0",
     "lucide-react": "^1.8.0",
     "next": "16.2.4",
+    "next-intl": "^4.9.1",
     "postgres": "^3.4.9",
     "qrcode.react": "^4.2.0",
     "react": "19.2.4",
