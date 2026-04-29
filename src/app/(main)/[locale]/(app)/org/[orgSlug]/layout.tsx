@@ -55,9 +55,11 @@ export default async function OrgLayout({
   if (org.require2FA && !isSetupPage) {
     const dbUser = await db.query.users.findFirst({
       where: eq(users.id, session.user.id),
+      columns: { twoFactorEnabled: true } // Minimum fetch
     });
 
     if (!dbUser?.twoFactorEnabled) {
+      // Security: ensure no context leakage before redirect
       redirect(`/org/${orgSlug}/setup-2fa`);
     }
   }

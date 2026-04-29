@@ -7,9 +7,15 @@ import { SessionsList } from "@/components/security/sessions-list";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ShieldAlert } from "lucide-react";
 
 export default function SecurityPage() {
-  const t = useTranslations("Security");
+   const t = useTranslations("Security");
+  const tc = useTranslations("Compliance");
+  const searchParams = useSearchParams();
+  const isEnforced = searchParams.get("enforced") === "true";
   const { data: session, isPending, refetch } = authClient.useSession();
   
   if (isPending) {
@@ -24,8 +30,17 @@ export default function SecurityPage() {
   const user = session?.user as NonNullable<typeof session>["user"] & { twoFactorEnabled?: boolean };
   const is2FAEnabled = !!user?.twoFactorEnabled;
 
-  return (
+   return (
     <div className="space-y-6">
+      {isEnforced && !is2FAEnabled && (
+        <Alert variant="destructive" className="bg-red-500/10 border-red-500/20 text-red-500">
+          <ShieldAlert className="h-4 w-4" />
+          <AlertTitle>{tc("mfaRequired")}</AlertTitle>
+          <AlertDescription>
+            {tc("mfaLockoutWarning")}
+          </AlertDescription>
+        </Alert>
+      )}
       <div>
         <h3 className="text-lg font-medium text-zinc-100">{t("title")}</h3>
         <p className="text-sm text-zinc-400">

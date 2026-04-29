@@ -77,3 +77,17 @@ To maintain a premium, enterprise-grade user experience and clean codebase, the 
     - *Benefit*: Instant navigation without full page mounting and easily shareable state for list views.
 
 Standardizing on sub-routes for settings ensures that navigation transitions (GSAP Fade-and-Scale) are consistent across the administrative interface.
+
+## 9. Bilingual Routing & Proxy Architecture
+
+The platform implements a SEO-first bilingual strategy (EN/PT-BR) using `next-intl` integrated with a custom proxy handler.
+
+- **Routing Model**: 
+    - `src/app/(main)/[locale]`: Handles all application and marketing routes with locale prefixes.
+    - `src/app/(public)`: Dedicated segment for status pages and public assets that bypass the locale requirement.
+- **Proxy/Middleware Chain**:
+    - The `src/middleware.ts` acts as a pass-through to `src/proxy.ts`.
+    - **Proxy Logic**:
+        1. **API v1 Intercept**: Authenticates API calls using API Keys + Redis metadata.
+        2. **Tenant Resolution**: Resolves custom domains and organization slugs via Redis.
+        3. **i18n Rewriting**: Injects the detected or default locale into the URL structure for Next.js to resolve localized segments without breaking core auth/api paths.

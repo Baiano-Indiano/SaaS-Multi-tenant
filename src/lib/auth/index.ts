@@ -8,6 +8,7 @@ import * as schema from "../db/schema";
 import { and, eq } from "drizzle-orm";
 import { recordAuditLog } from "../audit";
 import { v4 as uuidv4 } from "uuid";
+import { redis } from "../redis";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -50,9 +51,13 @@ export const auth = betterAuth({
         if (context.path.includes("two-factor/enable")) {
           action = "USER_2FA_ENABLED";
           details = "O usuário ativou a autenticação de dois fatores.";
+          // Sync to Redis for proxy enforcement
+          await redis.set(`user:${session.user.id}:mfa`, true);
         } else if (context.path.includes("two-factor/disable")) {
           action = "USER_2FA_DISABLED";
           details = "O usuário desativou a autenticação de dois fatores.";
+          // Sync to Redis for proxy enforcement
+          await redis.set(`user:${session.user.id}:mfa`, false);
         } else if (context.path.includes("multi-session/revoke-all")) {
           action = "USER_ALL_SESSIONS_REVOKED";
           details = "O usuário revogou todas as outras sessões ativas.";

@@ -1,6 +1,6 @@
 {
   "Marketing": {
-    "title": "A Base para SaaS B2B {br} Que Você Pode Confiar.",
+    "title": "A Base para SaaS B2B <br/> Que Você Pode Confiar.",
     "subtitle": "Arquitetura de dados segura e isolada por inquilino com gestão flexível de organizações que acelera o lançamento de aplicações corporativas.",
     "getStarted": "Começar Agora",
     "talkToSales": "Falar com Vendas",
@@ -475,5 +475,17 @@
         ]
       }
     }
+  },
+  "Compliance": {
+    "title": "Requisito de Segurança",
+    "description": "Para proteger os dados organizacionais, este espaço de trabalho exige que todos os membros tenham a Autenticação de Dois Fatores (2FA) ativada.",
+    "setupTitle": "Configurar 2FA Agora",
+    "setupDescription": "Configure seu aplicativo autenticador para recuperar o acesso a esta organização.",
+    "onEnabledSuccess": "2FA ativado! Acesso concedido.",
+    "notReady": "Ainda não está pronto?",
+    "notReadyDescription": "Você pode mudar para outra organização ou encerrar a sessão da sua conta.",
+    "switchOrg": "Trocar Organização",
+    "signOut": "Sair",
+    "lostAccess": "Perdeu o acesso ao seu dispositivo 2FA? Entre em contato com o administrador da sua organização para redefinir suas configurações de segurança."
   }
 }

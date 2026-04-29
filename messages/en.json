@@ -1,6 +1,6 @@
 {
   "Marketing": {
-    "title": "The B2B SaaS Foundation {br} You Can Build On.",
+    "title": "The B2B SaaS Foundation <br/> You Can Build On.",
     "subtitle": "Secure, tenant-isolated data architecture with flexible organization management that accelerates the launch of enterprise-ready applications.",
     "getStarted": "Get Started",
     "talkToSales": "Talk to Sales",
@@ -450,5 +450,17 @@
         ]
       }
     }
+  },
+  "Compliance": {
+    "title": "Security Requirement",
+    "description": "To protect organizational data, this workspace requires all members to have Two-Factor Authentication (2FA) enabled.",
+    "setupTitle": "Setup 2FA Now",
+    "setupDescription": "Configure your authenticator app to regain access to this organization.",
+    "onEnabledSuccess": "2FA enabled! Access granted.",
+    "notReady": "Not ready yet?",
+    "notReadyDescription": "You can switch to another organization or sign out of your account.",
+    "switchOrg": "Switch Organization",
+    "signOut": "Sign Out",
+    "lostAccess": "Lost access to your 2FA device? Contact your organization administrator to reset your security settings."
   }
 }

@@ -64,6 +64,7 @@ export async function createApiKeyAction(data: {
         orgId: data.orgId,
         tenantSchemaName: org.tenantSchemaName,
         roleId: data.roleId,
+        userId: session.user.id,
       });
     }
 

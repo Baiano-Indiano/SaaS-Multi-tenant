@@ -14,7 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { BackupCodesDisplay } from "./backup-codes-display";
-import { Loader2, ShieldCheck, ShieldAlert, ShieldX, Smartphone, Key, RefreshCw } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, ShieldCheck, ShieldX, Smartphone, Key, RefreshCw, CheckCircle2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -27,6 +28,7 @@ export function TwoFactorSetup({ onEnabled }: { onEnabled: () => void }) {
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [hasConfirmedBackup, setHasConfirmedBackup] = useState(false);
 
   const startSetup = async () => {
     setIsLoading(true);
@@ -222,23 +224,44 @@ export function TwoFactorSetup({ onEnabled }: { onEnabled: () => void }) {
                 exit="exit"
                 className="space-y-6"
               >
-                <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex gap-3">
-                  <ShieldAlert className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-sm text-amber-200/80 leading-relaxed">
-                    {t("TwoFactor.BackupCodesWarning") || "Save these backup codes in a secure place. They are the only way to access your account if you lose your authentication device."}
-                  </p>
+                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex gap-3 animate-in zoom-in-95 duration-500">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-emerald-200">
+                      {t("verifiedSuccess") || "Security Verified!"}
+                    </p>
+                    <p className="text-xs text-emerald-200/60 leading-relaxed">
+                      {t("TwoFactor.BackupCodesWarning") || "Final step: Save these backup codes. They are the only way to recover access if you lose your device."}
+                    </p>
+                  </div>
                 </div>
                 
                 <div className="relative group">
                   <BackupCodesDisplay codes={backupCodes} />
                 </div>
 
+                <div className="flex items-start space-x-3 p-4 bg-zinc-900/40 rounded-lg border border-zinc-800/50 hover:bg-zinc-900/60 transition-colors cursor-pointer" onClick={() => setHasConfirmedBackup(!hasConfirmedBackup)}>
+                  <Checkbox 
+                    id="confirm-backup" 
+                    checked={hasConfirmedBackup}
+                    onCheckedChange={(checked) => setHasConfirmedBackup(checked as boolean)}
+                    className="mt-1 border-zinc-700 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                  />
+                  <Label 
+                    htmlFor="confirm-backup" 
+                    className="text-xs text-zinc-400 leading-normal cursor-pointer select-none"
+                  >
+                    I have safely stored these backup codes and understand they cannot be recovered if lost.
+                  </Label>
+                </div>
+
                 <div className="pt-2">
                   <Button 
                     onClick={finishSetup}
-                    className="w-full h-11 bg-primary text-primary-foreground hover:opacity-90 shadow-[0_0_20px_rgba(var(--primary),0.3)]"
+                    disabled={!hasConfirmedBackup}
+                    className="w-full h-11 bg-primary text-primary-foreground hover:opacity-90 shadow-[0_0_20px_rgba(var(--primary),0.3)] transition-all duration-300 disabled:opacity-50 disabled:grayscale"
                   >
-                    {t("savedBackupCodes")}
+                    {t("savedBackupCodes") || "Activate 2FA"}
                   </Button>
                 </div>
               </motion.div>

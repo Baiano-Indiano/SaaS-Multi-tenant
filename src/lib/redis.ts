@@ -15,7 +15,7 @@ export const redis = new Redis({
 
 export const API_KEY_REDIS_PREFIX = "api_key:";
 
-export async function storeApiKeyInRedis(hash: string, data: { orgId: string; tenantSchemaName: string; roleId: string }) {
+export async function storeApiKeyInRedis(hash: string, data: { orgId: string; tenantSchemaName: string; roleId: string; userId: string }) {
   await redis.set(`${API_KEY_REDIS_PREFIX}${hash}`, data);
 }
 
@@ -24,5 +24,5 @@ export async function removeApiKeyFromRedis(hash: string) {
 }
 
 export async function getApiKeyFromRedis(hash: string) {
-  return await redis.get<{ orgId: string; tenantSchemaName: string; roleId: string }>(`${API_KEY_REDIS_PREFIX}${hash}`);
+  return await redis.get<{ orgId: string; tenantSchemaName: string; roleId: string; userId: string }>(`${API_KEY_REDIS_PREFIX}${hash}`);
 }
