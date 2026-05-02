@@ -3,16 +3,17 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { can } from "@/lib/auth/rbac-utils";
-import { db } from "@/lib/db";
-import { organizations } from "@/lib/db/schema";
+import { requirePermission } from "@/lib/auth/rbac-utils";
+import { getTenantDb } from "@/lib/db/tenant-db";
+import { roles, rolePermissions } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import postgres from "postgres";
 import { randomUUID } from "crypto";
 import { PermissionKey } from "@/lib/auth/permissions";
+import { recordAuditLog } from "@/lib/audit";
 
-const connectionString = process.env.DATABASE_URL!;
-
+/**
+ * Creates a new custom role within the organization's tenant schema.
+ */
 export async function createRoleAction(formData: {
   name: string;
   slug: string;
@@ -24,50 +25,49 @@ export async function createRoleAction(formData: {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) throw new Error("Unauthorized");
 
-  // Security: Check if user has permission to manage roles
-  const allowed = await can(session.user.id, formData.orgId, "roles:manage");
-  if (!allowed) throw new Error("Forbidden: Missing roles:manage permission");
+  // Step 1: Permission & Tenant Validation (Rules 1 & 2)
+  return await getTenantDb(session.user.id, formData.orgId, async (tx) => {
+    // Verify user has 'roles:manage' permission in this context
+    await requirePermission(session.user.id, formData.orgId, "roles:manage");
 
-  // Get tenant schema
-  const org = await db.query.organizations.findFirst({
-    where: eq(organizations.id, formData.orgId),
-  });
-  if (!org?.tenantSchemaName) throw new Error("Organization schema not found");
+    const roleId = randomUUID();
 
-  const schema = org.tenantSchemaName;
-  const client = postgres(connectionString, { prepare: false });
-
-  try {
-    await client.begin(async (sql) => {
-      const roleId = randomUUID();
-
-      // 1. Insert role
-      await sql`
-        INSERT INTO ${sql(schema)}.role (id, name, slug, description)
-        VALUES (${roleId}, ${formData.name}, ${formData.slug}, ${formData.description})
-      `;
-
-      // 2. Insert permissions
-      if (formData.permissions.length > 0) {
-        for (const p of formData.permissions) {
-          await sql`
-            INSERT INTO ${sql(schema)}.role_permission ("roleId", "permissionKey")
-            VALUES (${roleId}, ${p})
-          `;
-        }
-      }
+    // 1. Create the role
+    await tx.insert(roles).values({
+      id: roleId,
+      name: formData.name,
+      slug: formData.slug,
+      description: formData.description,
     });
 
+    // 2. Assign permissions
+    if (formData.permissions.length > 0) {
+      const permsToInsert = formData.permissions.map(p => ({
+        roleId,
+        permissionKey: p,
+      }));
+      await tx.insert(rolePermissions).values(permsToInsert);
+    }
+
     revalidatePath(`/org/${formData.orgSlug}/settings/roles`);
+
+    // Record Audit Log (Phase 11)
+    await recordAuditLog({
+      organizationId: formData.orgId,
+      action: "ROLE_CREATED",
+      entityType: "ROLE",
+      entityId: roleId,
+      details: `Created custom role: ${formData.name} (${formData.slug})`
+    });
+
     return { success: true };
-  } catch (error) {
-    console.error("Failed to create role:", error);
-    throw new Error("Failed to create role");
-  } finally {
-    await client.end();
-  }
+  });
 }
 
+/**
+ * Updates an existing custom role's details and permissions.
+ * System roles (admin, member, viewer) are protected.
+ */
 export async function updateRoleAction(formData: {
   id: string;
   name: string;
@@ -79,90 +79,147 @@ export async function updateRoleAction(formData: {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) throw new Error("Unauthorized");
 
-  const allowed = await can(session.user.id, formData.orgId, "roles:manage");
-  if (!allowed) throw new Error("Forbidden");
+  return await getTenantDb(session.user.id, formData.orgId, async (tx) => {
+    await requirePermission(session.user.id, formData.orgId, "roles:manage");
 
-  const org = await db.query.organizations.findFirst({
-    where: eq(organizations.id, formData.orgId),
-  });
-  if (!org?.tenantSchemaName) throw new Error("Schema not found");
-
-  const schema = org.tenantSchemaName;
-  const client = postgres(connectionString, { prepare: false });
-
-  try {
-    await client.begin(async (sql) => {
-      // Security check: System roles are immutable
-      const role = await sql`SELECT slug FROM ${sql(schema)}.role WHERE id = ${formData.id}`.then(res => res[0]);
-      if (role && ['admin', 'member', 'viewer'].includes(role.slug)) {
-        throw new Error("System roles are immutable and cannot be edited");
-      }
-
-      // 1. Update role details
-      await sql`
-        UPDATE ${sql(schema)}.role 
-        SET name = ${formData.name}, description = ${formData.description}
-        WHERE id = ${formData.id}
-      `;
-
-      // 2. Sync permissions (simple way: delete and re-insert)
-      await sql`
-        DELETE FROM ${sql(schema)}.role_permission 
-        WHERE "roleId" = ${formData.id}
-      `;
-
-      if (formData.permissions.length > 0) {
-        for (const p of formData.permissions) {
-          await sql`
-            INSERT INTO ${sql(schema)}.role_permission ("roleId", "permissionKey")
-            VALUES (${formData.id}, ${p})
-          `;
-        }
-      }
+    // Security check: Verify if the role is a protected system role
+    const existingRole = await tx.query.roles.findFirst({
+      where: eq(roles.id, formData.id),
     });
 
+    if (!existingRole) throw new Error("Role not found");
+    if (['admin', 'member', 'viewer', 'owner'].includes(existingRole.slug)) {
+      throw new Error("System roles are immutable and cannot be edited");
+    }
+
+    // 1. Update role base details
+    await tx.update(roles)
+      .set({
+        name: formData.name,
+        description: formData.description,
+      })
+      .where(eq(roles.id, formData.id));
+
+    // 2. Sync permissions (Delete and Re-insert strategy)
+    await tx.delete(rolePermissions).where(eq(rolePermissions.roleId, formData.id));
+
+    if (formData.permissions.length > 0) {
+      const permsToInsert = formData.permissions.map(p => ({
+        roleId: formData.id,
+        permissionKey: p,
+      }));
+      await tx.insert(rolePermissions).values(permsToInsert);
+    }
+
     revalidatePath(`/org/${formData.orgSlug}/settings/roles`);
+
+    // Record Audit Log (Phase 11)
+    await recordAuditLog({
+      organizationId: formData.orgId,
+      action: "ROLE_UPDATED",
+      entityType: "ROLE",
+      entityId: formData.id,
+      details: `Updated role: ${formData.name}`
+    });
+
     return { success: true };
-  } catch (error) {
-    console.error("Failed to update role:", error);
-    throw new Error("Failed to update role");
-  } finally {
-    await client.end();
-  }
+  });
 }
 
+/**
+ * Deletes a custom role from the organization.
+ * System roles are protected.
+ */
 export async function deleteRoleAction(roleId: string, orgId: string, orgSlug: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) throw new Error("Unauthorized");
 
-  const allowed = await can(session.user.id, orgId, "roles:manage");
-  if (!allowed) throw new Error("Forbidden");
+  return await getTenantDb(session.user.id, orgId, async (tx) => {
+    await requirePermission(session.user.id, orgId, "roles:manage");
 
-  const org = await db.query.organizations.findFirst({
-    where: eq(organizations.id, orgId),
-  });
-  if (!org?.tenantSchemaName) throw new Error("Schema not found");
+    // Security check: Verify if the role is a protected system role
+    const existingRole = await tx.query.roles.findFirst({
+      where: eq(roles.id, roleId),
+    });
 
-  const schema = org.tenantSchemaName;
-  const client = postgres(connectionString, { prepare: false });
-
-  try {
-    const role = await client`SELECT slug FROM ${client(schema)}.role WHERE id = ${roleId}`.then(res => res[0]);
-    if (role && ['admin', 'member', 'viewer'].includes(role.slug)) {
+    if (!existingRole) throw new Error("Role not found");
+    if (['admin', 'member', 'viewer', 'owner'].includes(existingRole.slug)) {
       throw new Error("System roles are immutable and cannot be deleted");
     }
 
-    await client`
-      DELETE FROM ${client(schema)}.role 
-      WHERE id = ${roleId}
-    `;
+    // Delete role (cascading into rolePermissions due to schema constraints)
+    await tx.delete(roles).where(eq(roles.id, roleId));
 
     revalidatePath(`/org/${orgSlug}/settings/roles`);
+
+    // Record Audit Log (Phase 11)
+    await recordAuditLog({
+      organizationId: orgId,
+      action: "ROLE_DELETED",
+      entityType: "ROLE",
+      entityId: roleId,
+      details: `Removed custom role from organization`
+    });
+
     return { success: true };
-  } catch (error) {
-    console.error("Failed to delete role:", error);
-    throw new Error("Failed to delete role");
-  } finally {
-    await client.end();
-  }
+  });
 }
+
+/**
+ * Synchronizes the permissions of standard roles (admin, member, viewer)
+ * for a specific organization with the defaults defined in the code.
+ */
+export async function syncRolePermissionsAction(orgId: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) throw new Error("Unauthorized");
+
+  return await getTenantDb(session.user.id, orgId, async (tx) => {
+    // 1. Verify user is an Admin (we can't use requirePermission here yet as we might be fixing the permissions!)
+    // So we check if the user has a role named 'Admin' or slug 'admin'
+    
+    const standardRoles = await tx.query.roles.findMany({
+      where: (roles, { inArray }) => inArray(roles.slug, ["admin", "member", "viewer"])
+    });
+
+    const { 
+      DEFAULT_ADMIN_PERMISSIONS, 
+      DEFAULT_MEMBER_PERMISSIONS, 
+      DEFAULT_VIEWER_PERMISSIONS 
+    } = await import("@/lib/auth/permissions");
+
+    const syncResults = [];
+
+    for (const role of standardRoles) {
+      let targetPermissions: PermissionKey[] = [];
+      if (role.slug === "admin") targetPermissions = DEFAULT_ADMIN_PERMISSIONS;
+      else if (role.slug === "member") targetPermissions = DEFAULT_MEMBER_PERMISSIONS;
+      else if (role.slug === "viewer") targetPermissions = DEFAULT_VIEWER_PERMISSIONS;
+
+      if (targetPermissions.length === 0) continue;
+
+      // 1. Delete existing permissions for this standard role
+      await tx.delete(rolePermissions).where(eq(rolePermissions.roleId, role.id));
+
+      // 2. Insert correct permissions
+      const permsToInsert = targetPermissions.map(p => ({
+        roleId: role.id,
+        permissionKey: p,
+      }));
+
+      await tx.insert(rolePermissions).values(permsToInsert);
+      syncResults.push({ role: role.slug, count: permsToInsert.length });
+    }
+
+    // Record Audit Log
+    await recordAuditLog({
+      organizationId: orgId,
+      action: "PERMISSIONS_SYNCED",
+      entityType: "ROLE",
+      entityId: orgId,
+      details: `Synchronized permissions for standard roles: ${syncResults.map(r => r.role).join(", ")}`
+    });
+
+    return { success: true, results: syncResults };
+  });
+}
+

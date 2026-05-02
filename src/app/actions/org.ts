@@ -5,15 +5,28 @@ import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { organizations } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { can } from "@/lib/auth/rbac-utils";
 import postgres from "postgres";
 
 import { randomUUID } from "crypto";
 
-const connectionString = process.env.DATABASE_URL!;
+import { recordAuditLog } from "@/lib/audit";
 
-export async function createOrganizationAction(name: string, slug: string) {
+const connectionString = process.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/saas_db";
+
+type CreateOrganizationResult =
+  | { success: true; organizationId: string; slug: string }
+  | { success: false; error: string };
+
+type UpdateOrganizationResult =
+  | { success: true }
+  | { success: false; error: string };
+
+export async function createOrganizationAction(name: string, slug: string): Promise<CreateOrganizationResult> {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
+  if (!session?.user) {
+    return { success: false, error: "Sessão expirada. Faça login novamente." };
+  }
 
   try {
     // 1. Create organization using Better-Auth
@@ -29,38 +42,59 @@ export async function createOrganizationAction(name: string, slug: string) {
     if (!org) throw new Error("Failed to create organization");
 
     // 2. Provision Tenant Schema (Simple logic for now)
-    const tenantSchema = `tenant_${org.slug.replace(/-/g, "_")}`;
+    const tenantSchema = `tenant_${org.slug.replace(/-/g, "_")}`.toLowerCase();
     
     // Update org with schema name in public database
     await db.update(organizations)
       .set({ tenantSchemaName: tenantSchema })
       .where(eq(organizations.id, org.id));
 
-    // 3. Create Schema and Seed Roles
+    // 3. Create Schema and Initial Tables
     const client = postgres(connectionString, { prepare: false });
     try {
       await client`CREATE SCHEMA IF NOT EXISTS ${client(tenantSchema)}`;
       
-      // Basic RBAC tables in tenant schema (if not already there)
-      // Note: In a real app, you'd run migrations here.
-      // For this starter, we'll assume the tables 'role' and 'role_permission' exist or should be created.
-      
-      await client`
-        CREATE TABLE IF NOT EXISTS ${client(tenantSchema)}.role (
-          id UUID PRIMARY KEY,
+      // I'll define the exact DDL to ensure consistency with Rule 2 & 3
+      const ddl = [
+        `CREATE TABLE IF NOT EXISTS "${tenantSchema}".role (
+          id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
           slug TEXT NOT NULL UNIQUE,
-          description TEXT
-        )
-      `;
+          description TEXT,
+          "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+        )`,
+        `CREATE TABLE IF NOT EXISTS "${tenantSchema}".role_permission (
+          "roleId" TEXT NOT NULL REFERENCES "${tenantSchema}".role(id) ON DELETE CASCADE,
+          "permissionKey" TEXT NOT NULL,
+          PRIMARY KEY ("roleId", "permissionKey")
+        )`,
+        `CREATE TABLE IF NOT EXISTS "${tenantSchema}".project (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          description TEXT,
+          status TEXT NOT NULL DEFAULT 'active',
+          "userId" TEXT NOT NULL,
+          "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+          "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
+        )`,
+        `CREATE TABLE IF NOT EXISTS "${tenantSchema}".audit_log (
+          id TEXT PRIMARY KEY,
+          "userId" TEXT NOT NULL,
+          "userName" TEXT NOT NULL,
+          "userEmail" TEXT NOT NULL,
+          action TEXT NOT NULL,
+          "entityType" TEXT NOT NULL,
+          "entityId" TEXT,
+          details TEXT,
+          "ipAddress" TEXT,
+          "userAgent" TEXT,
+          "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+        )`
+      ];
 
-      await client`
-        CREATE TABLE IF NOT EXISTS ${client(tenantSchema)}.role_permission (
-          id SERIAL PRIMARY KEY,
-          "roleId" UUID NOT NULL REFERENCES ${client(tenantSchema)}.role(id) ON DELETE CASCADE,
-          "permissionKey" TEXT NOT NULL
-        )
-      `;
+      for (const query of ddl) {
+        await client.unsafe(query);
+      }
 
       // 4. Seed Default Roles (Admin, Member, Viewer)
       const adminId = randomUUID();
@@ -76,29 +110,28 @@ export async function createOrganizationAction(name: string, slug: string) {
         ON CONFLICT DO NOTHING
       `;
 
-      // 5. Seed Permissions for Default Roles
-      const adminPermissions = [
-        "org:update", "org:delete", "members:read", "members:invite", 
-        "members:remove", "roles:manage", "roles:assign", "billing:read", "billing:manage"
-      ];
-      const memberPermissions = ["members:read", "members:invite", "billing:read"];
-      const viewerPermissions = ["members:read", "billing:read"];
+      // 5. Seed Permissions for Default Roles (Using constants from permissions.ts)
+      const { 
+        DEFAULT_ADMIN_PERMISSIONS, 
+        DEFAULT_MEMBER_PERMISSIONS, 
+        DEFAULT_VIEWER_PERMISSIONS 
+      } = await import("@/lib/auth/permissions");
 
       const permissionInserts = [
-        ...adminPermissions.map(p => ({ roleId: adminId, permissionKey: p })),
-        ...memberPermissions.map(p => ({ roleId: memberId, permissionKey: p })),
-        ...viewerPermissions.map(p => ({ roleId: viewerId, permissionKey: p })),
+        ...DEFAULT_ADMIN_PERMISSIONS.map(p => ({ roleId: adminId, permissionKey: p })),
+        ...DEFAULT_MEMBER_PERMISSIONS.map(p => ({ roleId: memberId, permissionKey: p })),
+        ...DEFAULT_VIEWER_PERMISSIONS.map(p => ({ roleId: viewerId, permissionKey: p })),
       ];
 
       for (const item of permissionInserts) {
         await client`
           INSERT INTO ${client(tenantSchema)}.role_permission ("roleId", "permissionKey")
           VALUES (${item.roleId}, ${item.permissionKey})
+          ON CONFLICT DO NOTHING
         `;
       }
 
       // Assign first user (admin) to the admin role in the public.member table
-      // Better-Auth 'organization' plugin creates a member entry. We need to link it to our Role.
       await db.execute(sql`
         UPDATE member 
         SET "roleId" = ${adminId} 
@@ -112,6 +145,15 @@ export async function createOrganizationAction(name: string, slug: string) {
       await client.end();
     }
 
+    // Record Audit Log (Phase 11) - AFTER provisioning
+    await recordAuditLog({
+      organizationId: org.id,
+      action: "ORG_CREATED",
+      entityType: "ORGANIZATION",
+      entityId: org.id,
+      details: `Created organization "${name}" (${slug})`
+    });
+
     return { 
       success: true, 
       organizationId: org.id, 
@@ -119,6 +161,45 @@ export async function createOrganizationAction(name: string, slug: string) {
     };
   } catch (error) {
     console.error("Organization creation failed:", error);
-    throw error;
+    const message = error instanceof Error ? error.message : "Falha ao criar organização.";
+    return { success: false, error: message };
+  }
+}
+
+export async function updateOrganizationAction(orgId: string, name: string, slug: string): Promise<UpdateOrganizationResult> {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) {
+    return { success: false, error: "Sessão expirada. Faça login novamente." };
+  }
+
+  try {
+    // 1. Verify Permission via RBAC
+    const allowed = await can(session.user.id, orgId, "org:update");
+    if (!allowed) {
+      return { success: false, error: "Você não tem permissão para editar esta organização." };
+    }
+
+    // 2. Update organization
+    await db.update(organizations)
+      .set({ 
+        name, 
+        slug,
+      })
+      .where(eq(organizations.id, orgId));
+
+    // 3. Record Audit Log
+    await recordAuditLog({
+      organizationId: orgId,
+      action: "ORG_UPDATED",
+      entityType: "ORGANIZATION",
+      entityId: orgId,
+      details: `Updated organization name to "${name}" and slug to "${slug}"`
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Organization update failed:", error);
+    const message = error instanceof Error ? error.message : "Falha ao atualizar organização.";
+    return { success: false, error: message };
   }
 }

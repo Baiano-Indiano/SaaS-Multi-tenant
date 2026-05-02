@@ -1,7 +1,7 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
-import { animate, stagger, remove } from "animejs";
+import { useRef, useLayoutEffect } from "react";
+import gsap from "gsap";
 
 export function HeroGraphic() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -9,31 +9,34 @@ export function HeroGraphic() {
   useLayoutEffect(() => {
     if (!containerRef.current) return;
 
-    const targets = containerRef.current.querySelectorAll(".stagger-item");
-    const pulseTargets = containerRef.current.querySelectorAll(".pulse-item");
+    const ctx = gsap.context(() => {
+      // Stagger reveal for sidebar + content blocks
+      gsap.fromTo(".stagger-item", 
+        { opacity: 0, y: 20 },
+        { 
+          opacity: 1, 
+          y: 0, 
+          ease: "expo.out", 
+          duration: 1, 
+          stagger: 0.15 
+        }
+      );
 
-    // Stagger reveal for sidebar + content blocks
-    animate(targets, {
-      opacity: [0, 1],
-      translateY: [20, 0],
-      ease: 'outExpo',
-      duration: 1000,
-      delay: stagger(150),
-    });
+      // Pulse items fade in after a delay
+      gsap.fromTo(".pulse-item", 
+        { opacity: 0, scale: 0.95 },
+        { 
+          opacity: 1, 
+          scale: 1, 
+          ease: "expo.out", 
+          duration: 0.8, 
+          delay: 0.4, 
+          stagger: 0.1 
+        }
+      );
+    }, containerRef);
 
-    // Pulse items fade in after a delay
-    animate(pulseTargets, {
-      opacity: [0, 1],
-      scale: [0.95, 1],
-      ease: 'outExpo',
-      duration: 800,
-      delay: stagger(100, { start: 400 }),
-    });
-
-    return () => {
-      remove(targets);
-      remove(pulseTargets);
-    };
+    return () => ctx.revert();
   }, []);
 
   return (

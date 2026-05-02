@@ -1,10 +1,8 @@
 import { db } from "../db";
-import { members } from "../db/schema";
+import { members, rolePermissions } from "../db/schema";
 import { PermissionKey } from "./permissions";
 import { eq, and } from "drizzle-orm";
-import postgres from "postgres";
-
-const connectionString = process.env.DATABASE_URL!;
+import { withAdminTenantDb } from "../db/tenant-db";
 
 export interface TenantRole {
   id: string;
@@ -36,25 +34,17 @@ export async function can(userId: string, organizationId: string, permission: Pe
     return false;
   }
 
-  const schema = member.organization.tenantSchemaName;
-  const client = postgres(connectionString, { prepare: false, max: 1 });
-  
-  try {
-    const result = await client`
-      SELECT 1 
-      FROM ${client(schema)}.role_permission 
-      WHERE "roleId" = ${member.roleId} 
-      AND "permissionKey" = ${permission}
-      LIMIT 1
-    `;
+  // Use withAdminTenantDb to execute check in the correct schema context
+  return await withAdminTenantDb(organizationId, async (tx) => {
+    const result = await tx.query.rolePermissions.findFirst({
+      where: and(
+        eq(rolePermissions.roleId, member.roleId!),
+        eq(rolePermissions.permissionKey, permission)
+      )
+    });
     
-    return result.length > 0;
-  } catch (error) {
-    console.error(`Error checking permission ${permission} for user ${userId} in ${schema}:`, error);
-    return false;
-  } finally {
-    await client.end();
-  }
+    return !!result;
+  });
 }
 
 /**
@@ -68,55 +58,40 @@ export async function requirePermission(userId: string, organizationId: string, 
 }
 
 /**
- * Fetch all roles for a given organization schema.
+ * Fetch all roles for a given organization.
  */
-export async function getRoles(schema: string): Promise<TenantRole[]> {
-  const client = postgres(connectionString, { prepare: false, max: 1 });
-  try {
-    const rows = await client`
-      SELECT id, name, slug, description, "createdAt"
-      FROM ${client(schema)}.role
-      ORDER BY name ASC
-    `;
-    return rows as unknown as TenantRole[];
-  } finally {
-    await client.end();
-  }
+export async function getRoles(organizationId: string): Promise<TenantRole[]> {
+  return await withAdminTenantDb(organizationId, async (tx) => {
+    const rows = await tx.query.roles.findMany({
+      orderBy: (roles, { asc }) => [asc(roles.name)],
+    });
+    return rows as TenantRole[];
+  });
 }
 
 /**
- * Fetch all roles with their assigned permissions.
+ * Fetch all roles with their assigned permissions for a given organization.
  */
-export async function getRolesWithPermissions(schema: string): Promise<TenantRoleWithPermissions[]> {
-  const client = postgres(connectionString, { prepare: false, max: 1 });
-  try {
+export async function getRolesWithPermissions(organizationId: string): Promise<TenantRoleWithPermissions[]> {
+  return await withAdminTenantDb(organizationId, async (tx) => {
     // 1. Fetch all roles
-    const rolesRows = await client`
-      SELECT id, name, slug, description, "createdAt"
-      FROM ${client(schema)}.role
-      ORDER BY name ASC
-    `;
+    const rolesRows = await tx.query.roles.findMany({
+      orderBy: (roles, { asc }) => [asc(roles.name)],
+    });
 
     if (rolesRows.length === 0) return [];
 
-    // 2. Fetch all permissions for these roles
-    const roleIds = rolesRows.map(r => r.id);
-    const permissionsRows = await client`
-      SELECT "roleId", "permissionKey"
-      FROM ${client(schema)}.role_permission
-      WHERE "roleId" IN ${client(roleIds)}
-    `;
+    // 2. Fetch all permissions for these roles in a single query
+    const permsRows = await tx.query.rolePermissions.findMany();
 
     // 3. Map permissions to roles
     return rolesRows.map(role => ({
-      ...(role as unknown as TenantRole),
-      permissions: permissionsRows
+      ...(role as TenantRole),
+      permissions: permsRows
         .filter(p => p.roleId === role.id)
         .map(p => p.permissionKey) as PermissionKey[]
     }));
-  } finally {
-    await client.end();
-  }
+  });
 }
 
 // Re-exported from shared constants for server-side convenience

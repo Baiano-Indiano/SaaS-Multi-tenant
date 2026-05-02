@@ -32,3 +32,27 @@ Toda a base tÃ©cnica da *Fase 1* estÃ¡ montada em ambiente local. VocÃª pode exe
 > [!TIP]
 > Caso queira que um teste estrutural e validacional automatizado seja operado, basta prosseguir com a Fase de Migrations ou Teste correspondente.
 > Sugiro utilizar comandos customizados no roadmap (ex. `/gsd-plan-phase`) para seguir para as funcionalidades de rotas visuais de login e convites.
+
+# Phase 11: Team Activity & Audit Logs
+
+A **Fase 11** estabeleceu um sistema de log de auditoria abrangente e isolado por inquilino (tenant).
+
+## O que foi implementado
+
+### 1. Instrumentação de Server Actions
+- Chamadas manuais ao recordAuditLog em todas as ações administrativas críticas (Projetos, Membros, Organizações, RBAC).
+- Padronização de todas as mensagens de log para **Inglês**.
+
+### 2. UI de Atividade Refinada
+- Feed de atividades com agrupamento por data (Today, Yesterday, etc.).
+- Linha do tempo vertical aprimorada com ícones contextuais e visual prêmio.
+- Modal de detalhes para inspeção de metadados técnicos (IP, User Agent).
+
+### 3. Limpeza Automática (Cron)
+- Endpoint de cron no Vercel (/api/cron/cleanup-logs) para remover logs com mais de 90 dias.
+- Implementação segura usando withAdminTenantDb para iterar sobre todos os esquemas de inquilinos.
+
+---
+**Próximos Passos**: 
+O sistema está pronto para produção. Recomenda-se configurar a CRON_SECRET no painel da Vercel para ativar a limpeza automática.
+

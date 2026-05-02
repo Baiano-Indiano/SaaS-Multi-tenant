@@ -55,6 +55,42 @@ export const PERMISSIONS = {
     name: "Manage Subscription",
     description: "Ability to change plans and update payment methods",
   },
+
+  // Audit Logs
+  "audit_logs:read": {
+    key: "audit_logs:read",
+    name: "View Activity Log",
+    description: "Ability to view the organization's administrative activity log",
+  },
+
+  // Project Management
+  "projects:read": {
+    key: "projects:read",
+    name: "Read Projects",
+    description: "Ability to view projects",
+  },
+  "projects:create": {
+    key: "projects:create",
+    name: "Create Projects",
+    description: "Ability to create new projects",
+  },
+  "projects:update": {
+    key: "projects:update",
+    name: "Update Projects",
+    description: "Ability to update project settings",
+  },
+  "projects:delete": {
+    key: "projects:delete",
+    name: "Delete Projects",
+    description: "Ability to delete projects",
+  },
+
+  // Security Management
+  "security:manage": {
+    key: "security:manage",
+    name: "Manage Security",
+    description: "Ability to enforce 2FA and manage security policies for the organization",
+  },
 } as const;
 
 export type PermissionKey = keyof typeof PERMISSIONS;
@@ -74,9 +110,22 @@ export const DEFAULT_MEMBER_PERMISSIONS: PermissionKey[] = [
   "members:read",
   "members:invite",
   "billing:read",
+  "projects:read",
 ];
 
 export const DEFAULT_VIEWER_PERMISSIONS: PermissionKey[] = [
   "members:read",
   "billing:read",
+  "projects:read",
 ];
+
+/**
+ * Mapping of role slugs to their default permission sets
+ */
+export const ROLE_PERMISSIONS_MAP: Record<string, PermissionKey[]> = {
+  admin: DEFAULT_ADMIN_PERMISSIONS,
+  administrator: DEFAULT_ADMIN_PERMISSIONS,
+  owner: DEFAULT_ADMIN_PERMISSIONS,
+  member: DEFAULT_MEMBER_PERMISSIONS,
+  viewer: DEFAULT_VIEWER_PERMISSIONS,
+};

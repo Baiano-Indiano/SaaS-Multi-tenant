@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { animate } from "animejs";
+import gsap from "gsap";
 import { Button } from "@/components/ui/button";
 import { acceptInvitationAction } from "@/app/actions/member";
 import { toast } from "sonner";
-import { Loader2, LogOut, CheckCircle2 } from "lucide-react";
+import { LogOut, CheckCircle2 } from "lucide-react";
 import { authClient } from "@/lib/auth/client";
 
 interface AcceptInviteButtonProps {
@@ -15,35 +15,53 @@ interface AcceptInviteButtonProps {
   currentEmail?: string;
 }
 
+import { useTranslations } from "next-intl";
+
 export function AcceptInviteButton({ 
   invitationId, 
   isEmailMismatch, 
   targetEmail, 
   currentEmail 
 }: AcceptInviteButtonProps) {
+  const t = useTranslations("InviteFlow");
   const cardRef = useRef<HTMLDivElement>(null);
   const [isPending, setIsPending] = useState(false);
 
   useEffect(() => {
     if (cardRef.current) {
-      animate(cardRef.current, {
-        translateY: [20, 0],
-        opacity: [0, 1],
-        duration: 1000,
-        easing: "easeOutExpo",
-        delay: 200
+      const ctx = gsap.context(() => {
+        gsap.fromTo(cardRef.current, 
+          { 
+            y: 20, 
+            opacity: 0 
+          },
+          { 
+            y: 0, 
+            opacity: 1, 
+            duration: 1, 
+            ease: "expo.out",
+            delay: 0.2
+          }
+        );
       });
+      return () => ctx.revert();
     }
   }, []);
 
   const handleAccept = async () => {
     setIsPending(true);
+    const promise = acceptInvitationAction(invitationId);
+
+    toast.promise(promise, {
+      loading: t("processing"),
+      success: t("success"),
+      error: (error) => error instanceof Error ? error.message : t("error"),
+    });
+
     try {
-      await acceptInvitationAction(invitationId);
-      toast.success("Acesso confirmado à organização!");
+      await promise;
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : "Falha ao aceitar convite");
     } finally {
       setIsPending(false);
     }
@@ -65,10 +83,9 @@ export function AcceptInviteButton({
             <LogOut className="w-8 h-8 text-red-500" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-zinc-100 tracking-tight">Conflito de Identidade</h1>
+            <h1 className="text-2xl font-bold text-zinc-100 tracking-tight">{t("identityConflict")}</h1>
             <p className="text-zinc-400 text-sm leading-relaxed">
-              Este convite é restrito ao e-mail <span className="text-zinc-200 font-medium">{targetEmail}</span>. 
-              Você está logado atualmente como <span className="text-zinc-200 font-medium">{currentEmail}</span>.
+              {t("conflictDescription", { targetEmail, currentEmail: currentEmail ?? "" })}
             </p>
           </div>
           
@@ -77,11 +94,11 @@ export function AcceptInviteButton({
             className="w-full h-12 text-base font-medium transition-all hover:scale-[1.02]"
             onClick={handleLogout}
           >
-            Sair e Trocar de Conta
+            {t("logoutAndSwitch")}
           </Button>
           
           <p className="text-xs text-zinc-500">
-            A proteção de dados da organização exige que o e-mail seja idêntico ao convidado.
+            {t("securityNotice")}
           </p>
         </div>
       </div>
@@ -99,25 +116,18 @@ export function AcceptInviteButton({
         </div>
         
         <div className="space-y-4">
-          <h1 className="text-3xl font-bold text-zinc-100 tracking-tight">Convite Recebido</h1>
+          <h1 className="text-3xl font-bold text-zinc-100 tracking-tight">{t("title")}</h1>
           <p className="text-zinc-400 text-sm">
-            Clique no botão abaixo para ingressar e começar a colaborar com sua equipe.
+            {t("description")}
           </p>
         </div>
 
         <Button 
           className="w-full h-12 text-base font-semibold bg-zinc-100 text-zinc-900 hover:bg-zinc-200 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-70"
           onClick={handleAccept}
-          disabled={isPending}
+          isLoading={isPending}
         >
-          {isPending ? (
-            <>
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Processando...
-            </>
-          ) : (
-            "Aceitar e Ingressar no Dashboard"
-          )}
+          {t("acceptButton")}
         </Button>
         
         <p className="text-[10px] text-zinc-600 uppercase tracking-widest font-bold">

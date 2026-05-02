@@ -1,0 +1,633 @@
+{
+  "Marketing": {
+    "title": "A Base para SaaS B2B Que Você Pode Confiar.",
+    "subtitle": "Arquitetura de dados segura e isolada por tenant com gerenciamento flexível de organizações que acelera o lançamento de aplicações prontas para o mercado corporativo.",
+    "getStarted": "Começar Agora",
+    "talkToSales": "Falar com Vendas",
+    "trustedBy": "Confiado por Equipes Corporativas",
+    "featuresTitle": "Tudo o que você precisa para escalar",
+    "bento": {
+      "schema": {
+        "title": "Arquitetura de Schema por Tenant",
+        "description": "Isolamento de dados completo nativo usando schemas PostgreSQL. Segurança inigualável para clientes corporativos."
+      },
+      "rbac": {
+        "title": "Acesso Baseado em Cargos",
+        "description": "Permissões granulares e gerenciamento de cargos atribuídos dinamicamente via middleware genérico."
+      },
+      "auth": {
+        "title": "Autenticação Moderna",
+        "description": "Integrado com Better-Auth para gerenciamento de identidade robusto em todas as organizações."
+      },
+      "ui": {
+        "title": "Componentes de UI Premium",
+        "description": "Desenvolvido com Tailwind v4 e Shadcn/ui. Componentes bonitos, acessíveis e customizáveis prontos para sua marca."
+      }
+    },
+    "cta": {
+      "title": "Pronto para construir seu SaaS?",
+      "subtitle": "Pare de reconstruir autenticação, cobrança e organizações. Comece a construir seu produto.",
+      "button": "Comece a Construir Agora"
+    }
+  },
+  "Auth": {
+    "login": "Entrar",
+    "register": "Cadastrar",
+    "welcomeBack": "Bem-vindo de volta",
+    "createAccount": "Crie sua conta",
+    "subtitle": "A infraestrutura definitiva para sua aplicação B2B.",
+    "loginTitle": "Entrar na conta",
+    "registerTitle": "Criar uma conta",
+    "registerSubtitle": "Junte-se à próxima geração de startups enterprise.",
+    "loginDescription": "Digite seu e-mail e senha para acessar sua conta.",
+    "registerDescription": "Preencha os dados abaixo para começar sua jornada.",
+    "emailLabel": "E-mail",
+    "passwordLabel": "Senha",
+    "nameLabel": "Nome",
+    "emailPlaceholder": "exemplo@email.com",
+    "namePlaceholder": "Seu nome",
+    "signInButton": "Entrar",
+    "signUpButton": "Cadastrar",
+    "orUse": "Ou use",
+    "enterpriseSSO": "Enterprise SSO",
+    "noAccount": "Não tem uma conta?",
+    "registerLink": "Registre-se",
+    "hasAccount": "Já tem uma conta?",
+    "loginLink": "Faça login",
+    "corporateEmail": "E-mail Corporativo",
+    "corporateEmailPlaceholder": "nome@empresa.com",
+    "ssoRedirectNotice": "Nós redirecionaremos você para o provedor de identidade da sua empresa.",
+    "continueSSO": "Continuar com SSO",
+    "backToLogin": "Voltar para login padrão",
+    "verifyingCredentials": "Verificando credenciais...",
+    "creatingAccount": "Criando sua conta...",
+    "welcomeBackToast": "Bem-vindo de volta!",
+    "accountCreatedToast": "Conta criada com sucesso!",
+    "invalidCredentials": "E-mail ou senha inválidos.",
+    "emailAlreadyRegistered": "Este e-mail já está cadastrado. Faça login.",
+    "userNotFound": "Nenhuma conta encontrada com este e-mail. Clique em \"Registre-se\" para criar sua conta.",
+    "authFailed": "Falha na autenticação.",
+    "couldNotSignIn": "Não foi possível entrar. Verifique suas credenciais.",
+    "couldNotCreateAccount": "Não foi possível criar a conta. Tente novamente.",
+    "invalidEmail": "E-mail inválido",
+    "passwordTooShort": "A senha deve ter pelo menos 6 caracteres",
+    "nameRequired": "Nome é obrigatório"
+  },
+  "Navigation": {
+    "dashboard": "Dashboard",
+    "settings": "Configurações",
+    "projects": "Projetos",
+    "members": "Membros",
+    "playground": "Playground",
+    "accountSettings": "Configurações da Conta",
+    "logout": "Sair",
+    "organization": "Organização",
+    "user": "Usuário",
+    "login": "Entrar",
+    "goToDashboard": "Ir para o Dashboard"
+  },
+  "Footer": {
+    "allRightsReserved": "Todos os direitos reservados.",
+    "builtWith": "Construído com {tech}"
+  },
+  "Organization": {
+    "selectOrganization": "Selecionar Organização",
+    "organizations": "Organizações",
+    "createOrganization": "Criar Organização",
+    "organizationsCount": "{count} {count, plural, one {organização} other {organizações}}",
+    "createTitle": "Criar Organização",
+    "createDescription": "Dê um nome ao seu espaço de trabalho. Você pode convidar membros após a criação.",
+    "orgNameLabel": "Nome da Organização",
+    "orgNamePlaceholder": "Acme Corp",
+    "creating": "Criando organização...",
+    "createdSuccess": "Organização criada com sucesso!"
+  },
+  "Common": {
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "delete": "Excluir",
+    "create": "Criar",
+    "loading": "Carregando..."
+  },
+  "Dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Gerencie os recursos da sua organização e monitore atividades em tempo real.",
+    "resourceDistribution": "Distribuição de Recursos",
+    "resourceDistributionDescription": "Alocação ativa de recursos entre projetos.",
+    "live": "Ao Vivo",
+    "growthAnalytics": "Análise de Crescimento",
+    "growthAnalyticsDescription": "Tendências de aquisição e engajamento de membros.",
+    "recentActivity": "Atividade Recente",
+    "recentActivityDescription": "Feed em tempo real de eventos da organização.",
+    "systemHealth": "Saúde do Sistema",
+    "apiLatency": "Latência da API",
+    "upcomingTasks": "Próximas Tarefas",
+    "upgradeSchema": "Atualizar esquema v2.0",
+    "implementWebhooks": "Implementar Webhooks v3.0",
+    "overview": "Visão Geral da Organização",
+    "managing": "Gerenciando",
+    "proTip": "Dica Pro",
+    "proTipContent": "Use a barra lateral para gerenciar funções e permissões de equipe especificamente para este esquema de organização.",
+    "fastDeploy": "Implantação Rápida",
+    "fastDeployContent": "Seus projetos estão isolados e prontos para acesso externo seguro.",
+    "activeProjects": "Projetos Ativos",
+    "capacityUsed": "{percent}% de capacidade usada",
+    "totalMembers": "Total de Membros",
+    "pending": "+{count} Pendentes",
+    "activeSeats": "Assentos ativos",
+    "customRoles": "Cargos Customizados",
+    "accessProfiles": "Perfis de acesso definidos",
+    "apiUsage": "Uso de API",
+    "planLimit": "Limite do Plano"
+  },
+  "SelectOrg": {
+    "title": "Suas Organizações",
+    "subtitle": "Selecione uma organização para continuar ou crie uma nova.",
+    "existing": "Existentes",
+    "noneFound": "Nenhuma organização encontrada.",
+    "createFirst": "Crie sua primeira organização no formulário ao lado.",
+    "newOrganization": "Nova Organização",
+    "createTenant": "Criar Tenant",
+    "configureWorkspace": "Configure seu espaço de trabalho isolado.",
+    "companyName": "Nome da Empresa",
+    "urlSlug": "Slug da URL",
+    "failedCreating": "Falha ao criar organização.",
+    "companyPlaceholder": "Ex: Acme Inc",
+    "slugPlaceholder": "acme-inc",
+    "opening": "Abrindo organização...",
+    "welcome": "Bem-vindo!",
+    "errorOpening": "Não foi possível abrir esta organização agora."
+  },
+  "Account": {
+    "title": "Configurações da Conta",
+    "description": "Gerencie as configurações da sua conta pessoal e preferências de segurança.",
+    "security": "Segurança",
+    "profile": "Perfil",
+    "profileSettings": {
+      "title": "Perfil Pessoal",
+      "description": "Atualize suas informações pessoais e foto de perfil.",
+      "nameLabel": "Nome de Exibição",
+      "namePlaceholder": "Seu Nome",
+      "emailLabel": "Endereço de E-mail",
+      "emailNotice": "O e-mail não pode ser alterado diretamente.",
+      "saveChanges": "Salvar Alterações",
+      "saving": "Salvando...",
+      "savedSuccess": "Perfil atualizado com sucesso!",
+      "error": "Falha ao atualizar o perfil",
+      "validation": {
+        "nameMin": "O nome deve ter pelo menos 2 caracteres."
+      }
+    }
+  },
+  "Security": {
+    "title": "Configurações de Segurança",
+    "description": "Gerencie a segurança da sua conta e métodos de autenticação.",
+    "authenticatorApp": "App Autenticador",
+    "authenticatorDescription": "Use um app como Google Authenticator ou 1Password para gerar códigos de uso único.",
+    "twoFactorStatus": "Autenticação de Dois Fatores",
+    "enabled": "Ativado",
+    "disabled": "Desativado",
+    "enable": "Ativar",
+    "disable": "Desativar",
+    "thisDevice": "ESTE DISPOSITIVO",
+    "signOutDevice": "Encerrar sessão neste dispositivo",
+    "revokeAllOthers": "Sair de todos os outros",
+    "started": "Iniciado",
+    "ago": "atrás",
+    "unknownIP": "IP Desconhecido",
+    "unknownDevice": "Dispositivo Desconhecido",
+    "noneFound": "Nenhuma sessão ativa encontrada.",
+    "loadingSessions": "Carregando sessões ativas...",
+    "sessionsRevoked": "Todas as outras sessões foram revogadas",
+    "sessionRevoked": "Sessão revogada com sucesso",
+    "failedRevoke": "Falha ao revogar sessão",
+    "failedLoad": "Falha ao carregar sessões ativas",
+    "sessions": "Sessões Ativas",
+    "sessionsDescription": "Gerencie suas sessões ativas em diferentes dispositivos e navegadores.",
+    "twoFactorTitle": "Autenticação de Dois Fatores",
+    "twoFactorDescription": "Adicione uma camada extra de segurança à sua conta.",
+    "chrome": "Chrome no Desktop",
+    "firefox": "Firefox no Desktop",
+    "safari": "Safari no Desktop",
+    "postman": "Postman Runtime",
+    "unexpectedError": "Ocorreu um erro inesperado",
+    "genericError": "Ocorreu um erro",
+    "status": "Status",
+    "enable2FA": "Ativar 2FA",
+    "disable2FA": "Desativar 2FA",
+    "setup2FA": "Configurar Autenticação de Dois Fatores",
+    "setup2FADescription": "Proteja sua conta com TOTP (Senha de Uso Único Baseada em Tempo).",
+    "confirmPassword": "Confirme sua senha",
+    "enterCurrentPassword": "Digite sua senha atual",
+    "continue": "Continuar",
+    "scanQRCode": "Escaneie o código QR com seu aplicativo de autenticação (como Google Authenticator ou 1Password) e insira o código de 6 dígitos abaixo.",
+    "verificationCode": "Código de Verificação",
+    "verifyAndEnable": "Verificar e Ativar",
+    "savedBackupCodes": "Eu salvei meus códigos de backup",
+    "failedStartSetup": "Falha ao iniciar a configuração do 2FA",
+    "invalidCode": "Código de verificação inválido",
+    "verifiedSuccess": "Autenticação de dois fatores verificada!",
+    "failedVerify": "Falha ao verificar o código",
+    "disable2FADescription": "Isso tornará sua conta menos segura. Por favor, digite sua senha para confirmar.",
+    "password": "Senha",
+    "failedDisable": "Falha ao desativar o 2FA",
+    "disabledSuccess": "Autenticação de dois fatores desativada",
+    "saveBackupCodes": "Salve seus códigos de backup!",
+    "backupCodesWarning": "Se você perder o acesso ao seu aplicativo de autenticação, esses códigos são a ÚNICA maneira de acessar sua conta.",
+    "copy": "Copiar",
+    "download": "Baixar",
+    "backupCodesCopied": "Códigos de backup copiados para a área de transferência",
+    "backupCodesDownloaded": "Códigos de backup baixados"
+  },
+  "Hero": {
+    "totalRevenue": "Receita Total",
+    "revenueAmount": "R$ 128.430,00",
+    "activity": "Atividade",
+    "scrollToAssemble": "Role para montar"
+  },
+  "InviteFlow": {
+    "title": "Convite Recebido",
+    "description": "Clique no botão abaixo para ingressar e começar a colaborar com sua equipe.",
+    "acceptButton": "Aceitar e Ingressar no Dashboard",
+    "identityConflict": "Conflito de Identidade",
+    "conflictDescription": "Este convite é restrito ao e-mail {targetEmail}. Você está logado atualmente como {currentEmail}.",
+    "logoutAndSwitch": "Sair e Trocar de Conta",
+    "securityNotice": "A proteção de dados da organização exige que o e-mail seja idêntico ao do convidado.",
+    "processing": "Processando seu acesso...",
+    "success": "Acesso confirmado à organização!",
+    "error": "Falha ao aceitar o convite"
+  },
+  "Members": {
+    "title": "Membros da Equipe",
+    "description": "Gerencie quem tem acesso à sua organização e quais são suas permissões.",
+    "cancel": "Cancelar",
+    "upgradeNotice": "Cargos e permissões são gerenciados por organização. Precisa de cargos personalizados? Faça o upgrade para o plano Enterprise.",
+    "inviteMember": "Convidar Membro",
+    "inviteDescription": "Envie um convite para um novo membro se juntar à sua organização.",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "nome@empresa.com",
+    "roleLabel": "Função",
+    "sendInvitation": "Enviar Convite",
+    "inviting": "Convidando...",
+    "invitedSuccess": "Convite enviado com sucesso!",
+    "failedInvite": "Falha ao enviar convite.",
+    "limitReached": "Limite de membros atingido.",
+    "limitReachedTitle": "Limite de Membros Atingido",
+    "limitReachedReason": "Você atingiu o limite de membros do seu plano atual. Faça o upgrade para convidar mais pessoas.",
+    "selectRole": "Selecione um cargo",
+    "updatingRole": "Atualizando nível de acesso...",
+    "roleUpdated": "Nível de acesso atualizado",
+    "roleUpdateFailed": "Falha ao atualizar nível de acesso",
+    "selectAccessLevel": "Selecionar nível de acesso",
+    "systemStandards": "Padrões do Sistema",
+    "organizationCustom": "Customizados da Organização",
+    "removingMember": "Removendo membro...",
+    "memberRemoved": "Membro removido com sucesso",
+    "removeFailed": "Falha ao remover membro",
+    "offboard": "Desligar",
+    "removeConfirmTitle": "Remover Membro?",
+    "removeConfirmDescription": "Isso revogará imediatamente todo o acesso a esta organização. Esta ação é registrada e só pode ser desfeita por um novo convite.",
+    "revokeAccess": "Revogar Acesso",
+    "sessions": {
+      "title": "Sessões",
+      "manageTitle": "Gerenciar Sessões",
+      "description": "Visualizando sessões ativas para {name}.",
+      "revokeAll": "Revogar Tudo",
+      "fetching": "Buscando dispositivos ativos...",
+      "unknownDevice": "Dispositivo Desconhecido",
+      "chromeDesktop": "Chrome no Desktop",
+      "firefoxDesktop": "Firefox no Desktop",
+      "safariDesktop": "Safari no Desktop",
+      "unknownIp": "IP Desconhecido",
+      "lastSeen": "{time}",
+      "terminate": "Encerrar Sessão",
+      "noSessions": "Sem sessões ativas",
+      "noSessionsDesc": "Este membro não está logado em nenhum dispositivo no momento.",
+      "revokeWarning": "Revogar uma sessão desconectará imediatamente o membro daquele dispositivo. Todo o progresso não salvo será perdido.",
+      "loadError": "Erro ao carregar sessões",
+      "revokeSuccess": "Sessão revogada",
+      "revokeError": "Erro ao revogar sessão",
+      "revokeAllSuccess": "Todas as sessões revogadas",
+      "revokeAllError": "Erro ao revogar sessões"
+    },
+    "table": {
+      "member": "Membro",
+      "role": "Função",
+      "joinedAt": "Entrou em",
+      "actions": "Ações"
+    },
+    "roles": {
+      "admin": "Administrador",
+      "member": "Membro",
+      "owner": "Dono",
+      "viewer": "Visualizador"
+    },
+    "validation": {
+      "emailInvalid": "E-mail inválido",
+      "roleRequired": "A função é obrigatória"
+    },
+    "invitations": {
+      "title": "Convites Pendentes",
+      "email": "E-mail",
+      "role": "Cargo",
+      "expiresAt": "Expira em",
+      "actions": "Ações",
+      "expiresToday": "Hoje",
+      "expiresInDays": "{days} dias",
+      "revoke": "Revogar",
+      "canceling": "Cancelando convite...",
+      "cancelSuccess": "Convite cancelado com sucesso",
+      "cancelError": "Falha ao cancelar convite",
+      "cancelConfirmTitle": "Cancelar convite?",
+      "cancelConfirmDescription": "A pessoa convidada não poderá mais usar este link para entrar na organização.",
+      "back": "Voltar",
+      "confirmCancel": "Confirmar cancelamento"
+    }
+  },
+  "Settings": {
+    "title": "Configurações Gerais",
+    "description": "Gerencie o perfil da sua organização, informações básicas e preferências globais.",
+    "subscriptionPlan": "Plano de Assinatura",
+    "free": "Gratuito",
+    "active": "ATIVO",
+    "manage": "Gerenciar",
+    "orgId": "ID da Organização",
+    "comingSoon": "Funcionalidades adicionais como marca personalizada, políticas de segurança e webhooks avançados estão sendo preparadas para sua organização.",
+    "profile": {
+      "title": "Perfil da Organização",
+      "description": "Detalhes básicos sobre sua equipe e como ela aparece para os outros.",
+      "displayName": "Nome de Exibição",
+      "displayNamePlaceholder": "Acme Corp",
+      "orgUrl": "URL da Organização (Slug)",
+      "orgUrlPlaceholder": "acme-corp",
+      "saveChanges": "Salvar Alterações",
+      "saving": "Salvando alterações...",
+      "savedSuccess": "Organização atualizada com sucesso!",
+      "error": "Ocorreu um erro ao atualizar a organização.",
+      "validation": {
+        "nameMin": "O nome da organização deve ter pelo menos 2 caracteres.",
+        "slugMin": "O slug deve ter pelo menos 2 caracteres.",
+        "slugInvalid": "O slug pode conter apenas letras minúsculas, números e hífens."
+      }
+    },
+    "security": {
+      "title": "Políticas de Segurança",
+      "description": "Gerencie requisitos de segurança e controles de acesso em toda a organização.",
+      "badge": "ENTERPRISE",
+      "twoFactorTitle": "Autenticação de Dois Fatores Obrigatória",
+      "twoFactorDescription": "Quando ativado, todos os membros devem ter o 2FA ativo para acessar os dados da organização. Usuários sem 2FA serão solicitados a configurá-lo antes de prosseguir.",
+      "warningTitle": "Aviso de Segurança",
+      "warningDescription": "Sua organização não está impondo o 2FA no momento. Isso aumenta o risco de acesso não autorizado por meio de credenciais comprometidas.",
+      "enabledSuccess": "Imposição de 2FA ativada para todos os membros.",
+      "disabledSuccess": "Imposição de 2FA desativada.",
+      "updateError": "Ocorreu um erro ao atualizar as configurações."
+    }
+  },
+  "Projects": {
+    "title": "Projetos",
+    "description": "Gerencie os projetos e quadros isolados da sua organização.",
+    "newProject": "Novo Projeto",
+    "createTitle": "Criar Novo Projeto",
+    "createDesc": "Este projeto será armazenado no esquema isolado da sua organização.",
+    "noneFound": "Nenhum projeto encontrado",
+    "noProjectsDesc": "Esta organização ainda não possui projetos. Projetos criados aqui são estritamente isolados para este locatário.",
+    "createFirst": "Criar Primeiro Projeto",
+    "noDescription": "Sem descrição",
+    "nameLabel": "Nome do Projeto",
+    "namePlaceholder": "Ex: Redesign do App Mobile",
+    "descLabel": "Descrição (Opcional)",
+    "descPlaceholder": "Sobre o que é este projeto?",
+    "creating": "Criando projeto...",
+    "createdSuccess": "Projeto criado com sucesso!",
+    "createButton": "Criar Projeto",
+    "cancel": "Cancelar",
+    "open": "Abrir",
+    "settingsLabel": "Configurações",
+    "delete": "Excluir",
+    "actions": "Ações",
+    "deleteConfirmTitle": "Você tem certeza?",
+    "deleteConfirmDesc": "Este projeto será excluído permanentemente do esquema desta organização. Esta ação não pode ser desfeita.",
+    "deleting": "Excluindo...",
+    "deletedSuccess": "Projeto excluído com sucesso!",
+    "deleteError": "Falha ao excluir projeto.",
+    "updatedSuccess": "Projeto atualizado com sucesso!",
+    "updateError": "Falha ao atualizar projeto.",
+    "unexpectedError": "Ocorreu um erro inesperado.",
+    "errorDefault": "Ocorreu um erro.",
+    "limitReached": "Limite de projetos atingido.",
+    "limitReachedTitle": "Limite de Projetos Atingido",
+    "limitReachedReason": "Seu plano atual atingiu o limite de projetos. Faça o upgrade para continuar criando novos espaços de trabalho.",
+    "statusLabel": "Status",
+    "status": {
+      "active": "Ativo",
+      "archived": "Arquivado"
+    },
+    "selectStatus": "Selecione o status",
+    "saveChanges": "Salvar Alterações",
+    "dangerZone": "Zona de Perigo",
+    "dangerZoneDesc": "Ações irreversíveis para este projeto. Tenha cuidado.",
+    "deleteProjectTitle": "Excluir Projeto",
+    "deleteProjectDesc": "Isso excluirá permanentemente o projeto e todos os seus dados.",
+    "deleteAbsoluteConfirm": "Você tem certeza absoluta?",
+    "deleteAbsoluteDesc": "Esta ação não pode ser desfeita. Isso excluirá permanentemente o projeto {name} e removerá todos os dados associados dos nossos servidores.",
+    "yesDelete": "Sim, excluir projeto",
+    "table": {
+      "name": "Nome do Projeto",
+      "status": "Status",
+      "createdAt": "Criado em",
+      "actions": "Ações"
+    },
+    "validation": {
+      "nameMin": "O nome do projeto deve ter pelo menos 3 caracteres"
+    },
+    "settings": {
+      "breadcrumbDashboard": "Dashboard",
+      "breadcrumbProjects": "Projetos",
+      "breadcrumbSettings": "Configurações",
+      "title": "Configurações do Projeto",
+      "description": "Atualize a identidade e a configuração básica do seu projeto.",
+      "generalTab": "Geral",
+      "generalDesc": "Atualize as informações básicas do seu projeto.",
+      "saveChanges": "Salvar Alterações",
+      "saving": "Salvando...",
+      "savedSuccess": "Projeto atualizado com sucesso",
+      "error": "Falha ao atualizar projeto"
+    }
+  },
+  "Playground": {
+    "title": "Playground de API",
+    "description": "Teste nossos endpoints em tempo real com zero atrito.",
+    "createKey": "Criar Chave de Teste",
+    "noRoleError": "Nenhum cargo adequado encontrado para geração de chave de API.",
+    "keyName": "Chave de Playground ({date})",
+    "keyInjected": "Chave de API de teste gerada e injetada!",
+    "failedToGenerate": "Falha ao gerar chave de API",
+    "injected": "injetada"
+  },
+  "Billing": {
+    "title": "Plano e Faturamento",
+    "description": "Gerencie a assinatura e os limites da sua organização. Atualmente no plano {planName}.",
+    "success": "Sucesso!",
+    "successDescription": "Sua assinatura foi atualizada com sucesso. Pode levar alguns segundos para o sistema processar.",
+    "canceled": "Cancelado",
+    "canceledDescription": "O processo de checkout foi cancelado. Nenhuma cobrança foi realizada.",
+    "needHelp": "Precisa de algo mais?",
+    "stripePortal": "Para cancelamentos, notas fiscais ou alteração de método de pagamento, utilize o Portal de Faturamento do Stripe.",
+    "notFound": "Organização não encontrada.",
+    "perMonth": "/mês",
+    "popular": "Mais Popular",
+    "currentPlan": "Seu Plano Atual",
+    "subscribeNow": "Assinar agora",
+    "loadingCheckout": "Preparando checkout seguro do Stripe...",
+    "redirecting": "Redirecionando...",
+    "checkoutError": "Não foi possível iniciar o checkout.",
+    "plans": {
+      "free": {
+        "name": "Gratuito",
+        "price": "R$ 0",
+        "description": "Ideal para começar e testar a plataforma.",
+        "features": [
+          "Até 2 membros",
+          "Acesso básico",
+          "Suporte via comunidade"
+        ]
+      },
+      "starter": {
+        "name": "Starter",
+        "price": "R$ 19,90",
+        "description": "Para pequenos times que precisam de mais poder.",
+        "features": [
+          "Até 10 membros",
+          "Cargos customizados",
+          "Suporte prioritário",
+          "Analytics básico"
+        ]
+      },
+      "pro": {
+        "name": "Pro",
+        "price": "R$ 49,90",
+        "description": "Escalabilidade e controle total para sua empresa.",
+        "features": [
+          "Membros ilimitados",
+          "Cargos customizados ilimitados",
+          "Domínios customizados",
+          "Suporte 24/7 dedicado",
+          "Analytics avançado",
+          "Logs de auditoria"
+        ]
+      }
+    }
+  },
+  "Compliance": {
+    "title": "Requisito de Segurança",
+    "description": "Para proteger os dados organizacionais, este espaço de trabalho exige que todos os membros tenham a Autenticação de Dois Fatores (2FA) ativada.",
+    "setupTitle": "Configurar 2FA Agora",
+    "setupDescription": "Configure seu aplicativo autenticador para recuperar o acesso a esta organização.",
+    "onEnabledSuccess": "2FA ativado! Acesso concedido.",
+    "notReady": "Ainda não está pronto?",
+    "notReadyDescription": "Você pode mudar para outra organização ou encerrar a sessão da sua conta.",
+    "switchOrg": "Trocar Organização",
+    "signOut": "Sair",
+    "lostAccess": "Perdeu o acesso ao seu dispositivo 2FA? Entre em contato com o administrador da sua organização para redefinir suas configurações de segurança."
+  },
+  "Benefits": {
+    "title": "Construído para Escala e Confiabilidade",
+    "subtitle": "Nossa infraestrutura foi projetada para lidar com as demandas corporativas mais exigentes sem compromissos.",
+    "items": {
+      "isolation": {
+        "title": "Isolamento de Dados Corporativo",
+        "description": "Cada tenant recebe um schema PostgreSQL dedicado. Sem vazamentos de dados, conformidade garantida."
+      },
+      "performance": {
+        "title": "Performance Global no Edge",
+        "description": "Tempos de resposta de baixa latência em todo o mundo com nosso sistema de proxy Edge otimizado."
+      },
+      "automations": {
+        "title": "Automações Nativas",
+        "description": "Incorpore fluxos de trabalho complexos em seu produto para economizar horas de trabalho manual dos usuários."
+      },
+      "api": {
+        "title": "API Focada no Desenvolvedor",
+        "description": "Arquitetura extensível com webhooks nativos e acesso programático por organização."
+      }
+    },
+    "currency": "R$"
+  },
+  "Pricing": {
+    "title": "Preços Transparentes para Qualquer Escala",
+    "subtitle": "Escolha o plano que melhor se adapta às necessidades da sua organização.",
+    "monthly": "Mensal",
+    "annual": "Anual",
+    "save": "ECONOMIZE 20%",
+    "popular": "Mais Popular",
+    "perMonth": "/mês",
+    "custom": "Personalizado",
+    "currency": "R$",
+    "plans": {
+      "starter": {
+        "name": "Starter",
+        "description": "Perfeito para testes e protótipos em estágio inicial.",
+        "priceMonthly": "0",
+        "priceAnnual": "0",
+        "cta": "Começar grátis",
+        "features": [
+          "Até 5 membros",
+          "2 Projetos Ativos",
+          "Infraestrutura Compartilhada",
+          "Suporte via Comunidade"
+        ]
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "Escale seu negócio com ferramentas de organização avançadas.",
+        "priceMonthly": "49,90",
+        "priceAnnual": "39,90",
+        "cta": "Ir para o Pro",
+        "features": [
+          "Até 50 membros",
+          "Projetos Ilimitados",
+          "Cargos Customizados (RBAC)",
+          "Suporte Prioritário",
+          "Analytics Básico"
+        ]
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Segurança e conformidade máxima para grandes equipes.",
+        "priceMonthly": "Personalizado",
+        "priceAnnual": "Personalizado",
+        "cta": "Falar com Vendas",
+        "features": [
+          "Membros Ilimitados",
+          "Schema Dedicado",
+          "Logs de Auditoria",
+          "Garantia de SLA",
+          "Suporte 24/7",
+          "API & Webhooks"
+        ]
+      }
+    }
+  },
+  "FAQ": {
+    "title": "Perguntas Frequentes",
+    "subtitle": "Tudo o que você precisa saber sobre nossa plataforma corporativa.",
+    "items": {
+      "schema": {
+        "question": "Como funciona o isolamento de schema por tenant?",
+        "answer": "Cada organização criada em nossa plataforma recebe um schema PostgreSQL exclusivo. Isso garante que os dados sejam fisicamente isolados no nível do banco de dados, evitando qualquer possibilidade de vazamento de dados entre tenants, mantendo a performance de uma única instância de banco de dados."
+      },
+      "rbac": {
+        "question": "Posso personalizar os cargos e permissões?",
+        "answer": "Sim, nossos planos Professional e Enterprise permitem definir cargos personalizados com permissões granulares (RBAC). Você pode controlar o acesso a recursos e ações específicas dentro de cada organização."
+      },
+      "integration": {
+        "question": "Como integro minhas ferramentas existentes?",
+        "answer": "Oferecemos suporte nativo para Chaves de API e Webhooks. Você pode gerar chaves para seus desenvolvedores acessarem nossa API programaticamente ou registrar URLs de webhook para receber notificações em tempo real sobre eventos na sua organização."
+      },
+      "limits": {
+        "question": "Existe um limite no número de projetos?",
+        "answer": "O plano Starter inclui 2 projetos, enquanto os planos Professional e Enterprise oferecem criação ilimitada de projetos para apoiar o crescimento do seu negócio."
+      }
+    }
+  }
+}

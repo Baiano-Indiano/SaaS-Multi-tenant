@@ -1,5 +1,6 @@
 import { createAuthClient } from "better-auth/react"
-import { organizationClient } from "better-auth/client/plugins"
+import { organizationClient, twoFactorClient, multiSessionClient } from "better-auth/client/plugins"
+import { ssoClient } from "@better-auth/sso/client"
 import { PermissionKey } from "./permissions"
 import { PERMISSIONS_METADATA_KEY } from "./rbac-constants"
 
@@ -25,7 +26,14 @@ interface AuthSession {
 export const authClient = createAuthClient({
   baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   plugins: [
-    organizationClient()
+    organizationClient(),
+    twoFactorClient({
+      onTwoFactorRedirect: () => {
+        window.location.href = "/verify-2fa";
+      },
+    }),
+    multiSessionClient(),
+    ssoClient(),
   ]
 });
 
@@ -36,7 +44,10 @@ export const {
   useSession,
   organization,
   useListOrganizations,
-  useActiveOrganization
+  useActiveOrganization,
+  twoFactor,
+  multiSession,
+  sso,
 } = authClient;
 
 /**

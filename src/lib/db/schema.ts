@@ -7,6 +7,9 @@ export const users = pgTable("user", {
 	email: text("email").notNull().unique(),
 	emailVerified: boolean("emailVerified").notNull(),
 	image: text("image"),
+	twoFactorEnabled: boolean("twoFactorEnabled").notNull().default(false),
+	twoFactorSecret: text("twoFactorSecret"),
+	twoFactorBackupCodes: text("twoFactorBackupCodes"),
 	createdAt: timestamp("createdAt").notNull(),
 	updatedAt: timestamp("updatedAt").notNull()
 });
@@ -54,7 +57,14 @@ export const organizations = pgTable("organization", {
 	logo: text("logo"),
 	createdAt: timestamp("createdAt").notNull(),
 	metadata: text("metadata"),
-	tenantSchemaName: text("tenantSchemaName").notNull().default("")
+	tenantSchemaName: text("tenantSchemaName").notNull().default(""),
+	plan: text("plan").notNull().default("free"),
+	stripeCustomerId: text("stripeCustomerId"),
+	stripeSubscriptionId: text("stripeSubscriptionId"),
+	customDomain: text("customDomain").unique(),
+	domainVerified: boolean("domainVerified").notNull().default(false),
+	verificationToken: text("verificationToken"),
+	require2FA: boolean("require2FA").notNull().default(false)
 });
 
 export const members = pgTable("member", {
@@ -79,6 +89,10 @@ export const membersRelations = relations(members, ({ one }) => ({
 
 export const organizationsRelations = relations(organizations, ({ many }) => ({
 	members: many(members),
+	ssoConfigs: many(ssoConfigs),
+	domains: many(organizationDomains),
+	statusComponents: many(statusComponents),
+	statusIncidents: many(statusIncidents),
 }));
 
 /**
@@ -98,6 +112,20 @@ export const rolePermissions = pgTable("role_permission", {
 }, (t) => ({
 	pk: primaryKey({ columns: [t.roleId, t.permissionKey] }),
 }));
+
+/**
+ * Business Tables (Tenant-Side)
+ * Strictly decoupled from 'public' (Rule 3)
+ */
+export const projects = pgTable("project", {
+	id: text("id").primaryKey(),
+	name: text("name").notNull(),
+	description: text("description"),
+	status: text("status").notNull().default("active"),
+	userId: text("userId").notNull(), // Logical reference to public.user id (Rule 3)
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+	updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
 
 export const invitations = pgTable("invitation", {
 	id: text("id").primaryKey(),
@@ -119,5 +147,183 @@ export const invitationsRelations = relations(invitations, ({ one }) => ({
 	inviter: one(users, {
 		fields: [invitations.inviterId],
 		references: [users.id],
+	}),
+}));
+
+export const notifications = pgTable("notification", {
+	id: text("id").primaryKey(),
+	userId: text("userId").notNull().references(() => users.id, { onDelete: 'cascade' }),
+	organizationId: text("organizationId").references(() => organizations.id, { onDelete: 'cascade' }),
+	type: text("type").notNull(), // e.g., 'SYSTEM', 'BILLING', 'PROJECT_CREATED', 'MEMBER_JOINED'
+	title: text("title").notNull(),
+	message: text("message").notNull(),
+	link: text("link"),
+	readAt: timestamp("readAt"),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+	user: one(users, {
+		fields: [notifications.userId],
+		references: [users.id],
+	}),
+	organization: one(organizations, {
+		fields: [notifications.organizationId],
+		references: [organizations.id],
+	}),
+}));
+
+export const ssoConfigs = pgTable("sso_config", {
+	id: text("id").primaryKey(),
+	organizationId: text("organizationId").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+	providerId: text("providerId").notNull(), // e.g., 'google', 'microsoft-entra-id'
+	clientId: text("clientId").notNull(),
+	clientSecret: text("clientSecret"),
+	issuer: text("issuer"),
+	isActive: boolean("isActive").notNull().default(true),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+	updatedAt: timestamp("updatedAt").notNull().defaultNow()
+});
+
+export const ssoConfigsRelations = relations(ssoConfigs, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [ssoConfigs.organizationId],
+		references: [organizations.id],
+	}),
+}));
+
+export const organizationDomains = pgTable("organization_domain", {
+	id: text("id").primaryKey(),
+	organizationId: text("organizationId").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+	domain: text("domain").notNull().unique(),
+	isVerified: boolean("isVerified").notNull().default(false),
+	verificationToken: text("verificationToken").notNull(),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+	updatedAt: timestamp("updatedAt").notNull().defaultNow()
+});
+
+export const organizationDomainsRelations = relations(organizationDomains, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [organizationDomains.organizationId],
+		references: [organizations.id],
+	}),
+}));
+
+export const ssoProviders = pgTable("sso_provider", {
+	id: text("id").primaryKey(),
+	issuer: text("issuer").notNull(),
+	oidcConfig: text("oidcConfig"), // JSON string
+	samlConfig: text("samlConfig"), // JSON string
+	userId: text("userId").notNull().references(() => users.id),
+	providerId: text("providerId").notNull(),
+	organizationId: text("organizationId").references(() => organizations.id),
+	domain: text("domain").notNull(),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+	updatedAt: timestamp("updatedAt").notNull().defaultNow()
+});
+
+export const auditLogs = pgTable("audit_log", {
+	id: text("id").primaryKey(),
+	userId: text("userId").notNull(), // Logical reference to public.user id
+	userName: text("userName").notNull(),
+	userEmail: text("userEmail").notNull(),
+	action: text("action").notNull(), // e.g., 'PROJECT_CREATED', 'MEMBER_INVITED'
+	entityType: text("entityType").notNull(), // e.g., 'PROJECT', 'MEMBER'
+	entityId: text("entityId"),
+	details: text("details"), // JSON string or summary
+	ipAddress: text("ipAddress"),
+	userAgent: text("userAgent"),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+/**
+ * Connectivity Ecosystem Tables (Tenant-Side)
+ */
+export const apiKeys = pgTable("api_key", {
+	id: text("id").primaryKey(),
+	name: text("name").notNull(),
+	keyHash: text("keyHash").notNull().unique(),
+	keyPrefix: text("keyPrefix").notNull(),
+	roleId: text("roleId").notNull(), // Logical reference to tenant.role id
+	lastUsedAt: timestamp("lastUsedAt"),
+	expiresAt: timestamp("expiresAt"),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export const webhooks = pgTable("webhook", {
+	id: text("id").primaryKey(),
+	url: text("url").notNull(),
+	secret: text("secret").notNull(),
+	events: text("events"), // JSON string array of event names
+	isActive: boolean("isActive").notNull().default(true),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export const connectors = pgTable("connector", {
+	id: text("id").primaryKey(),
+	name: text("name").notNull(),
+	type: text("type").notNull(), // 'slack' | 'discord'
+	config: text("config").notNull(), // JSON string for webhook URL
+	isActive: boolean("isActive").notNull().default(true),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export const webhookDeliveries = pgTable("webhook_delivery", {
+	id: text("id").primaryKey(),
+	webhookId: text("webhookId").references(() => webhooks.id, { onDelete: 'cascade' }), // Optional if it's a workflow
+	workflowId: text("workflowId").references(() => workflows.id, { onDelete: 'cascade' }), // Optional if it's a standard webhook
+	eventType: text("eventType").notNull(),
+	payload: text("payload").notNull(), // JSON string
+	responseStatus: text("responseStatus"),
+	responseBody: text("responseBody"),
+	duration: text("duration"), // ms
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export const workflows = pgTable("workflow", {
+	id: text("id").primaryKey(),
+	name: text("name").notNull(),
+	trigger: text("trigger").notNull(), // e.g., 'project.created'
+	actionType: text("actionType").notNull().default("webhook"),
+	actionConfig: text("actionConfig").notNull(), // JSON string for target URL, etc.
+	connectorId: text("connectorId"), // Logical reference to tenant.connector id
+	isActive: boolean("isActive").notNull().default(true),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+export const statusComponents = pgTable("status_component", {
+	id: text("id").primaryKey(),
+	organizationId: text("organizationId").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+	name: text("name").notNull(),
+	description: text("description"),
+	status: text("status").notNull().default("operational"), // operational, degraded, partial_outage, major_outage
+	order: text("order").notNull().default("0"),
+	isActive: boolean("isActive").notNull().default(true),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+	updatedAt: timestamp("updatedAt").notNull().defaultNow()
+});
+
+export const statusIncidents = pgTable("status_incident", {
+	id: text("id").primaryKey(),
+	organizationId: text("organizationId").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+	title: text("title").notNull(),
+	description: text("description").notNull(),
+	status: text("status").notNull().default("investigating"), // investigating, identified, monitoring, resolved
+	severity: text("severity").notNull().default("minor"), // minor, major, critical
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+	updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+	resolvedAt: timestamp("resolvedAt"),
+});
+
+export const statusComponentsRelations = relations(statusComponents, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [statusComponents.organizationId],
+		references: [organizations.id],
+	}),
+}));
+
+export const statusIncidentsRelations = relations(statusIncidents, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [statusIncidents.organizationId],
+		references: [organizations.id],
 	}),
 }));

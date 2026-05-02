@@ -4,11 +4,15 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { can } from "@/lib/auth/rbac-utils";
+import { getTenantDb } from "@/lib/db/tenant-db";
 import { db } from "@/lib/db";
-import { members, organizations, invitations } from "@/lib/db/schema";
+import { roles as rolesTable, members, organizations, invitations } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { PLANS, PlanType } from "@/lib/billing/plans";
+import { can, requirePermission } from "@/lib/auth/rbac-utils";
 import postgres from "postgres";
+import { recordAuditLog } from "@/lib/audit";
+import { emitEvent } from "@/lib/events";
 
 const connectionString = process.env.DATABASE_URL!;
 
@@ -19,66 +23,88 @@ export async function updateMemberRoleAction(formData: {
   orgSlug: string;
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
-
-  // 1. Security Check: Actor must have roles:assign permission
-  const allowed = await can(session.user.id, formData.orgId, "roles:assign");
-  if (!allowed) throw new Error("Forbidden: Missing roles:assign permission");
-
-  // 2. Validate Target Role exists in Tenant Schema
-  const org = await db.query.organizations.findFirst({
-    where: eq(organizations.id, formData.orgId),
-  });
-  if (!org?.tenantSchemaName) throw new Error("Organization schema not found");
-
-  const schema = org.tenantSchemaName;
-  const client = postgres(connectionString, { prepare: false });
+  if (!session?.user) return { success: false, error: "Sessão expirada. Faça login novamente." };
 
   try {
-    const roleExists = await client`
-      SELECT slug FROM ${client(schema)}.role WHERE id = ${formData.roleId}
-    `.then(res => res.length > 0);
+    // RBAC: Verify user has permission to assign roles
+    await requirePermission(session.user.id, formData.orgId, "roles:assign");
 
-    if (!roleExists) throw new Error("Target role does not exist in this organization");
+    // getTenantDb performs the Membership check (Rule 1)
+    const result = await getTenantDb(session.user.id, formData.orgId, async (tx) => {
+      // 1. Verify Target Role exists in Tenant Schema
+      const targetRole = await tx.query.roles.findFirst({
+        where: eq(rolesTable.id, formData.roleId),
+      });
+      
+      if (!targetRole) throw new Error("Target role does not exist in this organization");
 
-    // Get the slug of the new role for Better-Auth sync (optional but good)
-    const newRole = await client`
-      SELECT slug FROM ${client(schema)}.role WHERE id = ${formData.roleId}
-    `.then(res => res[0]);
-
-    // 3. Update Member in Public Schema
-    await db.update(members)
-      .set({ 
-        roleId: formData.roleId,
-        role: newRole.slug // Keep Better-Auth 'role' field in sync
-      })
-      .where(
-        and(
+      // 3. Get Target User Info for notification
+      const targetMember = await tx.query.members.findFirst({
+        where: and(
           eq(members.id, formData.memberId),
           eq(members.organizationId, formData.orgId)
-        )
-      );
+        ),
+        with: { user: true }
+      });
+
+      // 4. Update Member
+      await tx.update(members)
+        .set({ 
+          roleId: formData.roleId,
+          role: targetRole.slug 
+        })
+        .where(
+          and(
+            eq(members.id, formData.memberId),
+            eq(members.organizationId, formData.orgId)
+          )
+        );
+        
+      return { targetMember, targetRole };
+    });
 
     revalidatePath(`/org/${formData.orgSlug}/members`);
+
+    // Record Audit Log (Phase 11)
+    await recordAuditLog({
+      organizationId: formData.orgId,
+      action: "MEMBER_ROLE_UPDATED",
+      entityType: "MEMBER",
+      entityId: formData.memberId,
+      details: `Updated member role to "${result.targetRole.name}"`
+    });
+
+    // Trigger Automations (Phase 16)
+    await emitEvent(formData.orgId, "role.updated", { 
+      memberId: formData.memberId, 
+      roleId: formData.roleId,
+      targetName: result.targetMember?.user?.name || result.targetMember?.user?.email,
+      newRole: result.targetRole.name,
+      actorName: session.user.name || session.user.email,
+    });
+
     return { success: true };
   } catch (error) {
     console.error("Failed to update member role:", error);
-    throw new Error("Failed to update member role");
-  } finally {
-    await client.end();
+    return { success: false, error: error instanceof Error ? error.message : "Falha ao atualizar cargo do membro." };
   }
 }
 
 export async function removeMemberAction(memberId: string, orgId: string, orgSlug: string) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
-
-  const allowed = await can(session.user.id, orgId, "members:remove");
-  if (!allowed) throw new Error("Forbidden");
+  if (!session?.user) return { success: false, error: "Sessão expirada. Faça login novamente." };
 
   try {
+    const allowed = await can(session.user.id, orgId, "members:remove");
+    if (!allowed) return { success: false, error: "Você não tem permissão para remover membros." };
+
     // Prevent removing the last admin (complex check, for now simple delete)
     // In a real app, you'd check if this is the only admin.
+
+    const memberToRemove = await db.query.members.findFirst({
+      where: eq(members.id, memberId),
+      with: { user: true }
+    });
 
     await db.delete(members)
       .where(
@@ -89,10 +115,27 @@ export async function removeMemberAction(memberId: string, orgId: string, orgSlu
       );
 
     revalidatePath(`/org/${orgSlug}/members`);
+
+    // Record Audit Log (Phase 11)
+    await recordAuditLog({
+      organizationId: orgId,
+      action: "MEMBER_REMOVED",
+      entityType: "MEMBER",
+      entityId: memberId,
+      details: `Removed member ${memberToRemove?.user?.name || memberToRemove?.user?.email || memberId} from organization`
+    });
+
+    // Trigger Automations (Phase 16)
+    await emitEvent(orgId, "member.removed", { 
+      id: memberId,
+      targetName: memberToRemove?.user?.name || memberToRemove?.user?.email,
+      actorName: session.user.name || session.user.email,
+    });
+
     return { success: true };
   } catch (error) {
     console.error("Failed to remove member:", error);
-    throw new Error("Failed to remove member");
+    return { success: false, error: "Falha ao remover membro." };
   }
 }
 
@@ -103,62 +146,91 @@ export async function inviteMemberAction(data: {
   orgSlug: string;
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
-
-  const allowed = await can(session.user.id, data.orgId, "members:invite");
-  if (!allowed) throw new Error("Forbidden");
-
-  // Validate Role in Tenant Schema
-  const org = await db.query.organizations.findFirst({
-    where: eq(organizations.id, data.orgId),
-  });
-  if (!org?.tenantSchemaName) throw new Error("Organization schema not found");
-
-  const schema = org.tenantSchemaName;
-  const client = postgres(connectionString, { prepare: false });
+  if (!session?.user) return { success: false, error: "Sessão expirada. Faça login novamente." };
 
   try {
-    const roleRes = await client`
-      SELECT slug FROM ${client(schema)}.role WHERE id = ${data.roleId}
-    `;
-    if (roleRes.length === 0) throw new Error("Role not found");
-    const roleSlug = roleRes[0].slug;
+    // RBAC: Verify user has permission to invite members
+    await requirePermission(session.user.id, data.orgId, "members:invite");
 
-    // 1. Create invitation via Better-Auth
-    const res = await auth.api.createInvitation({
-      body: {
-        email: data.email,
-        role: roleSlug,
-        organizationId: data.orgId,
-      },
-      headers: await headers(),
+    const result = await getTenantDb(session.user.id, data.orgId, async (tx) => {
+      // 1. Plan validation
+      const org = await tx.query.organizations.findFirst({
+        where: eq(organizations.id, data.orgId),
+      });
+      
+      const planId = (org?.plan?.toUpperCase() || "FREE") as PlanType;
+      const currentPlan = PLANS[planId] || PLANS.FREE;
+
+      const currentMembers = await tx.query.members.findMany({
+        where: eq(members.organizationId, data.orgId),
+      });
+
+      if (currentMembers.length >= currentPlan.maxMembers) {
+        return { error: "QUOTA_EXCEEDED" };
+      }
+
+      // 2. Validate Role
+      const targetRole = await tx.query.roles.findFirst({
+        where: eq(rolesTable.id, data.roleId),
+      });
+      if (!targetRole) throw new Error("Role not found");
+
+      // 3. Create invitation via Better-Auth
+      const res = await auth.api.createInvitation({
+        body: {
+          email: data.email,
+          role: targetRole.slug as "member" | "admin" | "owner",
+          organizationId: data.orgId,
+        },
+        headers: await headers(),
+      }) as { id: string };
+
+      // 4. Add roleId to the record for RBAC synchronization
+      if (res && res.id) {
+        await tx.update(invitations)
+          .set({ roleId: data.roleId })
+          .where(eq(invitations.id, res.id));
+      }
+
+      return { success: true };
     });
 
-    // 2. Add roleId to the record for RBAC synchronization
-    if (res && res.id) {
-      await db.update(invitations)
-        .set({ roleId: data.roleId })
-        .where(eq(invitations.id, res.id));
+    if ("error" in result) {
+      return { success: false, error: result.error === "QUOTA_EXCEEDED" ? "Limite de membros atingido para o seu plano." : "Falha ao convidar." };
     }
 
     revalidatePath(`/org/${data.orgSlug}/members`);
-    return { success: true };
+
+    // Record Audit Log (Phase 11)
+    await recordAuditLog({
+      organizationId: data.orgId,
+      action: "MEMBER_INVITED",
+      entityType: "INVITATION",
+      details: `Invited user ${data.email} to the organization`
+    });
+
+    // Trigger Automations (Phase 16)
+    await emitEvent(data.orgId, "member.invited", { 
+      email: data.email, 
+      roleId: data.roleId,
+      actorName: session.user.name || session.user.email,
+    });
+
+    return result;
   } catch (error) {
     console.error("Failed to invite member:", error);
-    throw new Error("Failed to invite member");
-  } finally {
-    await client.end();
+    return { success: false, error: error instanceof Error ? error.message : "Falha ao convidar membro." };
   }
 }
 
 export async function cancelInvitationAction(id: string, orgId: string, orgSlug: string) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
-
-  const allowed = await can(session.user.id, orgId, "members:invite");
-  if (!allowed) throw new Error("Forbidden");
+  if (!session?.user) return { success: false, error: "Sessão expirada. Faça login novamente." };
 
   try {
+    const allowed = await can(session.user.id, orgId, "members:invite");
+    if (!allowed) return { success: false, error: "Você não tem permissão para cancelar convites." };
+
     await auth.api.cancelInvitation({
       body: {
         invitationId: id,
@@ -167,16 +239,30 @@ export async function cancelInvitationAction(id: string, orgId: string, orgSlug:
     });
 
     revalidatePath(`/org/${orgSlug}/members`);
+
+    // Record Audit Log (Phase 11)
+    await recordAuditLog({
+      organizationId: orgId,
+      action: "INVITATION_CANCELLED",
+      entityType: "INVITATION",
+      entityId: id,
+      details: `Cancelled pending invitation`
+    });
+
     return { success: true };
   } catch (error) {
     console.error("Failed to cancel invitation:", error);
-    throw new Error("Failed to cancel invitation");
+    return { success: false, error: "Falha ao cancelar convite." };
   }
 }
 
 export async function getPendingInvitationsAction(orgId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) throw new Error("Unauthorized");
+
+  // RBAC: Verify membership and read permission
+  const allowed = await can(session.user.id, orgId, "members:read");
+  if (!allowed) throw new Error("Forbidden");
 
   return db.query.invitations.findMany({
     where: and(
@@ -246,6 +332,24 @@ export async function acceptInvitationAction(invitationId: string) {
 
     // Redirect to Org Dashboard
     // We don't return here because redirect throws a special error in Next.js
+    // Record Audit Log (Phase 11)
+    await recordAuditLog({
+      organizationId: org.id,
+      action: "INVITATION_ACCEPTED",
+      entityType: "MEMBER",
+      entityId: session.user.id,
+      details: `Accepted invitation to join the organization`
+    });
+
+    // Trigger Automations (Phase 16)
+    await emitEvent(org.id, "organization.invitation_accepted", {
+      userId: session.user.id,
+      email: session.user.email,
+      invitationId,
+      roleId: invite.roleId,
+      actorName: session.user.name || session.user.email,
+    });
+
   } catch (error) {
     console.error("Failed to accept invitation:", error);
     if (error instanceof Error) throw error;
