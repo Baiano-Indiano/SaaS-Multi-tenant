@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { db } from "../lib/db";
 import { organizations } from "../lib/db/schema";
 import { createTenantSchema } from "../lib/db/tenant";

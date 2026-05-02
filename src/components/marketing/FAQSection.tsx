@@ -5,25 +5,14 @@ import { ScrollReveal } from "./scroll-reveal";
 import { ChevronDown } from "lucide-react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+import { useTranslations } from "next-intl";
 
-const faqs = [
-  {
-    question: "How does the schema-per-tenant isolation work?",
-    answer: "Every organization created in our platform is assigned a unique PostgreSQL schema. This ensures that data is physically isolated at the database level, preventing any possibility of cross-tenant data leakage while maintaining the performance of a single database instance.",
-  },
-  {
-    question: "Can I customize the roles and permissions?",
-    answer: "Yes, our Professional and Enterprise plans allow you to define custom roles with granular permissions (RBAC). You can control access down to specific resources and actions within each organization.",
-  },
-  {
-    question: "How do I integrate my existing tools?",
-    answer: "We provide native support for API Keys and Webhooks. You can generate keys for your developers to access our API programmatically, or register webhook URLs to receive real-time notifications about events in your organization.",
-  },
-  {
-    question: "Is there a limit on the number of projects?",
-    answer: "The Starter plan includes 2 projects, while Professional and Enterprise plans offer unlimited project creation to support your business growth.",
-  },
-];
+const faqKeys = [
+  "schema",
+  "rbac",
+  "integration",
+  "limits"
+] as const;
 
 function FAQItem({ question, answer }: { question: string; answer: string; index: number }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -73,23 +62,30 @@ function FAQItem({ question, answer }: { question: string; answer: string; index
 }
 
 export function FAQSection() {
+  const t = useTranslations("FAQ");
+
   return (
     <section className="w-full py-24 bg-zinc-950 border-t border-zinc-900">
       <div className="max-w-4xl mx-auto px-6">
         <ScrollReveal>
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4 text-white">
-              Common Questions
+              {t("title")}
             </h2>
             <p className="text-xl text-zinc-400">
-              Everything you need to know about our enterprise platform.
+              {t("subtitle")}
             </p>
           </div>
         </ScrollReveal>
 
         <div className="bg-zinc-900/10 rounded-3xl border border-zinc-900 p-8 md:p-12">
-          {faqs.map((faq, i) => (
-            <FAQItem key={i} {...faq} index={i} />
+          {faqKeys.map((key, i) => (
+            <FAQItem 
+              key={i} 
+              question={t(`items.${key}.question`)} 
+              answer={t(`items.${key}.answer`)} 
+              index={i} 
+            />
           ))}
         </div>
       </div>

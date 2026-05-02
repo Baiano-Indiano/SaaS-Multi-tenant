@@ -1,10 +1,34 @@
 {
   "Marketing": {
-    "title": "A Base para SaaS B2B <br/> Que Você Pode Confiar.",
-    "subtitle": "Arquitetura de dados segura e isolada por inquilino com gestão flexível de organizações que acelera o lançamento de aplicações corporativas.",
+    "title": "A Base para SaaS B2B Que Você Pode Confiar.",
+    "subtitle": "Arquitetura de dados segura e isolada por tenant com gerenciamento flexível de organizações que acelera o lançamento de aplicações prontas para o mercado corporativo.",
     "getStarted": "Começar Agora",
     "talkToSales": "Falar com Vendas",
-    "trustedBy": "Confiado por Times Corporativos"
+    "trustedBy": "Confiado por Equipes Corporativas",
+    "featuresTitle": "Tudo o que você precisa para escalar",
+    "bento": {
+      "schema": {
+        "title": "Arquitetura de Schema por Tenant",
+        "description": "Isolamento de dados completo nativo usando schemas PostgreSQL. Segurança inigualável para clientes corporativos."
+      },
+      "rbac": {
+        "title": "Acesso Baseado em Cargos",
+        "description": "Permissões granulares e gerenciamento de cargos atribuídos dinamicamente via middleware genérico."
+      },
+      "auth": {
+        "title": "Autenticação Moderna",
+        "description": "Integrado com Better-Auth para gerenciamento de identidade robusto em todas as organizações."
+      },
+      "ui": {
+        "title": "Componentes de UI Premium",
+        "description": "Desenvolvido com Tailwind v4 e Shadcn/ui. Componentes bonitos, acessíveis e customizáveis prontos para sua marca."
+      }
+    },
+    "cta": {
+      "title": "Pronto para construir seu SaaS?",
+      "subtitle": "Pare de reconstruir autenticação, cobrança e organizações. Comece a construir seu produto.",
+      "button": "Comece a Construir Agora"
+    }
   },
   "Auth": {
     "login": "Entrar",
@@ -58,7 +82,13 @@
     "accountSettings": "Configurações da Conta",
     "logout": "Sair",
     "organization": "Organização",
-    "user": "Usuário"
+    "user": "Usuário",
+    "login": "Entrar",
+    "goToDashboard": "Ir para o Dashboard"
+  },
+  "Footer": {
+    "allRightsReserved": "Todos os direitos reservados.",
+    "builtWith": "Construído com {tech}"
   },
   "Organization": {
     "selectOrganization": "Selecionar Organização",
@@ -121,6 +151,7 @@
     "configureWorkspace": "Configure seu espaço de trabalho isolado.",
     "companyName": "Nome da Empresa",
     "urlSlug": "Slug da URL",
+    "failedCreating": "Falha ao criar organização.",
     "companyPlaceholder": "Ex: Acme Inc",
     "slugPlaceholder": "acme-inc",
     "opening": "Abrindo organização...",
@@ -159,15 +190,28 @@
     "enable": "Ativar",
     "disable": "Desativar",
     "thisDevice": "ESTE DISPOSITIVO",
+    "signOutDevice": "Encerrar sessão neste dispositivo",
     "revokeAllOthers": "Sair de todos os outros",
-    "started": "Iniciado há",
-    "ago": "",
+    "started": "Iniciado",
+    "ago": "atrás",
     "unknownIP": "IP Desconhecido",
     "unknownDevice": "Dispositivo Desconhecido",
-    "signOutDevice": "Encerrar sessão neste dispositivo",
     "noneFound": "Nenhuma sessão ativa encontrada.",
+    "loadingSessions": "Carregando sessões ativas...",
+    "sessionsRevoked": "Todas as outras sessões foram revogadas",
+    "sessionRevoked": "Sessão revogada com sucesso",
+    "failedRevoke": "Falha ao revogar sessão",
+    "failedLoad": "Falha ao carregar sessões ativas",
+    "sessions": "Sessões Ativas",
+    "sessionsDescription": "Gerencie suas sessões ativas em diferentes dispositivos e navegadores.",
     "twoFactorTitle": "Autenticação de Dois Fatores",
     "twoFactorDescription": "Adicione uma camada extra de segurança à sua conta.",
+    "chrome": "Chrome no Desktop",
+    "firefox": "Firefox no Desktop",
+    "safari": "Safari no Desktop",
+    "postman": "Postman Runtime",
+    "unexpectedError": "Ocorreu um erro inesperado",
+    "genericError": "Ocorreu um erro",
     "status": "Status",
     "enable2FA": "Ativar 2FA",
     "disable2FA": "Desativar 2FA",
@@ -193,20 +237,13 @@
     "copy": "Copiar",
     "download": "Baixar",
     "backupCodesCopied": "Códigos de backup copiados para a área de transferência",
-    "backupCodesDownloaded": "Códigos de backup baixados",
-    "loadingSessions": "Carregando sessões ativas...",
-    "sessionsRevoked": "Todas as outras sessões foram revogadas",
-    "sessionRevoked": "Sessão revogada com sucesso",
-    "failedRevoke": "Falha ao revogar sessão",
-    "failedLoad": "Falha ao carregar sessões ativas",
-    "sessions": "Sessões Ativas",
-    "sessionsDescription": "Gerencie suas sessões ativas em diferentes dispositivos e navegadores.",
-    "chrome": "Chrome no Desktop",
-    "firefox": "Firefox no Desktop",
-    "safari": "Safari no Desktop",
-    "postman": "Postman Runtime",
-    "unexpectedError": "Ocorreu um erro inesperado",
-    "genericError": "Ocorreu um erro"
+    "backupCodesDownloaded": "Códigos de backup baixados"
+  },
+  "Hero": {
+    "totalRevenue": "Receita Total",
+    "revenueAmount": "R$ 128.430,00",
+    "activity": "Atividade",
+    "scrollToAssemble": "Role para montar"
   },
   "InviteFlow": {
     "title": "Convite Recebido",
@@ -215,14 +252,15 @@
     "identityConflict": "Conflito de Identidade",
     "conflictDescription": "Este convite é restrito ao e-mail {targetEmail}. Você está logado atualmente como {currentEmail}.",
     "logoutAndSwitch": "Sair e Trocar de Conta",
-    "securityNotice": "A proteção de dados da organização exige que o e-mail seja idêntico ao convidado.",
+    "securityNotice": "A proteção de dados da organização exige que o e-mail seja idêntico ao do convidado.",
     "processing": "Processando seu acesso...",
     "success": "Acesso confirmado à organização!",
-    "error": "Falha ao aceitar convite"
+    "error": "Falha ao aceitar o convite"
   },
   "Members": {
     "title": "Membros da Equipe",
     "description": "Gerencie quem tem acesso à sua organização e quais são suas permissões.",
+    "cancel": "Cancelar",
     "upgradeNotice": "Cargos e permissões são gerenciados por organização. Precisa de cargos personalizados? Faça o upgrade para o plano Enterprise.",
     "inviteMember": "Convidar Membro",
     "inviteDescription": "Envie um convite para um novo membro se juntar à sua organização.",
@@ -261,7 +299,7 @@
       "firefoxDesktop": "Firefox no Desktop",
       "safariDesktop": "Safari no Desktop",
       "unknownIp": "IP Desconhecido",
-       "lastSeen": "{time}",
+      "lastSeen": "{time}",
       "terminate": "Encerrar Sessão",
       "noSessions": "Sem sessões ativas",
       "noSessionsDesc": "Este membro não está logado em nenhum dispositivo no momento.",
@@ -281,7 +319,8 @@
     "roles": {
       "admin": "Administrador",
       "member": "Membro",
-      "owner": "Dono"
+      "owner": "Dono",
+      "viewer": "Visualizador"
     },
     "validation": {
       "emailInvalid": "E-mail inválido",
@@ -290,7 +329,7 @@
     "invitations": {
       "title": "Convites Pendentes",
       "email": "E-mail",
-      "role": "Cargo (Role)",
+      "role": "Cargo",
       "expiresAt": "Expira em",
       "actions": "Ações",
       "expiresToday": "Hoje",
@@ -402,6 +441,9 @@
       "nameMin": "O nome do projeto deve ter pelo menos 3 caracteres"
     },
     "settings": {
+      "breadcrumbDashboard": "Dashboard",
+      "breadcrumbProjects": "Projetos",
+      "breadcrumbSettings": "Configurações",
       "title": "Configurações do Projeto",
       "description": "Atualize a identidade e a configuração básica do seu projeto.",
       "generalTab": "Geral",
@@ -456,7 +498,7 @@
         "description": "Para pequenos times que precisam de mais poder.",
         "features": [
           "Até 10 membros",
-          "Roles customizadas",
+          "Cargos customizados",
           "Suporte prioritário",
           "Analytics básico"
         ]
@@ -467,11 +509,11 @@
         "description": "Escalabilidade e controle total para sua empresa.",
         "features": [
           "Membros ilimitados",
-          "Roles customizadas ilimitadas",
+          "Cargos customizados ilimitados",
           "Domínios customizados",
           "Suporte 24/7 dedicado",
           "Analytics avançado",
-          "Audit logs"
+          "Logs de auditoria"
         ]
       }
     }
@@ -487,5 +529,105 @@
     "switchOrg": "Trocar Organização",
     "signOut": "Sair",
     "lostAccess": "Perdeu o acesso ao seu dispositivo 2FA? Entre em contato com o administrador da sua organização para redefinir suas configurações de segurança."
+  },
+  "Benefits": {
+    "title": "Construído para Escala e Confiabilidade",
+    "subtitle": "Nossa infraestrutura foi projetada para lidar com as demandas corporativas mais exigentes sem compromissos.",
+    "items": {
+      "isolation": {
+        "title": "Isolamento de Dados Corporativo",
+        "description": "Cada tenant recebe um schema PostgreSQL dedicado. Sem vazamentos de dados, conformidade garantida."
+      },
+      "performance": {
+        "title": "Performance Global no Edge",
+        "description": "Tempos de resposta de baixa latência em todo o mundo com nosso sistema de proxy Edge otimizado."
+      },
+      "automations": {
+        "title": "Automações Nativas",
+        "description": "Incorpore fluxos de trabalho complexos em seu produto para economizar horas de trabalho manual dos usuários."
+      },
+      "api": {
+        "title": "API Focada no Desenvolvedor",
+        "description": "Arquitetura extensível com webhooks nativos e acesso programático por organização."
+      }
+    },
+    "currency": "R$"
+  },
+  "Pricing": {
+    "title": "Preços Transparentes para Qualquer Escala",
+    "subtitle": "Escolha o plano que melhor se adapta às necessidades da sua organização.",
+    "monthly": "Mensal",
+    "annual": "Anual",
+    "save": "ECONOMIZE 20%",
+    "popular": "Mais Popular",
+    "perMonth": "/mês",
+    "custom": "Personalizado",
+    "currency": "R$",
+    "plans": {
+      "starter": {
+        "name": "Starter",
+        "description": "Perfeito para testes e protótipos em estágio inicial.",
+        "priceMonthly": "0",
+        "priceAnnual": "0",
+        "cta": "Começar grátis",
+        "features": [
+          "Até 5 membros",
+          "2 Projetos Ativos",
+          "Infraestrutura Compartilhada",
+          "Suporte via Comunidade"
+        ]
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "Escale seu negócio com ferramentas de organização avançadas.",
+        "priceMonthly": "49,90",
+        "priceAnnual": "39,90",
+        "cta": "Ir para o Pro",
+        "features": [
+          "Até 50 membros",
+          "Projetos Ilimitados",
+          "Cargos Customizados (RBAC)",
+          "Suporte Prioritário",
+          "Analytics Básico"
+        ]
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Segurança e conformidade máxima para grandes equipes.",
+        "priceMonthly": "Personalizado",
+        "priceAnnual": "Personalizado",
+        "cta": "Falar com Vendas",
+        "features": [
+          "Membros Ilimitados",
+          "Schema Dedicado",
+          "Logs de Auditoria",
+          "Garantia de SLA",
+          "Suporte 24/7",
+          "API & Webhooks"
+        ]
+      }
+    }
+  },
+  "FAQ": {
+    "title": "Perguntas Frequentes",
+    "subtitle": "Tudo o que você precisa saber sobre nossa plataforma corporativa.",
+    "items": {
+      "schema": {
+        "question": "Como funciona o isolamento de schema por tenant?",
+        "answer": "Cada organização criada em nossa plataforma recebe um schema PostgreSQL exclusivo. Isso garante que os dados sejam fisicamente isolados no nível do banco de dados, evitando qualquer possibilidade de vazamento de dados entre tenants, mantendo a performance de uma única instância de banco de dados."
+      },
+      "rbac": {
+        "question": "Posso personalizar os cargos e permissões?",
+        "answer": "Sim, nossos planos Professional e Enterprise permitem definir cargos personalizados com permissões granulares (RBAC). Você pode controlar o acesso a recursos e ações específicas dentro de cada organização."
+      },
+      "integration": {
+        "question": "Como integro minhas ferramentas existentes?",
+        "answer": "Oferecemos suporte nativo para Chaves de API e Webhooks. Você pode gerar chaves para seus desenvolvedores acessarem nossa API programaticamente ou registrar URLs de webhook para receber notificações em tempo real sobre eventos na sua organização."
+      },
+      "limits": {
+        "question": "Existe um limite no número de projetos?",
+        "answer": "O plano Starter inclui 2 projetos, enquanto os planos Professional e Enterprise oferecem criação ilimitada de projetos para apoiar o crescimento do seu negócio."
+      }
+    }
   }
 }

@@ -22,10 +22,27 @@ export async function recordAuditLog(params: {
     name: string;
     email: string;
   };
+  ip?: string;
+  userAgent?: string;
 }) {
-  const session = params.actor ? null : await auth.api.getSession({
-    headers: await headers(),
-  });
+  let session = null;
+  let headersList = null;
+
+  try {
+    headersList = await headers();
+  } catch {
+    // headers() might fail in some contexts (e.g. outside of request)
+  }
+
+  if (!params.actor) {
+    try {
+      session = await auth.api.getSession({
+        headers: headersList || undefined,
+      });
+    } catch (e) {
+      console.error("Audit Log: Failed to get session:", e);
+    }
+  }
 
   if (!session && !params.actor) {
     console.warn("Audit Log: No active session or manual actor found. Skipping log.");
@@ -38,9 +55,8 @@ export async function recordAuditLog(params: {
 
   if (!userId) return;
 
-  const h = await headers();
-  const ipAddress = h.get("x-forwarded-for") || h.get("x-real-ip") || "system";
-  const userAgent = h.get("user-agent") || "system";
+  const ipAddress = params.ip || headersList?.get("x-forwarded-for") || headersList?.get("x-real-ip") || "system";
+  const userAgent = params.userAgent || headersList?.get("user-agent") || "system";
 
   try {
     const insertLog = async (tx: TenantTransaction) => {

@@ -2,9 +2,8 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
 import { routing } from './i18n/routing';
-import { redis } from '@/lib/redis';
-import { getApiKeyFromRedis } from '@/lib/redis';
-import { hashApiKey } from '@/lib/auth/api-key';
+import { redis, getApiKeyFromRedis } from './lib/redis';
+import { hashApiKey } from './lib/auth/api-key';
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -177,6 +176,15 @@ export async function proxy(request: NextRequest) {
       const newPathname = pathname.replace(/^\/(en|pt)/, '');
       console.log(`[Proxy] Rewriting localized API call: ${pathname} -> ${newPathname}`);
       return NextResponse.rewrite(new URL(newPathname, request.url), {
+        request: {
+          headers: requestHeaders,
+        },
+      });
+    }
+
+    // Optimization: Skip request cloning for auth routes to prevent internal Better Auth context loss
+    if (pathname.startsWith('/api/auth')) {
+      return NextResponse.next({
         request: {
           headers: requestHeaders,
         },

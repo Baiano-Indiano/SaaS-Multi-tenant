@@ -203,15 +203,17 @@ export function ProjectSettingsForm({ project, orgSlug }: ProjectSettingsFormPro
               </div>
               
               <AlertDialog>
-                <AlertDialogTrigger>
-                  <Button 
-                    variant="destructive" 
-                    className="gap-2 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-900/50 transition-all shadow-lg shadow-red-900/20"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    {t("deleteProjectTitle")}
-                  </Button>
-                </AlertDialogTrigger>
+                <AlertDialogTrigger
+                  render={
+                    <Button 
+                      variant="destructive" 
+                      className="gap-2 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-900/50 transition-all shadow-lg shadow-red-900/20"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {t("deleteProjectTitle")}
+                    </Button>
+                  }
+                />
                 <AlertDialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
                   <AlertDialogHeader>
                     <AlertDialogTitle className="text-xl font-bold">{t("deleteAbsoluteConfirm")}</AlertDialogTitle>

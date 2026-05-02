@@ -128,12 +128,12 @@ export function InviteMemberDialog({ roles, orgId, orgSlug }: InviteMemberDialog
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
+      <DialogTrigger render={
         <Button className="font-semibold shadow-sm transition-all hover:shadow-md">
           <UserPlus className="mr-2 h-4 w-4" />
           {t("inviteMember")}
         </Button>
-      </DialogTrigger>
+      } />
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold tracking-tight">{t("inviteMember")}</DialogTitle>

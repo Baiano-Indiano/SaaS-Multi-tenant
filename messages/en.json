@@ -1,10 +1,34 @@
 {
   "Marketing": {
-    "title": "The B2B SaaS Foundation <br/> You Can Build On.",
+    "title": "The B2B SaaS Foundation You Can Build On.",
     "subtitle": "Secure, tenant-isolated data architecture with flexible organization management that accelerates the launch of enterprise-ready applications.",
     "getStarted": "Get Started",
     "talkToSales": "Talk to Sales",
-    "trustedBy": "Trusted by Enterprise Teams"
+    "trustedBy": "Trusted by Enterprise Teams",
+    "featuresTitle": "Everything you need to scale",
+    "bento": {
+      "schema": {
+        "title": "Schema-per-tenant Architecture",
+        "description": "Complete data isolation out of the box using PostgreSQL schemas. Unmatched security for enterprise clients."
+      },
+      "rbac": {
+        "title": "Role Based Access",
+        "description": "Granular permissions and role management dynamically assigned via generic middleware."
+      },
+      "auth": {
+        "title": "Modern Auth",
+        "description": "Integrated with Better-Auth for robust identity management across organizations."
+      },
+      "ui": {
+        "title": "Premium UI Components",
+        "description": "Powered by Tailwind v4 and Shadcn/ui. Beautiful, accessible, and customizable components ready for your brand."
+      }
+    },
+    "cta": {
+      "title": "Ready to build your SaaS?",
+      "subtitle": "Stop rebuilding auth, billing, and organizations. Start building your product.",
+      "button": "Start Building Now"
+    }
   },
   "Auth": {
     "login": "Login",
@@ -58,7 +82,13 @@
     "accountSettings": "Account Settings",
     "logout": "Logout",
     "organization": "Organization",
-    "user": "User"
+    "user": "User",
+    "login": "Login",
+    "goToDashboard": "Go to Dashboard"
+  },
+  "Footer": {
+    "allRightsReserved": "All rights reserved.",
+    "builtWith": "Built with {tech}"
   },
   "Organization": {
     "selectOrganization": "Select Organization",
@@ -181,7 +211,39 @@
     "safari": "Safari on Desktop",
     "postman": "Postman Runtime",
     "unexpectedError": "An unexpected error occurred",
-    "genericError": "An error occurred"
+    "genericError": "An error occurred",
+    "status": "Status",
+    "enable2FA": "Enable 2FA",
+    "disable2FA": "Disable 2FA",
+    "setup2FA": "Setup Two-Factor Authentication",
+    "setup2FADescription": "Protect your account with TOTP (Time-based One-Time Password).",
+    "confirmPassword": "Confirm your password",
+    "enterCurrentPassword": "Enter your current password",
+    "continue": "Continue",
+    "scanQRCode": "Scan the QR code with your authenticator app (like Google Authenticator or 1Password) and enter the 6-digit code below.",
+    "verificationCode": "Verification Code",
+    "verifyAndEnable": "Verify and Enable",
+    "savedBackupCodes": "I have saved my backup codes",
+    "failedStartSetup": "Failed to start 2FA setup",
+    "invalidCode": "Invalid verification code",
+    "verifiedSuccess": "Two-factor authentication verified!",
+    "failedVerify": "Failed to verify code",
+    "disable2FADescription": "This will make your account less secure. Please enter your password to confirm.",
+    "password": "Password",
+    "failedDisable": "Failed to disable 2FA",
+    "disabledSuccess": "Two-factor authentication disabled",
+    "saveBackupCodes": "Save your backup codes!",
+    "backupCodesWarning": "If you lose access to your authenticator app, these codes are the ONLY way to access your account.",
+    "copy": "Copy",
+    "download": "Download",
+    "backupCodesCopied": "Backup codes copied to clipboard",
+    "backupCodesDownloaded": "Backup codes downloaded"
+  },
+  "Hero": {
+    "totalRevenue": "Total Revenue",
+    "revenueAmount": "$128,430.00",
+    "activity": "Activity",
+    "scrollToAssemble": "Scroll to assemble"
   },
   "InviteFlow": {
     "title": "Invitation Received",
@@ -198,6 +260,7 @@
   "Members": {
     "title": "Team Members",
     "description": "Manage who has access to your organization and what their permissions are.",
+    "cancel": "Cancel",
     "upgradeNotice": "Roles and permissions are managed per organization. Need custom roles? Upgrade to the Enterprise plan.",
     "inviteMember": "Invite Member",
     "inviteDescription": "Send an invitation to someone to join your team.",
@@ -256,7 +319,8 @@
     "roles": {
       "admin": "Admin",
       "member": "Member",
-      "owner": "Owner"
+      "owner": "Owner",
+      "viewer": "Viewer"
     },
     "validation": {
       "emailInvalid": "Invalid email",
@@ -377,6 +441,9 @@
       "nameMin": "Project name must be at least 3 characters"
     },
     "settings": {
+      "breadcrumbDashboard": "Dashboard",
+      "breadcrumbProjects": "Projects",
+      "breadcrumbSettings": "Settings",
       "title": "Project Settings",
       "description": "Update your project's identity and basic configuration.",
       "generalTab": "General",
@@ -462,5 +529,105 @@
     "switchOrg": "Switch Organization",
     "signOut": "Sign Out",
     "lostAccess": "Lost access to your 2FA device? Contact your organization administrator to reset your security settings."
+  },
+  "Benefits": {
+    "title": "Built for Scale and Reliability",
+    "subtitle": "Our infrastructure is designed to handle the most demanding enterprise workloads with zero compromises.",
+    "items": {
+      "isolation": {
+        "title": "Enterprise Data Isolation",
+        "description": "Every tenant gets a dedicated PostgreSQL schema. No data leaks, guaranteed compliance."
+      },
+      "performance": {
+        "title": "Global Edge Performance",
+        "description": "Low-latency response times across the globe with our optimized Edge proxy system."
+      },
+      "automations": {
+        "title": "Native Automations",
+        "description": "Embed complex workflows into your product to save users hours of manual work."
+      },
+      "api": {
+        "title": "Developer First API",
+        "description": "Extensible architecture with native webhooks and programmatic access per organization."
+      }
+    },
+    "currency": "$"
+  },
+  "Pricing": {
+    "title": "Transparent Pricing for Every Scale",
+    "subtitle": "Choose the plan that best fits your organization's needs.",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "save": "SAVE 20%",
+    "popular": "Most Popular",
+    "perMonth": "/month",
+    "custom": "Custom",
+    "currency": "$",
+    "plans": {
+      "starter": {
+        "name": "Starter",
+        "description": "Perfect for testing and early-stage prototypes.",
+        "priceMonthly": "0",
+        "priceAnnual": "0",
+        "cta": "Start for free",
+        "features": [
+          "Up to 5 members",
+          "2 Active Projects",
+          "Shared Infrastructure",
+          "Community Support"
+        ]
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "Scale your business with advanced organization tools.",
+        "priceMonthly": "49",
+        "priceAnnual": "39",
+        "cta": "Go Pro",
+        "features": [
+          "Up to 50 members",
+          "Unlimited Projects",
+          "Custom Roles (RBAC)",
+          "Priority Support",
+          "Basic Analytics"
+        ]
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Maximum security and compliance for large teams.",
+        "priceMonthly": "Custom",
+        "priceAnnual": "Custom",
+        "cta": "Contact Sales",
+        "features": [
+          "Unlimited members",
+          "Dedicated Schema",
+          "Audit Logging",
+          "SLA Guarantee",
+          "24/7 Support",
+          "API & Webhooks"
+        ]
+      }
+    }
+  },
+  "FAQ": {
+    "title": "Common Questions",
+    "subtitle": "Everything you need to know about our enterprise platform.",
+    "items": {
+      "schema": {
+        "question": "How does the schema-per-tenant isolation work?",
+        "answer": "Every organization created in our platform is assigned a unique PostgreSQL schema. This ensures that data is physically isolated at the database level, preventing any possibility of cross-tenant data leakage while maintaining the performance of a single database instance."
+      },
+      "rbac": {
+        "question": "Can I customize the roles and permissions?",
+        "answer": "Yes, our Professional and Enterprise plans allow you to define custom roles with granular permissions (RBAC). You can control access down to specific resources and actions within each organization."
+      },
+      "integration": {
+        "question": "How do I integrate my existing tools?",
+        "answer": "We provide native support for API Keys and Webhooks. You can generate keys for your developers to access our API programmatically, or register webhook URLs to receive real-time notifications about events in your organization."
+      },
+      "limits": {
+        "question": "Is there a limit on the number of projects?",
+        "answer": "The Starter plan includes 2 projects, while Professional and Enterprise plans offer unlimited project creation to support your business growth."
+      }
+    }
   }
 }

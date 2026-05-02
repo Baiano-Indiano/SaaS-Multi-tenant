@@ -6,10 +6,12 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { cn } from "@/lib/utils";
 import { BarChart3, Activity, Zap } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 gsap.registerPlugin(ScrollTrigger);
 
 export function HeroAssembly() {
+  const t = useTranslations("Hero");
   const containerRef = useRef<HTMLDivElement>(null);
   const assemblyRef = useRef<HTMLDivElement>(null);
 
@@ -95,7 +97,7 @@ export function HeroAssembly() {
           <div className="plate-sidebar hidden md:flex col-span-3 row-span-6 bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-col gap-6 shadow-2xl overflow-hidden group">
              <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/30">
-                  <Zap className="w-4 h-4 text-primary" />
+                   <Zap className="w-4 h-4 text-primary" />
                 </div>
                 <div className="h-4 w-24 bg-zinc-800 rounded-full" />
              </div>
@@ -131,8 +133,10 @@ export function HeroAssembly() {
           <div className="plate-analytics col-span-4 md:col-span-6 row-span-4 md:row-span-5 bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-xl md:rounded-2xl p-6 md:p-8 shadow-2xl flex flex-col">
              <div className="flex justify-between items-start mb-6 md:mb-8">
                 <div>
-                  <h4 className="text-zinc-500 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1">Total Revenue</h4>
-                  <div className="text-xl md:text-3xl font-bold text-zinc-100">$128,430.00</div>
+                  <h4 className="text-zinc-500 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1">
+                    {t("totalRevenue")}
+                  </h4>
+                  <div className="text-xl md:text-3xl font-bold text-zinc-100">{t("revenueAmount")}</div>
                 </div>
                 <div className="p-1.5 md:p-2 bg-emerald-500/10 rounded-lg">
                   <BarChart3 className="w-4 h-4 md:w-5 md:h-5 text-emerald-500" />
@@ -155,7 +159,9 @@ export function HeroAssembly() {
           {/* PLATE: ACTIVITY (Visible on large screens) */}
           <div className="plate-activity hidden lg:flex col-span-3 row-span-5 bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl flex-col">
              <div className="flex items-center justify-between mb-6">
-                <h4 className="text-zinc-500 text-xs font-bold uppercase tracking-wider">Activity</h4>
+                <h4 className="text-zinc-500 text-xs font-bold uppercase tracking-wider">
+                  {t("activity")}
+                </h4>
                 <Activity className="w-4 h-4 text-zinc-600" />
              </div>
              <div className="space-y-6">
@@ -176,7 +182,9 @@ export function HeroAssembly() {
 
       {/* Instructional text - only visible at the start */}
       <div className="scroll-hint absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-zinc-500 animate-bounce pointer-events-none">
-        <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Scroll to assemble</span>
+        <span className="text-[10px] font-bold uppercase tracking-[0.2em]">
+          {t("scrollToAssemble")}
+        </span>
         <div className="w-px h-8 bg-gradient-to-b from-zinc-800 to-transparent" />
       </div>
     </section>

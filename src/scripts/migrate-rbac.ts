@@ -1,12 +1,8 @@
 import postgres from "postgres";
-import * as dotenv from "dotenv";
 import { randomUUID } from "crypto";
 import { 
-  DEFAULT_ADMIN_PERMISSIONS, 
-  DEFAULT_MEMBER_PERMISSIONS 
+  ROLE_PERMISSIONS_MAP
 } from "../lib/auth/permissions";
-
-dotenv.config({ path: ".env.local" });
 
 const connectionString = process.env.DATABASE_URL!;
 
@@ -25,7 +21,7 @@ async function migrate() {
     console.log(`Found ${schemas.length} tenant schemas to migrate.`);
 
     for (const { schema_name: schema } of schemas) {
-      console.log(`\n📦 Migrating schema: ${schema}`);
+      console.log(`\n💎 Migrating schema: ${schema}`);
 
       // 2. Create Tables inside the schema
       await sql`
@@ -46,77 +42,60 @@ async function migrate() {
         );
       `;
 
-      // 3. Create Default Roles
-      const existingRoles = await sql`SELECT id FROM ${sql(schema)}.role LIMIT 1`;
-      
-      let adminRoleId: string;
-      let memberRoleId: string;
-
-      if (existingRoles.length === 0) {
-        adminRoleId = randomUUID();
-        memberRoleId = randomUUID();
-
-        console.log(`Creating default roles for ${schema}...`);
-
-        await sql`
-          INSERT INTO ${sql(schema)}.role (id, name, slug, description)
-          VALUES (${adminRoleId}, 'Administrator', 'administrator', 'Full access to all organization resources')
-        `;
-
-        for (const p of DEFAULT_ADMIN_PERMISSIONS) {
+      // 3. Create Default Roles if they don't exist
+      for (const [slug, permissions] of Object.entries(ROLE_PERMISSIONS_MAP)) {
+        const existingRole = await sql`SELECT id FROM ${sql(schema)}.role WHERE slug = ${slug}`;
+        
+        let roleId: string;
+        if (existingRole.length === 0) {
+          roleId = randomUUID();
+          const name = slug.charAt(0).toUpperCase() + slug.slice(1);
+          console.log(`  - Creating role: ${name} (${slug})`);
+          
           await sql`
-            INSERT INTO ${sql(schema)}.role_permission ("roleId", "permissionKey")
-            VALUES (${adminRoleId}, ${p})
+            INSERT INTO ${sql(schema)}.role (id, name, slug, description)
+            VALUES (${roleId}, ${name}, ${slug}, ${`Standard ${name} role`})
           `;
+        } else {
+          roleId = existingRole[0].id;
+          console.log(`  - Role ${slug} already exists, syncing permissions...`);
         }
 
-        await sql`
-          INSERT INTO ${sql(schema)}.role (id, name, slug, description)
-          VALUES (${memberRoleId}, 'Member', 'member', 'Standard access to organization resources')
-        `;
-
-        for (const p of DEFAULT_MEMBER_PERMISSIONS) {
-          await sql`
-            INSERT INTO ${sql(schema)}.role_permission ("roleId", "permissionKey")
-            VALUES (${memberRoleId}, ${p})
-          `;
+        // Sync permissions (idempotent)
+        await sql`DELETE FROM ${sql(schema)}.role_permission WHERE "roleId" = ${roleId}`;
+        if (permissions.length > 0) {
+          const values = permissions.map(p => ({ roleId, permissionKey: p }));
+          await sql`INSERT INTO ${sql(schema)}.role_permission ${sql(values)}`;
         }
-      } else {
-        // Fetch existing roles if they were already created partially
-        const adminRole = await sql`SELECT id FROM ${sql(schema)}.role WHERE slug = 'administrator'`;
-        const memberRole = await sql`SELECT id FROM ${sql(schema)}.role WHERE slug = 'member'`;
-        adminRoleId = adminRole[0]?.id;
-        memberRoleId = memberRole[0]?.id;
       }
 
       // 4. Update Members in Public Schema to link to these roles
-      // We need to find the organization associated with this schema
       const org = await sql`SELECT id FROM public.organization WHERE "tenantSchemaName" = ${schema}`;
       
       if (org.length > 0) {
         const organizationId = org[0].id;
         
-        console.log(`Updating members for organization ${organizationId}...`);
-
-        // Case A: Admins/Owners -> Administrator
-        const adminUpdate = await sql`
-          UPDATE public.member 
-          SET "roleId" = ${adminRoleId}
-          WHERE "organizationId" = ${organizationId} 
-          AND (role = 'admin' OR role = 'owner')
-          AND "roleId" IS NULL
-        `;
-        console.log(`Updated ${adminUpdate.count} administrators.`);
-
-        // Case B: Members -> Member
-        const memberUpdate = await sql`
-          UPDATE public.member 
-          SET "roleId" = ${memberRoleId}
-          WHERE "organizationId" = ${organizationId} 
-          AND role = 'member'
-          AND "roleId" IS NULL
-        `;
-        console.log(`Updated ${memberUpdate.count} members.`);
+        for (const slug of Object.keys(ROLE_PERMISSIONS_MAP)) {
+          const role = await sql`SELECT id FROM ${sql(schema)}.role WHERE slug = ${slug}`;
+          if (role.length > 0) {
+            const roleId = role[0].id;
+            
+            // Map old string roles to new UUID roles
+            // admin/owner -> admin role
+            const roleFilter = slug === 'admin' ? "('admin', 'owner')" : `('${slug}')`;
+            
+            const updateCount = await sql`
+              UPDATE public.member 
+              SET "roleId" = ${roleId}
+              WHERE "organizationId" = ${organizationId} 
+              AND role IN ${sql.unsafe(roleFilter)}
+              AND "roleId" IS NULL
+            `;
+            if (updateCount.count > 0) {
+              console.log(`  - Linked ${updateCount.count} members to ${slug} role.`);
+            }
+          }
+        }
       }
     }
 

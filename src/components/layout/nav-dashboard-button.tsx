@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Loader2, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 
+import { useTranslations } from "next-intl";
+
 export function NavDashboardButton() {
+  const t = useTranslations("Navigation");
   const { data: session, isPending: sessionPending } = useSession();
   const { data: orgs, isPending: orgsPending } = useListOrganizations();
 
@@ -15,7 +18,7 @@ export function NavDashboardButton() {
     return (
       <Button variant="outline" disabled className="bg-white/5 border-white/10 text-white/50 gap-2">
         <Loader2 className="w-4 h-4 animate-spin" />
-        Dashboard
+        {t("dashboard")}
       </Button>
     );
   }
@@ -41,7 +44,7 @@ export function NavDashboardButton() {
       nativeButton={false}
     >
       <LayoutDashboard className="w-4 h-4" />
-      Go to Dashboard
+      {t("goToDashboard")}
     </Button>
   );
 }

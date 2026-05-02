@@ -110,9 +110,22 @@ export const DEFAULT_MEMBER_PERMISSIONS: PermissionKey[] = [
   "members:read",
   "members:invite",
   "billing:read",
+  "projects:read",
 ];
 
 export const DEFAULT_VIEWER_PERMISSIONS: PermissionKey[] = [
   "members:read",
   "billing:read",
+  "projects:read",
 ];
+
+/**
+ * Mapping of role slugs to their default permission sets
+ */
+export const ROLE_PERMISSIONS_MAP: Record<string, PermissionKey[]> = {
+  admin: DEFAULT_ADMIN_PERMISSIONS,
+  administrator: DEFAULT_ADMIN_PERMISSIONS,
+  owner: DEFAULT_ADMIN_PERMISSIONS,
+  member: DEFAULT_MEMBER_PERMISSIONS,
+  viewer: DEFAULT_VIEWER_PERMISSIONS,
+};

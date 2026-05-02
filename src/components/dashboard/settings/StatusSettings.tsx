@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { 
   Activity, 
@@ -259,12 +261,14 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
               <h4 className="text-sm font-bold uppercase tracking-[0.15em] text-zinc-500">Componentes</h4>
             </div>
             <Dialog open={isComponentDialogOpen} onOpenChange={setIsComponentDialogOpen}>
-              <DialogTrigger>
-                <Button size="sm" className="h-9 px-4 rounded-lg bg-white text-black hover:bg-zinc-200 shadow-xl transition-all active:scale-95" onClick={() => setEditingComponent({})}>
-                  <Plus className="w-4 h-4 mr-1.5" />
-                  Adicionar
-                </Button>
-              </DialogTrigger>
+              <DialogTrigger 
+                render={
+                  <Button size="sm" className="h-9 px-4 rounded-lg bg-white text-black hover:bg-zinc-200 shadow-xl transition-all active:scale-95" onClick={() => setEditingComponent({})}>
+                    <Plus className="w-4 h-4 mr-1.5" />
+                    Adicionar
+                  </Button>
+                }
+              />
               <DialogContent className="bg-zinc-950 border-zinc-800 text-white shadow-2xl sm:max-w-[480px]">
                 <DialogHeader className="space-y-3">
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
@@ -406,15 +410,17 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
               <h4 className="text-sm font-bold uppercase tracking-[0.15em] text-zinc-500">Incidentes</h4>
             </div>
             <Dialog open={isIncidentDialogOpen} onOpenChange={setIsIncidentDialogOpen}>
-              <DialogTrigger>
-                <Button size="sm" variant="outline" className="h-9 px-4 rounded-lg border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all" onClick={() => {
-                  setEditingIncident(null);
-                  setNewIncident({ title: "", description: "", status: "investigating", severity: "minor" });
-                }}>
-                  <Plus className="w-4 h-4 mr-1.5" />
-                  Reportar
-                </Button>
-              </DialogTrigger>
+              <DialogTrigger 
+                render={
+                  <Button size="sm" variant="outline" className="h-9 px-4 rounded-lg border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all" onClick={() => {
+                    setEditingIncident(null);
+                    setNewIncident({ title: "", description: "", status: "investigating", severity: "minor" });
+                  }}>
+                    <Plus className="w-4 h-4 mr-1.5" />
+                    Reportar
+                  </Button>
+                }
+              />
               <DialogContent className="bg-zinc-950 border-zinc-800 text-white shadow-2xl sm:max-w-[520px]">
                 <DialogHeader className="space-y-3">
                   <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center border border-red-500/20">

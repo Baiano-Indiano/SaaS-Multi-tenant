@@ -49,8 +49,8 @@ export async function GET(req: NextRequest) {
 			// Polling loop
 			while (!req.signal.aborted) {
 				try {
-					// 3. Heartbeat (every 15 seconds) to keep connection alive on Edge
-					if (Date.now() - lastHeartbeat > 15000) {
+					// 3. Heartbeat (every 10 seconds) to keep connection alive on Edge
+					if (Date.now() - lastHeartbeat > 10000) {
 						controller.enqueue(encoder.encode(": ping\n\n"));
 						lastHeartbeat = Date.now();
 					}
@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
 						ids, 
 						{ 
 							count: 5,
-							blockMS: 0 
+							blockMS: 3000 
 						}
 					)) as { name: string; messages: { id: string; data: RedisStreamData }[] }[] | null;
 
@@ -96,9 +96,19 @@ export async function GET(req: NextRequest) {
 					// Reducing to 1s for slightly better responsiveness while still being light
 					await new Promise(resolve => setTimeout(resolve, 1000));
 				} catch (err) {
-					console.error("Stream read error:", err);
-					// Wait longer on error before retry
-					await new Promise(resolve => setTimeout(resolve, 5000));
+					const error = err as Error & { code?: string };
+					const isTimeout = error.code === 'UND_ERR_HEADERS_TIMEOUT' || error.message.includes('timeout');
+					
+					if (isTimeout) {
+						// This is expected for long-polling if no data is found within the window
+						// We log a shorter message and retry quickly
+						console.log("Stream polling timeout (expected), retrying...");
+						await new Promise(resolve => setTimeout(resolve, 1000));
+					} else {
+						console.error("Stream read error:", err);
+						// Wait longer on genuine errors before retry
+						await new Promise(resolve => setTimeout(resolve, 5000));
+					}
 				}
 			}
 		},
