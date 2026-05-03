@@ -17,59 +17,78 @@ export function DashboardClient({ children }: DashboardClientProps) {
   useGSAP(() => {
     if (!containerRef.current) return;
 
-    // Entry Animations
-    const tl = gsap.timeline({ defaults: { ease: "expo.out" } });
+    const mm = gsap.matchMedia(containerRef);
 
-    tl.from(".dashboard-header", {
-      autoAlpha: 0,
-      y: -40,
-      filter: "blur(10px)",
-      duration: 1.2,
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      // Entry Animations
+      const tl = gsap.timeline({ defaults: { ease: "expo.out" } });
+
+      tl.from(".dashboard-header", {
+        autoAlpha: 0,
+        y: -40,
+        filter: "blur(10px)",
+        duration: 1.2,
+      });
+
+      tl.from(
+        ".dashboard-section",
+        {
+          autoAlpha: 0,
+          y: 60,
+          scale: 0.95,
+          filter: "blur(10px)",
+          duration: 1.4,
+          stagger: 0.15,
+        },
+        "-=0.8"
+      );
+
+      // Spotlight Tracking
+      const onMouseMove = (e: MouseEvent) => {
+        if (!spotlightRef.current || !containerRef.current) return;
+        const { left, top } = containerRef.current.getBoundingClientRect();
+        const x = e.clientX - left;
+        const y = e.clientY - top;
+
+        gsap.to(spotlightRef.current, {
+          x: x - 400, // Offset to center the 800px glow
+          y: y - 400,
+          opacity: 1,
+          duration: 0.6,
+          ease: "power2.out",
+        });
+      };
+
+      const onMouseLeave = () => {
+        if (!spotlightRef.current) return;
+        gsap.to(spotlightRef.current, {
+          opacity: 0,
+          duration: 0.8,
+        });
+      };
+
+      window.addEventListener("mousemove", onMouseMove);
+      containerRef.current?.addEventListener("mouseleave", onMouseLeave);
+
+      return () => {
+        window.removeEventListener("mousemove", onMouseMove);
+      };
     });
 
-    tl.from(
-      ".dashboard-section",
-      {
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      // Simplified Entry (just fade)
+      gsap.from([".dashboard-header", ".dashboard-section"], {
         autoAlpha: 0,
-        y: 60,
-        scale: 0.95,
-        filter: "blur(10px)",
-        duration: 1.4,
-        stagger: 0.15,
-      },
-      "-=0.8"
-    );
-
-    // Spotlight Tracking
-    const onMouseMove = (e: MouseEvent) => {
-      if (!spotlightRef.current || !containerRef.current) return;
-      const { left, top } = containerRef.current.getBoundingClientRect();
-      const x = e.clientX - left;
-      const y = e.clientY - top;
-
-      gsap.to(spotlightRef.current, {
-        x: x - 400, // Offset to center the 800px glow
-        y: y - 400,
-        opacity: 1,
-        duration: 0.6,
-        ease: "power2.out",
-      });
-    };
-
-    const onMouseLeave = () => {
-      if (!spotlightRef.current) return;
-      gsap.to(spotlightRef.current, {
-        opacity: 0,
         duration: 0.8,
+        stagger: 0.1,
+        ease: "power2.out"
       });
-    };
 
-    window.addEventListener("mousemove", onMouseMove);
-    containerRef.current.addEventListener("mouseleave", onMouseLeave);
+      // No spotlight tracking
+      gsap.set(spotlightRef.current, { opacity: 0 });
+    });
 
-    return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-    };
+    return () => mm.revert();
   }, { scope: containerRef });
 
   return (

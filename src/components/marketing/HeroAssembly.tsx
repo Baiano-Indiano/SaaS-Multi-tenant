@@ -18,61 +18,93 @@ export function HeroAssembly() {
   useGSAP(() => {
     if (!containerRef.current || !assemblyRef.current) return;
 
-    const timeline = gsap.timeline({
-      scrollTrigger: {
-        trigger: containerRef.current,
-        start: "top top",
-        end: "+=150%", // How long the animation lasts in scroll distance
-        scrub: 1.2,    // Smooth scrubbing
-        pin: true,     // Pin the section while animating
-        anticipatePin: 1,
-      }
+    const mm = gsap.matchMedia(containerRef);
+
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      const timeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top top",
+          end: "+=150%", // How long the animation lasts in scroll distance
+          scrub: 1.2,    // Smooth scrubbing
+          pin: true,     // Pin the section while animating
+          anticipatePin: 1,
+        }
+      });
+
+      // Fade out instructional text
+      timeline.to(".scroll-hint", {
+        opacity: 0,
+        y: 20,
+        ease: "power2.in"
+      }, 0);
+
+      // Animate the plates from scattered to assembled
+      // Plate 1: Sidebar
+      timeline.fromTo(".plate-sidebar", 
+        { x: -300, y: 150, opacity: 0, rotateY: 30, rotateX: 5, skewX: 10, scale: 0.8 },
+        { x: 0, y: 0, opacity: 1, rotateY: 0, rotateX: 0, skewX: 0, scale: 1, ease: "power2.inOut" },
+        0
+      );
+
+      // Plate 2: Main Content / Header
+      timeline.fromTo(".plate-header", 
+        { y: -200, opacity: 0, rotateX: -15, scale: 1.1 },
+        { y: 0, opacity: 1, rotateX: 0, scale: 1, ease: "power2.inOut" },
+        0.1
+      );
+
+      // Plate 3: Analytics Card
+      timeline.fromTo(".plate-analytics", 
+        { x: 400, y: 300, opacity: 0, rotateZ: 5, rotateY: -20, scale: 0.9 },
+        { x: 0, y: 0, opacity: 1, rotateZ: 0, rotateY: 0, scale: 1, ease: "power2.inOut" },
+        0.2
+      );
+
+      // Plate 4: Activity Log
+      timeline.fromTo(".plate-activity", 
+        { x: 250, y: -250, opacity: 0, rotateY: -25, skewY: 5, scale: 0.85 },
+        { x: 0, y: 0, opacity: 1, rotateY: 0, skewY: 0, scale: 1, ease: "power2.inOut" },
+        0.15
+      );
+
+      // Subtle atmospheric glow movement
+      gsap.to(".assembly-bg-glow", {
+        scale: 1.2,
+        opacity: 0.6,
+        duration: 3,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut"
+      });
     });
 
-    // Fade out instructional text
-    timeline.to(".scroll-hint", {
-      opacity: 0,
-      y: 20,
-      ease: "power2.in"
-    }, 0);
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      const timeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top top",
+          end: "+=150%",
+          scrub: 1.2,
+          pin: true,
+          anticipatePin: 1,
+        }
+      });
 
-    // Animate the plates from scattered to assembled
-    // Plate 1: Sidebar
-    timeline.fromTo(".plate-sidebar", 
-      { x: -300, y: 150, opacity: 0, rotateY: 30, rotateX: 5, skewX: 10, scale: 0.8 },
-      { x: 0, y: 0, opacity: 1, rotateY: 0, rotateX: 0, skewX: 0, scale: 1, ease: "power2.inOut" },
-      0
-    );
+      // Fade out instructional text
+      timeline.to(".scroll-hint", {
+        opacity: 0,
+        ease: "power2.in"
+      }, 0);
 
-    // Plate 2: Main Content / Header
-    timeline.fromTo(".plate-header", 
-      { y: -200, opacity: 0, rotateX: -15, scale: 1.1 },
-      { y: 0, opacity: 1, rotateX: 0, scale: 1, ease: "power2.inOut" },
-      0.1
-    );
-
-    // Plate 3: Analytics Card
-    timeline.fromTo(".plate-analytics", 
-      { x: 400, y: 300, opacity: 0, rotateZ: 5, rotateY: -20, scale: 0.9 },
-      { x: 0, y: 0, opacity: 1, rotateZ: 0, rotateY: 0, scale: 1, ease: "power2.inOut" },
-      0.2
-    );
-
-    // Plate 4: Activity Log
-    timeline.fromTo(".plate-activity", 
-      { x: 250, y: -250, opacity: 0, rotateY: -25, skewY: 5, scale: 0.85 },
-      { x: 0, y: 0, opacity: 1, rotateY: 0, skewY: 0, scale: 1, ease: "power2.inOut" },
-      0.15
-    );
-
-    // Subtle atmospheric glow movement
-    gsap.to(".assembly-bg-glow", {
-      scale: 1.2,
-      opacity: 0.6,
-      duration: 3,
-      repeat: -1,
-      yoyo: true,
-      ease: "sine.inOut"
+      // Simple opacity fades
+      timeline.fromTo(".plate-sidebar", { opacity: 0 }, { opacity: 1, ease: "power1.inOut" }, 0);
+      timeline.fromTo(".plate-header", { opacity: 0 }, { opacity: 1, ease: "power1.inOut" }, 0.1);
+      timeline.fromTo(".plate-analytics", { opacity: 0 }, { opacity: 1, ease: "power1.inOut" }, 0.2);
+      timeline.fromTo(".plate-activity", { opacity: 0 }, { opacity: 1, ease: "power1.inOut" }, 0.15);
+      
+      // Stop the glow animation
+      gsap.set(".assembly-bg-glow", { opacity: 0 });
     });
 
   }, { scope: containerRef });

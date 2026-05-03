@@ -16,6 +16,10 @@ console.log("[Auth] Initializing betterAuth...");
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
   secret: process.env.BETTER_AUTH_SECRET,
+  trustedOrigins: [
+    "http://localhost:3000",
+    "http://26.218.98.227:3000"
+  ],
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {

@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
+import * as Sentry from '@sentry/nextjs';
 import { routing } from './i18n/routing';
 import { redis, getApiKeyFromRedis } from './lib/redis';
 import { hashApiKey } from './lib/auth/api-key';
+import { apiRateLimit, authRateLimit } from './lib/rate-limit';
+import { generateNonce, buildCspHeader } from './lib/security';
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -18,10 +21,21 @@ const intlMiddleware = createMiddleware(routing);
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get('host') || '';
+  const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+  
+  // Security: Generate unique nonce for CSP
+  const nonce = generateNonce();
   
   // Initialize headers and set x-pathname for layout-based checks
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-pathname', pathname);
+  requestHeaders.set('x-nonce', nonce);
+
+  // --- 0. Bypass internal routes (Sentry tunnel, Next.js internals) ---
+  const isMonitoring = pathname === '/monitoring' || pathname.match(/^\/[a-z]{2}\/monitoring/);
+  if (isMonitoring || pathname.startsWith('/_next')) {
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
 
   // --- 1. API v1 Authentication Interceptor ---
   if (pathname.startsWith('/api/v1')) {
@@ -37,42 +51,67 @@ export async function proxy(request: NextRequest) {
     const rawKey = authHeader.split(' ')[1];
     
     try {
-      const hashedKey = await hashApiKey(rawKey);
-      const keyData = await getApiKeyFromRedis(hashedKey);
+      return await Sentry.startSpan(
+        { name: 'proxy.api-key-auth', op: 'http.proxy', attributes: { 'proxy.flow': 'api-v1-auth' } },
+        async () => {
+          const hashedKey = await hashApiKey(rawKey);
+          const keyData = await getApiKeyFromRedis(hashedKey);
 
-      if (!keyData) {
-        return NextResponse.json({ error: 'Invalid or expired API Key' }, { status: 401 });
-      }
+          if (!keyData) {
+            return NextResponse.json({ error: 'Invalid or expired API Key' }, { status: 401 });
+          }
 
-      // Industrial MFA Enforcement for API (W5)
-      const orgData = await redis.get<{ require2FA: boolean; id: string }>(`org:${keyData.orgId}`);
-      if (orgData?.require2FA) {
-        // If the org requires 2FA, we check if the specific user has it enabled in Redis
-        // We use a prefix user:{id}:mfa synced by auth hooks
-        const isUserMfaEnabled = await redis.get<boolean>(`user:${keyData.userId}:mfa`);
+          // Tenant-Aware API Rate Limiting
+          const identifier = `org_${keyData.orgId}`;
+          const { success, limit, remaining, reset } = await apiRateLimit.limit(identifier);
 
-        if (!isUserMfaEnabled) {
-          return NextResponse.json(
-            { 
-              error: 'MFA Enforcement Active',
-              message: 'This organization requires Two-Factor Authentication. Please enable MFA on your account to use API keys.',
-              setupUrl: `${request.nextUrl.origin}/account/security`
-            }, 
-            { status: 403 }
-          );
+          if (!success) {
+            return NextResponse.json(
+              { error: 'Rate limit exceeded' },
+              {
+                status: 429,
+                headers: {
+                  'X-RateLimit-Limit': limit.toString(),
+                  'X-RateLimit-Remaining': remaining.toString(),
+                  'X-RateLimit-Reset': reset.toString(),
+                },
+              }
+            );
+          }
+
+          // Industrial MFA Enforcement for API (W5)
+          const orgData = await redis.get<{ require2FA: boolean; id: string }>(`org:${keyData.orgId}`);
+          if (orgData?.require2FA) {
+            const isUserMfaEnabled = await redis.get<boolean>(`user:${keyData.userId}:mfa`);
+
+            if (!isUserMfaEnabled) {
+              return NextResponse.json(
+                { 
+                  error: 'MFA Enforcement Active',
+                  message: 'This organization requires Two-Factor Authentication. Please enable MFA on your account to use API keys.',
+                  setupUrl: `${request.nextUrl.origin}/account/security`
+                }, 
+                { status: 403 }
+              );
+            }
+          }
+
+          // Set tenant context for Sentry breadcrumbs (UUID only, no PII)
+          Sentry.setTag('tenant.id', keyData.orgId);
+
+          requestHeaders.set('x-tenant-id', keyData.orgId);
+          requestHeaders.set('x-tenant-schema', keyData.tenantSchemaName);
+          requestHeaders.set('x-role-id', keyData.roleId);
+
+          return NextResponse.next({
+            request: {
+              headers: requestHeaders,
+            },
+          });
         }
-      }
-
-      requestHeaders.set('x-tenant-id', keyData.orgId);
-      requestHeaders.set('x-tenant-schema', keyData.tenantSchemaName);
-      requestHeaders.set('x-role-id', keyData.roleId);
-
-      return NextResponse.next({
-        request: {
-          headers: requestHeaders,
-        },
-      });
+      );
     } catch (error) {
+      Sentry.captureException(error, { tags: { 'proxy.flow': 'api-v1-auth' } });
       console.error('[Proxy] API Key validation error:', error);
       return NextResponse.json({ error: 'Internal Server Error during validation' }, { status: 500 });
     }
@@ -97,21 +136,27 @@ export async function proxy(request: NextRequest) {
       !pathname.includes('.')
     ) {
       try {
-        // Check Redis for cached domain mapping
-        const domainData = await redis.get<{ slug: string; id: string }>(`domain:${targetHostname}`);
+        return await Sentry.startSpan(
+          { name: 'proxy.domain-resolution', op: 'http.proxy', attributes: { 'proxy.hostname': targetHostname } },
+          async () => {
+            const domainData = await redis.get<{ slug: string; id: string }>(`domain:${targetHostname}`);
 
-        if (domainData) {
-          console.log(`[Proxy] Rewriting ${targetHostname}${pathname} -> /org/${domainData.slug}${pathname}`);
-          return NextResponse.rewrite(
-            new URL(`/org/${domainData.slug}${pathname}`, request.url),
-            {
-              request: {
-                headers: requestHeaders,
-              },
+            if (domainData) {
+              Sentry.setTag('tenant.slug', domainData.slug);
+              return NextResponse.rewrite(
+                new URL(`/org/${domainData.slug}${pathname}`, request.url),
+                {
+                  request: {
+                    headers: requestHeaders,
+                  },
+                }
+              );
             }
-          );
-        }
+            return null;
+          }
+        ) ?? undefined; // fall through if no domain match
       } catch (error) {
+        Sentry.captureException(error, { tags: { 'proxy.flow': 'domain-resolution' } });
         console.error('[Proxy] Domain resolution error:', error);
       }
     }
@@ -163,6 +208,7 @@ export async function proxy(request: NextRequest) {
         }
       }
     } catch (error) {
+      Sentry.captureException(error, { tags: { 'proxy.flow': 'mfa-enforcement' } });
       console.error('[Proxy] MFA Enforcement error:', error);
     }
   }
@@ -184,6 +230,23 @@ export async function proxy(request: NextRequest) {
 
     // Optimization: Skip request cloning for auth routes to prevent internal Better Auth context loss
     if (pathname.startsWith('/api/auth')) {
+      if (request.method === 'POST') {
+        const { success, limit, remaining, reset } = await authRateLimit.limit(`ip_${ip}`);
+        if (!success) {
+          return NextResponse.json(
+            { error: 'Too many login attempts' },
+            {
+              status: 429,
+              headers: {
+                'X-RateLimit-Limit': limit.toString(),
+                'X-RateLimit-Remaining': remaining.toString(),
+                'X-RateLimit-Reset': reset.toString(),
+              },
+            }
+          );
+        }
+      }
+
       return NextResponse.next({
         request: {
           headers: requestHeaders,
@@ -199,7 +262,14 @@ export async function proxy(request: NextRequest) {
   }
 
   // For standard app routes, run the i18n middleware
-  return intlMiddleware(request);
+  const response = await intlMiddleware(request);
+
+  // --- 5. Security Headers (CSP Hardening) ---
+  // Inject CSP and Nonce headers into all document responses
+  response.headers.set('Content-Security-Policy-Report-Only', buildCspHeader(nonce));
+  response.headers.set('x-nonce', nonce);
+
+  return response;
 }
 
 // Next.js 16 Proxy Config

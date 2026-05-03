@@ -77,8 +77,6 @@ export function PricingSection() {
                 ? `${currency}${annualPrice}` 
                 : `${currency}${monthlyPrice}`;
 
-            const featuresCount = 5; // We could make this dynamic if needed
-            // However, the JSON structure has an array for features.
             // next-intl supports arrays if configured, but usually we use a key with indices.
             // Let's check how many features each plan has in the JSON.
             // Actually, I can just use raw JSON if I want, or use a loop if I know the count.

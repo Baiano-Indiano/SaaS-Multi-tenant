@@ -1,15 +1,15 @@
 import fs from 'fs';
-import path from 'path';
 
-const en = JSON.parse(fs.readFileSync('messages/en.json', 'utf8'));
-const pt = JSON.parse(fs.readFileSync('messages/pt.json', 'utf8'));
+const en = JSON.parse(fs.readFileSync('messages/en.json', 'utf8')) as Record<string, unknown>;
+const pt = JSON.parse(fs.readFileSync('messages/pt.json', 'utf8')) as Record<string, unknown>;
 
-function getKeys(obj, prefix = '') {
-  return Object.keys(obj).reduce((res, el) => {
-    if (Array.isArray(obj[el])) {
+function getKeys(obj: Record<string, unknown>, prefix = ''): string[] {
+  return Object.keys(obj).reduce((res: string[], el) => {
+    const value = obj[el];
+    if (Array.isArray(value)) {
       res.push(prefix + el);
-    } else if (typeof obj[el] === 'object' && obj[el] !== null) {
-      res.push(...getKeys(obj[el], prefix + el + '.'));
+    } else if (typeof value === 'object' && value !== null) {
+      res.push(...getKeys(value as Record<string, unknown>, prefix + el + '.'));
     } else {
       res.push(prefix + el);
     }
@@ -28,21 +28,24 @@ console.log('Missing in EN:', missingInEn);
 
 // Check if any PT values are still in English (heuristic: contains common English words)
 const englishWords = ['the', 'and', 'with', 'for', 'your', 'build', 'infrastructure', 'ready'];
-const ptValuesInEnglish = [];
+const ptValuesInEnglish: { path: string; value: string }[] = [];
 
-function checkValues(enObj, ptObj, path = '') {
+function checkValues(enObj: Record<string, unknown>, ptObj: Record<string, unknown>, path = '') {
   for (const key in enObj) {
     const currentPath = path ? `${path}.${key}` : key;
-    if (typeof enObj[key] === 'object' && enObj[key] !== null && !Array.isArray(enObj[key])) {
-      if (ptObj[key]) {
-        checkValues(enObj[key], ptObj[key], currentPath);
+    const enValRaw = enObj[key];
+    const ptValRaw = ptObj[key];
+
+    if (typeof enValRaw === 'object' && enValRaw !== null && !Array.isArray(enValRaw)) {
+      if (ptValRaw && typeof ptValRaw === 'object' && !Array.isArray(ptValRaw)) {
+        checkValues(enValRaw as Record<string, unknown>, ptValRaw as Record<string, unknown>, currentPath);
       }
     } else {
-      if (ptObj[key]) {
-        const enVal = String(enObj[key]).toLowerCase();
-        const ptVal = String(ptObj[key]).toLowerCase();
+      if (ptValRaw) {
+        const enVal = String(enValRaw).toLowerCase();
+        const ptVal = String(ptValRaw).toLowerCase();
         if (enVal === ptVal && enVal.split(' ').some(w => englishWords.includes(w))) {
-           ptValuesInEnglish.push({ path: currentPath, value: ptObj[key] });
+           ptValuesInEnglish.push({ path: currentPath, value: String(ptValRaw) });
         }
       }
     }

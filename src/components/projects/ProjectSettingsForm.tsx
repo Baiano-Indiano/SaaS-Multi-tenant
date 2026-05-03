@@ -227,7 +227,7 @@ export function ProjectSettingsForm({ project, orgSlug }: ProjectSettingsFormPro
                     </AlertDialogCancel>
                     <AlertDialogAction 
                       onClick={onDelete}
-                      isLoading={isDeleting}
+                      disabled={isDeleting}
                       className="bg-red-600 hover:bg-red-500 text-white border-none font-semibold"
                     >
                       {t("yesDelete")}

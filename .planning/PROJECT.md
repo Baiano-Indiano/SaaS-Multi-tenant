@@ -4,39 +4,26 @@
 
 A B2B SaaS starter boilerplate focusing on deep organization isolation and premium user experience.
 
-## Current State: v3.0 (Enterprise & Scale) - [Shipped]
+## Current State: v8.0 (Enterprise Reliability & Security Hardening) - [Shipped]
 
-**Goal Accomplished:** Expanded upon the foundation with enterprise-level features including dynamic analytics, connectivity (API Keys & Webhooks), workflow engines, and member management.
-
-### Shipped Features
-- **Enterprise Landing Page**: GSAP ScrollTrigger features and benefits.
-- **Dynamic Analytics**: Staggered UI dashboards and interactive charts.
-- **Connectivity Ecosystem**: API Keys and Webhook registration.
-- **Core Automations**: Workflow builder UI and background delivery service.
-- **Member Management**: Data tables for members and invites.
-
-<details>
-<summary>Archived State: v2.0 (Productivity & Scale)</summary>
-
-**Goal Accomplished:** Transformed the foundation into a high-engagement, reactive platform with usage transparency and enterprise-ready routing.
+**Goal Accomplished:** Transformed the application into a production-resilient platform with deep observability (Sentry), tenant-aware rate limiting, PII sanitization, and strict security headers (CSP).
 
 ### Shipped Features
-- **Real-time Notifications**: Upstash Redis infrastructure with SSE streaming for live updates.
-- **Tenant Analytics**: Real-time quota tracking and dashboard visualization.
-- **Enterprise Domains**: Custom domain support with Vercel Platforms API.
-- **Audit Logging**: Comprehensive, tenant-isolated activity tracking.
-- **Premium UI/UX**: Sub-route based settings navigation with GSAP fade-and-scale transitions.
-</details>
+- **Sentry APM**: Full observability in `proxy.ts` with PII scrubbing.
+- **Rate Limiting**: Multi-tier protection (Auth/API) via Upstash/Redis.
+- **PII Sanitization**: Recursive scrubbing of sensitive data in logs and traces.
+- **Security Audit**: Automated OWASP scans and nonce-based CSP implementation.
 
-## Current Milestone: v4.0 (Security & Integrations)
+## Current Milestone: v9.0 (Developer Experience & Scalability)
 
-**Goal:** Elevar a plataforma a padrão enterprise com 2FA obrigatório, gestão de sessões ativas, e conectores nativos plug-and-play (Slack/Discord) sobre o motor de webhooks existente.
+**Goal:** Otimizar o workflow de desenvolvimento local e preparar a infraestrutura para escala multi-região e expansão de API.
 
 **Target features:**
-- 2FA (TOTP) — Configuração por usuário + enforcement por organização
-- Gestão de Sessões — Listar, revogar remotamente, expiração configurável
-- Conectores Nativos — Slack e Discord com OAuth/Webhook simplificado
-- Notificações de Eventos — Eventos do sistema disparam ações nos conectores
+- **Testing**: Expansão da suíte de testes E2E e unitários.
+- **Tooling**: CLI para gerenciamento de tenants e migrações.
+- **Scalability**: Estratégia de banco de dados multi-região.
+- **Public API**: Fundação para API pública e webhooks externos.
+
 
 ## Requirements
 
@@ -53,10 +40,11 @@ A B2B SaaS starter boilerplate focusing on deep organization isolation and premi
 
 ### Active
 
-- [ ] 2FA (TOTP) com enforcement organizacional
-- [ ] Gestão de sessões ativas com revogação remota
-- [ ] Conectores nativos Slack & Discord
-- [ ] Notificações de eventos via conectores
+- [ ] Sentry APM & Observability (Proxy + DB Tracing)
+- [ ] Connection Pooling & Tenant Rate Limiting
+- [ ] Compliance Hardening (PII masking in Audit Logs)
+- [ ] GSAP Performance & Reduced Motion Logic
+- [ ] Security Audit (OWASP) & CSP Hardening
 
 ## Constraints
 
@@ -93,4 +81,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-24 — Milestone v4.0 started*
+*Last updated: 2026-05-02 — Milestone v8.0 started*

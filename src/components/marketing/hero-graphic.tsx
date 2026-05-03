@@ -9,7 +9,9 @@ export function HeroGraphic() {
   useLayoutEffect(() => {
     if (!containerRef.current) return;
 
-    const ctx = gsap.context(() => {
+    const mm = gsap.matchMedia(containerRef);
+
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
       // Stagger reveal for sidebar + content blocks
       gsap.fromTo(".stagger-item", 
         { opacity: 0, y: 20 },
@@ -34,9 +36,19 @@ export function HeroGraphic() {
           stagger: 0.1 
         }
       );
-    }, containerRef);
+    });
 
-    return () => ctx.revert();
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      // Just set them visible or a very quick fade
+      gsap.set([".stagger-item", ".pulse-item"], { 
+        opacity: 1, 
+        y: 0, 
+        scale: 1,
+        clearProps: "all"
+      });
+    });
+
+    return () => mm.revert();
   }, []);
 
   return (
