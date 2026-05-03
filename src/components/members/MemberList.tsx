@@ -11,45 +11,56 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { MemberActions } from "./MemberActions";
 import { Shield, Mail } from "lucide-react";
-import { motion, Variants } from "framer-motion";
+import { motion, Variants, useReducedMotion, AnimatePresence } from "framer-motion";
 import { useTranslations, useFormatter } from "next-intl";
 
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08 }
-  }
-};
-
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 15 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
-};
+interface Role {
+  id: string;
+  name: string;
+  slug: string;
+}
 
 interface Member {
   id: string;
   role: string;
   roleId: string | null;
+  createdAt: Date | string;
   user: {
     id: string;
     name: string;
     email: string;
-    image: string | null;
+    image?: string | null;
   };
-  createdAt: Date;
 }
 
 interface MemberListProps {
   members: Member[];
   orgId: string;
   orgSlug: string;
-  roles: { id: string; name: string; slug: string }[];
+  roles: Role[];
 }
 
 export function MemberList({ members, orgId, orgSlug, roles }: MemberListProps) {
   const t = useTranslations("Members");
   const formatter = useFormatter();
+  const shouldReduceMotion = useReducedMotion();
+
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: shouldReduceMotion ? 0 : 0.08 }
+    }
+  };
+
+  const itemVariants: Variants = {
+    hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 15 },
+    show: { 
+      opacity: 1, 
+      y: 0, 
+      transition: { type: "spring", stiffness: 300, damping: 24 } 
+    }
+  };
 
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-950 overflow-hidden shadow-2xl shadow-black/40">
@@ -76,12 +87,17 @@ export function MemberList({ members, orgId, orgSlug, roles }: MemberListProps) 
           initial="hidden"
           animate="show"
         >
-          {members.map((member) => (
-            <motion.tr 
-              variants={itemVariants}
-              key={member.id} 
-              className="border-b transition-colors data-[state=selected]:bg-muted border-zinc-800/50 hover:bg-zinc-900/30 group"
-            >
+          <AnimatePresence mode="popLayout">
+            {members.map((member) => (
+              <motion.tr 
+                layout
+                variants={itemVariants}
+                initial="hidden"
+                animate="show"
+                exit={{ opacity: 0, x: -20 }}
+                key={member.id} 
+                className="border-b transition-colors data-[state=selected]:bg-muted border-zinc-800/50 hover:bg-zinc-900/30 group"
+              >
               <TableCell className="py-4 px-6">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-9 w-9 border border-zinc-800 group-hover:border-zinc-700 transition-colors">
@@ -124,6 +140,7 @@ export function MemberList({ members, orgId, orgSlug, roles }: MemberListProps) 
               </TableCell>
             </motion.tr>
           ))}
+          </AnimatePresence>
         </motion.tbody>
       </Table>
     </div>

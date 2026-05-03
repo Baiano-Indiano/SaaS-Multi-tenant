@@ -4,14 +4,16 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import { AnalyticsWidgets } from "@/components/dashboard/AnalyticsWidgets";
-import { OverviewChart } from "@/components/dashboard/overview-chart";
-import { AreaChart } from "@/components/dashboard/area-chart";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { StatsSkeleton, ChartSkeleton, AreaChartSkeleton, ActivitySkeleton } from "@/components/dashboard/DashboardSkeletons";
 import { MagneticCard } from "@/components/dashboard/MagneticCard";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { useTranslations } from "next-intl";
+import dynamic from "next/dynamic";
+
+const OverviewChart = dynamic(() => import("@/components/dashboard/overview-chart").then(m => m.OverviewChart), { ssr: false });
+const AreaChart = dynamic(() => import("@/components/dashboard/area-chart").then(m => m.AreaChart), { ssr: false });
 
 // Mock stats for the demonstration
 const mockStats = {
@@ -39,15 +41,31 @@ export default function DashboardPage() {
 
   useGSAP(() => {
     if (!isLoading && contentRef.current) {
-      gsap.from(contentRef.current.children, {
-        opacity: 0,
-        scale: 0.98,
-        y: 10,
-        duration: 0.8,
-        stagger: 0.1,
-        ease: "expo.out",
-        clearProps: "all"
+      const mm = gsap.matchMedia(contentRef);
+
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        gsap.from(contentRef.current!.children, {
+          opacity: 0,
+          scale: 0.98,
+          y: 10,
+          duration: 0.8,
+          stagger: 0.1,
+          ease: "expo.out",
+          clearProps: "all"
+        });
       });
+
+      mm.add("(prefers-reduced-motion: reduce)", () => {
+        gsap.from(contentRef.current!.children, {
+          opacity: 0,
+          duration: 0.5,
+          stagger: 0.05,
+          ease: "power2.out",
+          clearProps: "all"
+        });
+      });
+
+      return () => mm.revert();
     }
   }, [isLoading]);
 

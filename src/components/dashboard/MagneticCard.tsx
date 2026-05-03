@@ -27,45 +27,61 @@ export function MagneticCard({
     const card = cardRef.current;
     const inner = innerRef.current;
 
-    const onMouseMove = (e: MouseEvent) => {
-      const { left, top, width, height } = card.getBoundingClientRect();
-      const x = e.clientX - left;
-      const y = e.clientY - top;
-      
-      const centerX = width / 2;
-      const centerY = height / 2;
-      
-      const rotateX = ((y - centerY) / centerY) * -strength;
-      const rotateY = ((x - centerX) / centerX) * strength;
+    const mm = gsap.matchMedia(cardRef);
 
-      gsap.to(inner, {
-        rotateX,
-        rotateY,
-        scale,
-        duration: 0.4,
-        ease: "power2.out",
-        overwrite: "auto",
-      });
-    };
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      const onMouseMove = (e: MouseEvent) => {
+        const { left, top, width, height } = card.getBoundingClientRect();
+        const x = e.clientX - left;
+        const y = e.clientY - top;
+        
+        const centerX = width / 2;
+        const centerY = height / 2;
+        
+        const rotateX = ((y - centerY) / centerY) * -strength;
+        const rotateY = ((x - centerX) / centerX) * strength;
 
-    const onMouseLeave = () => {
-      gsap.to(inner, {
+        gsap.to(inner, {
+          rotateX,
+          rotateY,
+          scale,
+          duration: 0.4,
+          ease: "power2.out",
+          overwrite: "auto",
+        });
+      };
+
+      const onMouseLeave = () => {
+        gsap.to(inner, {
+          rotateX: 0,
+          rotateY: 0,
+          scale: 1,
+          duration: 0.6,
+          ease: "elastic.out(1, 0.3)",
+          overwrite: "auto",
+        });
+      };
+
+      card.addEventListener("mousemove", onMouseMove);
+      card.addEventListener("mouseleave", onMouseLeave);
+
+      return () => {
+        card.removeEventListener("mousemove", onMouseMove);
+        card.removeEventListener("mouseleave", onMouseLeave);
+      };
+    });
+
+    // For reduced motion, we do nothing (no listeners, no transforms)
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      gsap.set(inner, {
         rotateX: 0,
         rotateY: 0,
         scale: 1,
-        duration: 0.6,
-        ease: "elastic.out(1, 0.3)",
-        overwrite: "auto",
+        clearProps: "all"
       });
-    };
+    });
 
-    card.addEventListener("mousemove", onMouseMove);
-    card.addEventListener("mouseleave", onMouseLeave);
-
-    return () => {
-      card.removeEventListener("mousemove", onMouseMove);
-      card.removeEventListener("mouseleave", onMouseLeave);
-    };
+    return () => mm.revert();
   }, { scope: cardRef });
 
   return (

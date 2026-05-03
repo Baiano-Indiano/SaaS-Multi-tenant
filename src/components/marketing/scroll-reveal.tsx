@@ -38,19 +38,38 @@ export function ScrollReveal({
 
     const targets = containerRef.current.children;
 
-    gsap.from(targets, {
-      x,
-      y,
-      opacity: 0,
-      duration,
-      delay,
-      stagger,
-      ease: "expo.out",
-      scrollTrigger: {
-        trigger: containerRef.current,
-        start: "top 85%",
-        toggleActions: once ? "play none none none" : "play reverse play reverse",
-      },
+    const mm = gsap.matchMedia(containerRef);
+
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      gsap.from(targets, {
+        x,
+        y,
+        opacity: 0,
+        duration,
+        delay,
+        stagger,
+        ease: "expo.out",
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top 85%",
+          toggleActions: once ? "play none none none" : "play reverse play reverse",
+        },
+      });
+    });
+
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      gsap.from(targets, {
+        opacity: 0,
+        duration,
+        delay,
+        stagger,
+        ease: "power1.inOut",
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top 85%",
+          toggleActions: once ? "play none none none" : "play reverse play reverse",
+        },
+      });
     });
   }, { scope: containerRef });
 

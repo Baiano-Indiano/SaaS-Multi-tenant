@@ -21,21 +21,35 @@ function FAQItem({ question, answer }: { question: string; answer: string; index
   useGSAP(() => {
     if (!contentRef.current) return;
     
-    if (isOpen) {
-      gsap.to(contentRef.current, {
-        height: "auto",
-        opacity: 1,
-        duration: 0.4,
-        ease: "power2.out",
+    const mm = gsap.matchMedia();
+    
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      if (isOpen) {
+        gsap.to(contentRef.current, {
+          height: "auto",
+          opacity: 1,
+          duration: 0.4,
+          ease: "power2.out",
+        });
+      } else {
+        gsap.to(contentRef.current, {
+          height: 0,
+          opacity: 0,
+          duration: 0.3,
+          ease: "power2.in",
+        });
+      }
+    });
+
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      gsap.set(contentRef.current, {
+        height: isOpen ? "auto" : 0,
+        opacity: isOpen ? 1 : 0,
+        clearProps: "all"
       });
-    } else {
-      gsap.to(contentRef.current, {
-        height: 0,
-        opacity: 0,
-        duration: 0.3,
-        ease: "power2.in",
-      });
-    }
+    });
+
+    return () => mm.revert();
   }, [isOpen]);
 
   return (

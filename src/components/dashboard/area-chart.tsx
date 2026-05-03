@@ -41,22 +41,34 @@ export function AreaChart() {
   useGSAP(() => {
     if (!pathRef.current || !areaRef.current) return;
 
-    const length = pathRef.current.getTotalLength();
+    const mm = gsap.matchMedia(containerRef);
 
-    // Line drawing animation
-    gsap.set(pathRef.current, { strokeDasharray: length, strokeDashoffset: length });
-    gsap.to(pathRef.current, {
-      strokeDashoffset: 0,
-      duration: 1.5,
-      ease: "power2.inOut",
-      delay: 0.5,
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      const length = pathRef.current!.getTotalLength();
+
+      // Line drawing animation
+      gsap.set(pathRef.current, { strokeDasharray: length, strokeDashoffset: length });
+      gsap.to(pathRef.current, {
+        strokeDashoffset: 0,
+        duration: 1.5,
+        ease: "power2.inOut",
+        delay: 0.5,
+      });
+
+      // Area fade in
+      gsap.fromTo(areaRef.current, 
+        { opacity: 0 },
+        { opacity: 0.1, duration: 1, delay: 1, ease: "power2.out" }
+      );
     });
 
-    // Area fade in
-    gsap.fromTo(areaRef.current, 
-      { opacity: 0 },
-      { opacity: 0.1, duration: 1, delay: 1, ease: "power2.out" }
-    );
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      // Just fade everything in
+      gsap.fromTo([pathRef.current, areaRef.current], 
+        { opacity: 0 },
+        { opacity: 1, duration: 1, delay: 0.5, ease: "power2.out" }
+      );
+    });
   }, { scope: containerRef });
 
   return (

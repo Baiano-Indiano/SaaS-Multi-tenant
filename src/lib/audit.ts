@@ -5,6 +5,54 @@ import { auditLogs } from "./db/schema";
 import { lt } from "drizzle-orm";
 import type { TenantTransaction } from "./db/tenant-db";
 
+const SENSITIVE_KEYWORDS = [
+  "password", "token", "secret", "session",
+  "backupcode", "webhook", "api_key", "apikey",
+  "stripe", "payment", "card", "2fa", "mfa"
+];
+
+export function sanitizeAuditDetails(details: unknown): unknown {
+  if (!details) return details;
+  
+  let obj = details;
+  let isString = false;
+  if (typeof details === "string") {
+    try {
+      obj = JSON.parse(details);
+      isString = true;
+    } catch {
+      return details;
+    }
+  }
+
+  if (typeof obj !== "object" || obj === null) {
+    return details;
+  }
+
+  const sanitize = (item: unknown): unknown => {
+    if (Array.isArray(item)) {
+      return item.map(sanitize);
+    }
+    if (typeof item === "object" && item !== null) {
+      const sanitized: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(item as Record<string, unknown>)) {
+        const lowerKey = key.toLowerCase();
+        const isSensitive = SENSITIVE_KEYWORDS.some(keyword => lowerKey.includes(keyword));
+        if (isSensitive) {
+          sanitized[key] = "[REDACTED]";
+        } else {
+          sanitized[key] = sanitize(value);
+        }
+      }
+      return sanitized;
+    }
+    return item;
+  };
+
+  const scrubbed = sanitize(obj as Record<string, unknown>);
+  return isString ? JSON.stringify(scrubbed) : scrubbed;
+}
+
 /**
  * recordAuditLog
  * 
@@ -68,7 +116,7 @@ export async function recordAuditLog(params: {
         action: params.action,
         entityType: params.entityType,
         entityId: params.entityId,
-        details: typeof params.details === "string" ? params.details : (params.details ? JSON.stringify(params.details) : null),
+        details: params.details ? (typeof params.details === "string" ? sanitizeAuditDetails(params.details) as string : JSON.stringify(sanitizeAuditDetails(params.details))) : null,
         ipAddress,
         userAgent,
       });
