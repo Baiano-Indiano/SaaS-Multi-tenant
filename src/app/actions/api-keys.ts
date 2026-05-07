@@ -65,6 +65,7 @@ export async function createApiKeyAction(data: {
         tenantSchemaName: org.tenantSchemaName,
         roleId: data.roleId,
         userId: session.user.id,
+        scopes: ["read", "write"], // Default simplified scope
       });
     }
 

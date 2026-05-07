@@ -63,6 +63,7 @@
     "creatingAccount": "Creating your account...",
     "welcomeBackToast": "Welcome back!",
     "accountCreatedToast": "Account created successfully!",
+    "twoFactorRequiredToast": "Two-factor authentication required.",
     "invalidCredentials": "Invalid email or password.",
     "emailAlreadyRegistered": "This email is already registered. Please log in.",
     "userNotFound": "No account found with this email. Click \"Register\" to create your account.",
@@ -185,6 +186,7 @@
     "authenticatorApp": "Authenticator App",
     "authenticatorDescription": "Use an app like Google Authenticator or 1Password to generate one-time codes.",
     "twoFactorStatus": "Two-Factor Authentication",
+    "status": "Status",
     "enabled": "Enabled",
     "disabled": "Disabled",
     "enable": "Enable",
@@ -237,7 +239,10 @@
     "copy": "Copy",
     "download": "Download",
     "backupCodesCopied": "Backup codes copied to clipboard",
-    "backupCodesDownloaded": "Backup codes downloaded"
+    "backupCodesDownloaded": "Backup codes downloaded",
+    "TwoFactor": {
+      "BackupCodesWarning": "If you lose access to your authenticator app, these codes are the ONLY way to access your account."
+    }
   },
   "Hero": {
     "totalRevenue": "Total Revenue",
@@ -462,7 +467,15 @@
     "keyName": "Playground Key ({date})",
     "keyInjected": "Test API Key generated and injected!",
     "failedToGenerate": "Failed to generate API Key",
-    "injected": "injected"
+    "injected": "injected",
+    "liveWarning": "Live Environment",
+    "liveWarningDescription": "This playground executes real requests against your organization's data. Use caution when performing write operations.",
+    "selectKey": "Select API Key",
+    "manualKey": "Use custom key",
+    "pasteKey": "Paste your API key here...",
+    "keySelectionLabel": "Active Authentication",
+    "testKeyLabel": "Temporary (1h)",
+    "persistentKeyLabel": "Standard Key"
   },
   "Billing": {
     "title": "Plan and Billing",
@@ -521,6 +534,8 @@
   "Compliance": {
     "title": "Security Requirement",
     "description": "To protect organizational data, this workspace requires all members to have Two-Factor Authentication (2FA) enabled.",
+    "mfaRequired": "MFA Required",
+    "mfaLockoutWarning": "This organization requires two-factor authentication. Please enable it to ensure full access.",
     "setupTitle": "Setup 2FA Now",
     "setupDescription": "Configure your authenticator app to regain access to this organization.",
     "onEnabledSuccess": "2FA enabled! Access granted.",

@@ -1,27 +1,50 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ApiReferenceReact } from "@scalar/api-reference-react";
-import "@scalar/api-reference-react/style.css";
-import { openApiSpec } from "@/lib/api/openapi";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { createApiKeyAction } from "@/app/actions/api-keys";
-import { Key, Loader2, Sparkles } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { 
+  Key, 
+  Loader2, 
+  Sparkles, 
+  ShieldAlert,
+  Terminal
+} from "lucide-react";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations, useFormatter } from "next-intl";
+import { ApiReferenceReact } from "@scalar/api-reference-react";
+import { createApiKeyAction } from "@/app/actions/api-keys";
 
 interface PlaygroundClientProps {
   orgId: string;
   orgSlug: string;
   adminRoleId: string | null;
+  existingKeys: { id: string; name: string }[];
+  openApiSpec: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
-export function PlaygroundClient({ orgId, orgSlug, adminRoleId }: PlaygroundClientProps) {
+export function PlaygroundClient({ 
+  orgId, 
+  orgSlug, 
+  adminRoleId,
+  existingKeys,
+  openApiSpec
+}: PlaygroundClientProps) {
   const t = useTranslations("Playground");
   const format = useFormatter();
   const [apiKey, setApiKey] = useState<string>("");
+  const [manualKey, setManualKey] = useState<string>("");
+  const [isManual, setIsManual] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const handleGenerateKey = () => {
@@ -35,12 +58,13 @@ export function PlaygroundClient({ orgId, orgSlug, adminRoleId }: PlaygroundClie
         name: t("keyName", { date: format.dateTime(new Date(), { month: 'short', day: 'numeric', year: 'numeric' }) }),
         orgId,
         orgSlug,
-        roleId: adminRoleId,
-        expiresInDays: 1, // Short lived for security
+        roleId: adminRoleId!,
+        expiresInDays: 1,
       });
 
       if (result.success && result.rawKey) {
         setApiKey(result.rawKey);
+        setIsManual(false);
         toast.success(t("keyInjected"));
       } else {
         toast.error(t("failedToGenerate"));
@@ -54,42 +78,128 @@ export function PlaygroundClient({ orgId, orgSlug, adminRoleId }: PlaygroundClie
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between"
+        className="space-y-4"
       >
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-100">{t("title")}</h1>
-          <p className="text-zinc-400">{t("description")}</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-100 flex items-center gap-2">
+              <Terminal className="h-6 w-6 text-emerald-400" />
+              {t("title")}
+            </h1>
+            <p className="text-zinc-400">{t("description")}</p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Button 
+              onClick={handleGenerateKey} 
+              disabled={isPending}
+              variant="outline"
+              className="bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-zinc-100 gap-2 h-10 shadow-lg shadow-primary/5"
+            >
+              {isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4 text-amber-400" />
+              )}
+              {t("createKey")}
+            </Button>
+          </div>
         </div>
 
-        {!apiKey ? (
-          <Button 
-            onClick={handleGenerateKey} 
-            disabled={isPending}
-            variant="outline"
-            className="bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-zinc-100 gap-2 h-11 px-6 shadow-lg shadow-primary/5"
-          >
-            {isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4 text-amber-400" />
-            )}
-            {t("createKey")}
-          </Button>
-        ) : (
-          <div className="flex items-center gap-3 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-sm font-mono">
-            <Key className="h-3.5 w-3.5" />
-            {apiKey.substring(0, 10)}... {t("injected")}
-          </div>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
+            <CardContent className="p-4 flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                  <Key className="h-4 w-4 text-emerald-400" />
+                  {t("keySelectionLabel")}
+                </label>
+                <button 
+                  onClick={() => setIsManual(!isManual)}
+                  className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                >
+                  {isManual ? t("selectKey") : t("manualKey")}
+                </button>
+              </div>
+
+              <AnimatePresence mode="wait">
+                {isManual ? (
+                  <motion.div
+                    key="manual"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 10 }}
+                  >
+                    <Input 
+                      placeholder={t("pasteKey")}
+                      value={manualKey}
+                      onChange={(e) => {
+                        setManualKey(e.target.value);
+                        setApiKey(e.target.value);
+                      }}
+                      className="bg-zinc-950 border-zinc-800 text-zinc-100 h-10"
+                    />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="select"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 10 }}
+                  >
+                    <Select 
+                      onValueChange={(val) => setApiKey(val ?? "")}
+                      value={apiKey}
+                    >
+                      <SelectTrigger className="bg-zinc-950 border-zinc-800 text-zinc-100 h-10">
+                        <SelectValue placeholder={t("selectKey")} />
+                      </SelectTrigger>
+                      <SelectContent className="bg-zinc-950 border-zinc-800 text-zinc-100">
+                        {apiKey && !existingKeys.some(k => k.id === apiKey) && (
+                          <SelectItem value={apiKey} className="text-emerald-400">
+                            {t("testKeyLabel")} ({apiKey.substring(0, 8)}...)
+                          </SelectItem>
+                        )}
+                        {existingKeys.map((key) => (
+                          <SelectItem key={key.id} value={key.id}>
+                            {t("persistentKeyLabel")}: {key.name}
+                          </SelectItem>
+                        ))}
+                        {existingKeys.length === 0 && !apiKey && (
+                          <div className="p-2 text-xs text-zinc-500 italic">
+                            No keys found. Generate one above.
+                          </div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </CardContent>
+          </Card>
+
+          <Alert className="border-amber-500/20 bg-amber-500/5 text-amber-200">
+            <ShieldAlert className="h-4 w-4 text-amber-500" />
+            <AlertTitle className="text-amber-500 font-semibold flex items-center gap-2">
+              {t("liveWarning")}
+            </AlertTitle>
+            <AlertDescription className="text-zinc-400 text-xs mt-1">
+              {t("liveWarningDescription")}
+            </AlertDescription>
+          </Alert>
+        </div>
       </motion.div>
 
       {/* Scalar Container */}
-      <Card className="flex-1 overflow-hidden border-zinc-800 bg-zinc-950 shadow-2xl">
+      <Card className="flex-1 overflow-hidden border-zinc-800 bg-zinc-950 shadow-2xl relative min-h-[700px]">
+        <div className="absolute top-4 right-4 z-50 flex gap-2">
+           {/* Future: Documentation toggle or search focus */}
+        </div>
         <CardContent className="p-0 h-full">
-          <div className="scalar-theme-custom h-full min-h-[600px]">
+          <div className="scalar-theme-custom h-full">
             <ApiReferenceReact
               configuration={{
-                content: openApiSpec, // Direct calls
+                content: openApiSpec,
                 proxyUrl: "",
                 authentication: {
                   preferredSecurityScheme: "bearerAuth",
@@ -99,11 +209,12 @@ export function PlaygroundClient({ orgId, orgSlug, adminRoleId }: PlaygroundClie
                     },
                   },
                 },
-                theme: "none", // We use custom CSS variables
+                theme: "none",
                 hideDownloadButton: true,
                 hideTestRequestButton: false,
                 isEditable: false,
                 showSidebar: true,
+                searchHotKey: "k",
               }}
             />
           </div>

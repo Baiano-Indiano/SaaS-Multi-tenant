@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, primaryKey, unique } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const users = pgTable("user", {
@@ -8,8 +8,6 @@ export const users = pgTable("user", {
 	emailVerified: boolean("emailVerified").notNull(),
 	image: text("image"),
 	twoFactorEnabled: boolean("twoFactorEnabled").notNull().default(false),
-	twoFactorSecret: text("twoFactorSecret"),
-	twoFactorBackupCodes: text("twoFactorBackupCodes"),
 	createdAt: timestamp("createdAt").notNull(),
 	updatedAt: timestamp("updatedAt").notNull()
 });
@@ -74,7 +72,9 @@ export const members = pgTable("member", {
 	role: text("role").notNull(),
 	roleId: text("roleId"), // Reference to role in tenant schema (logical)
 	createdAt: timestamp("createdAt").notNull()
-});
+}, (t) => ({
+	unq: unique().on(t.organizationId, t.userId)
+}));
 
 export const membersRelations = relations(members, ({ one }) => ({
 	organization: one(organizations, {
@@ -274,6 +274,7 @@ export const webhookDeliveries = pgTable("webhook_delivery", {
 	workflowId: text("workflowId").references(() => workflows.id, { onDelete: 'cascade' }), // Optional if it's a standard webhook
 	eventType: text("eventType").notNull(),
 	payload: text("payload").notNull(), // JSON string
+	status: text("status").notNull().default("processing"), // 'processing', 'delivered', 'failed'
 	responseStatus: text("responseStatus"),
 	responseBody: text("responseBody"),
 	duration: text("duration"), // ms
@@ -327,3 +328,11 @@ export const statusIncidentsRelations = relations(statusIncidents, ({ one }) => 
 		references: [organizations.id],
 	}),
 }));
+
+export const twoFactors = pgTable("two_factor", {
+	id: text("id").primaryKey(),
+	secret: text("secret").notNull(),
+	backupCodes: text("backupCodes").notNull(),
+	userId: text("userId").notNull().references(() => users.id, { onDelete: 'cascade' }),
+	verified: boolean("verified").notNull().default(false)
+});

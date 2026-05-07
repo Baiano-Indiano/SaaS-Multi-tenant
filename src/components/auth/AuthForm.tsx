@@ -23,6 +23,7 @@ import { useGSAP } from "@gsap/react";
 import { Shield } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { checkSSOAvailabilityAction } from "@/app/actions/sso";
 
 interface AuthFormProps {
   type: "login" | "register";
@@ -35,8 +36,12 @@ export function AuthForm({ type }: AuthFormProps) {
   const [loading, setLoading] = useState(false);
   const [showSSO, setShowSSO] = useState(false);
   const [ssoEmail, setSsoEmail] = useState("");
-  const progressRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
+  
+  const [ssoAvailable, setSsoAvailable] = useState(false);
+  const [detectedDomain, setDetectedDomain] = useState("");
+  const [isCheckingSSO, setIsCheckingSSO] = useState(false);
 
   const authSchema = useMemo(() => z.object({
     email: z.string().email(t("invalidEmail")),
@@ -80,17 +85,19 @@ export function AuthForm({ type }: AuthFormProps) {
     } else {
       // Complete and hide
       const tl = gsap.timeline();
-      tl.to(progressRef.current, {
-        width: "100%",
-        duration: 0.3,
-        ease: "power2.inOut",
-      }).to(progressRef.current, {
-        opacity: 0,
-        duration: 0.2,
-        onComplete: () => {
-          gsap.set(progressRef.current, { width: "0%", opacity: 1 });
-        }
-      });
+      if (progressRef.current) {
+        tl.to(progressRef.current, {
+          width: "100%",
+          duration: 0.3,
+          ease: "power2.inOut",
+        }).to(progressRef.current, {
+          opacity: 0,
+          duration: 0.2,
+          onComplete: () => {
+            gsap.set(progressRef.current, { width: "0%", opacity: 1 });
+          }
+        });
+      }
     }
   }, { dependencies: [loading], scope: containerRef });
 
@@ -98,10 +105,40 @@ export function AuthForm({ type }: AuthFormProps) {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<AuthValues>({
     resolver: zodResolver(authSchema),
   });
+
+  const email = watch("email");
+
+  // Detect SSO Domain
+  useEffect(() => {
+    if (type !== "login" || !email || !email.includes("@") || email.length < 5) {
+      setSsoAvailable(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsCheckingSSO(true);
+      try {
+        const result = await checkSSOAvailabilityAction(email);
+        if (result.available) {
+          setSsoAvailable(true);
+          setDetectedDomain(result.domain || "");
+        } else {
+          setSsoAvailable(false);
+        }
+      } catch (error) {
+        console.error("SSO check failed:", error);
+      } finally {
+        setIsCheckingSSO(false);
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [email, type]);
 
   useEffect(() => {
     const emailFromQuery = searchParams.get("email");
@@ -143,6 +180,11 @@ export function AuthForm({ type }: AuthFormProps) {
       }
 
       if (response?.error) {
+        // If 2FA is required, it's not an error in this flow, it's a redirect state
+        if (response.error.code === "TWO_FACTOR_REQUIRED") {
+          return { twoFactorRequired: true };
+        }
+
         const raw =
           typeof response.error === "string"
             ? response.error
@@ -151,19 +193,31 @@ export function AuthForm({ type }: AuthFormProps) {
         throw new Error(mapped);
       }
 
-      if (!response?.data?.user?.id) {
+      const data = response?.data;
+      if (type === "login" && data && (
+        ('twoFactorRequired' in data && (data as { twoFactorRequired?: boolean }).twoFactorRequired) || 
+        ('twoFactorRedirect' in data && (data as { twoFactorRedirect?: boolean }).twoFactorRedirect)
+      )) {
+        return { twoFactorRequired: true };
+      }
+
+      if (!data?.user?.id) {
         const msg = type === "login"
           ? t("couldNotSignIn")
           : t("couldNotCreateAccount");
         throw new Error(msg);
       }
 
-      return response.data;
+      return data;
     })();
 
     toast.promise(authPromise, {
       loading: type === "login" ? t("verifyingCredentials") : t("creatingAccount"),
-      success: () => {
+      success: (data) => {
+        if (data && 'twoFactorRequired' in data && data.twoFactorRequired) {
+          router.push("/verify-2fa");
+          return t("twoFactorRequiredToast"); // We might need to add this to i18n
+        }
         router.push("/selecionar-org");
         return type === "login" ? t("welcomeBackToast") : t("accountCreatedToast");
       },
@@ -302,34 +356,76 @@ export function AuthForm({ type }: AuthFormProps) {
                     )}
                   </motion.div>
 
-                  <motion.div
-                    custom={type === "register" ? 2 : 1}
-                    variants={fieldVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className="space-y-2"
-                  >
-                    <Label htmlFor="password" className="text-zinc-300">
-                      {t("passwordLabel")}
-                    </Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      className="bg-zinc-900 border-zinc-800 text-white focus-visible:ring-zinc-700 h-10 transition-all focus:bg-zinc-900/80"
-                      {...register("password")}
-                    />
-                    {errors.password && (
-                      <p className="text-xs text-red-500">{errors.password.message}</p>
+                  <AnimatePresence mode="wait">
+                    {!ssoAvailable ? (
+                      <motion.div
+                        key="password-field"
+                        custom={type === "register" ? 2 : 1}
+                        variants={fieldVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                        className="space-y-2"
+                      >
+                        <Label htmlFor="password" className="text-zinc-300">
+                          {t("passwordLabel")}
+                        </Label>
+                        <Input
+                          id="password"
+                          type="password"
+                          className="bg-zinc-900 border-zinc-800 text-white focus-visible:ring-zinc-700 h-10 transition-all focus:bg-zinc-900/80"
+                          {...register("password")}
+                        />
+                        {errors.password && (
+                          <p className="text-xs text-red-500">{errors.password.message}</p>
+                        )}
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="sso-hint"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-3 rounded-lg bg-white/5 border border-white/10 flex items-center gap-3"
+                      >
+                        <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
+                          <Shield className="h-4 w-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-white">Enterprise SSO Ativo</p>
+                          <p className="text-[10px] text-zinc-500">Faça login com sua conta corporativa de {detectedDomain}</p>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="ml-auto text-[10px] h-7 px-2 text-zinc-400 hover:text-white"
+                          onClick={() => setSsoAvailable(false)}
+                        >
+                          Usar senha
+                        </Button>
+                      </motion.div>
                     )}
-                  </motion.div>
+                  </AnimatePresence>
                 </CardContent>
                 <CardFooter className="flex flex-col space-y-4 relative">
                   <Button
                     type="submit"
-                    className="w-full bg-white text-black hover:bg-zinc-200 h-11 transition-all active:scale-[0.98]"
-                    isLoading={loading}
+                    className={`w-full h-11 transition-all active:scale-[0.98] ${
+                      ssoAvailable 
+                        ? "bg-white text-black hover:bg-zinc-200" 
+                        : "bg-white text-black hover:bg-zinc-200"
+                    }`}
+                    isLoading={loading || isCheckingSSO}
+                    onClick={(e) => {
+                      if (ssoAvailable) {
+                        e.preventDefault();
+                        setSsoEmail(email);
+                        onSSOSubmit(e);
+                      }
+                    }}
                   >
-                    {type === "login" ? t("signInButton") : t("signUpButton")}
+                    {ssoAvailable 
+                      ? `Entrar com SSO` 
+                      : (type === "login" ? t("signInButton") : t("signUpButton"))}
                   </Button>
 
                   {type === "login" && (

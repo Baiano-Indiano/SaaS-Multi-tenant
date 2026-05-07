@@ -1,6 +1,7 @@
 "use client";
 
 
+import { useState } from "react";
 import { 
   Table, 
   TableBody, 
@@ -27,6 +28,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import { WebhookDeliveryLogsSheet } from "./webhook-delivery-logs";
 import { deleteWebhookAction } from "@/app/actions/webhooks";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -48,6 +50,9 @@ interface WebhookListProps {
 }
 
 export function WebhookList({ webhooks, orgId, orgSlug }: WebhookListProps) {
+  const [selectedWebhook, setSelectedWebhook] = useState<{ id: string, url: string } | null>(null);
+  const [isLogsOpen, setIsLogsOpen] = useState(false);
+
   const handleDelete = async (id: string) => {
     toast.promise(
       deleteWebhookAction({
@@ -162,9 +167,12 @@ export function WebhookList({ webhooks, orgId, orgSlug }: WebhookListProps) {
                             <ShieldCheck className="mr-2 h-4 w-4" />
                             <span>Copy Signing Secret</span>
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-muted-foreground opacity-50 cursor-not-allowed">
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedWebhook({ id: webhook.id, url: webhook.url });
+                            setIsLogsOpen(true);
+                          }}>
                             <Activity className="mr-2 h-4 w-4" />
-                            <span>View Delivery Logs (v16)</span>
+                            <span>View Delivery Logs</span>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
@@ -184,6 +192,16 @@ export function WebhookList({ webhooks, orgId, orgSlug }: WebhookListProps) {
           </AnimatePresence>
         </TableBody>
       </Table>
+
+      {selectedWebhook && (
+        <WebhookDeliveryLogsSheet 
+          isOpen={isLogsOpen}
+          onOpenChange={setIsLogsOpen}
+          webhookId={selectedWebhook.id}
+          webhookUrl={selectedWebhook.url}
+          orgId={orgId}
+        />
+      )}
     </div>
   );
 }

@@ -14,15 +14,38 @@ function DropdownMenuPortal({ ...props }: MenuPrimitive.Portal.Props) {
   return <MenuPrimitive.Portal data-slot="dropdown-menu-portal" {...props} />
 }
 
-function DropdownMenuTrigger({ render, ...props }: MenuPrimitive.Trigger.Props) {
+const DropdownMenuTrigger = React.forwardRef<
+  HTMLButtonElement,
+  MenuPrimitive.Trigger.Props & {
+    asChild?: boolean
+    render?: MenuPrimitive.Trigger.Props["render"]
+  }
+>(({ render, asChild, children, ...props }, ref) => {
+  if (asChild && React.isValidElement(children)) {
+    const child = children as React.ReactElement
+    return (
+      <MenuPrimitive.Trigger
+        ref={ref}
+        render={React.cloneElement(child, {
+          ...(child.props as Record<string, unknown>),
+          ...props,
+        })}
+      />
+    )
+  }
+
   return (
     <MenuPrimitive.Trigger
-      data-slot={render ? undefined : "dropdown-menu-trigger"}
-      render={render}
+      ref={ref}
+      data-slot={(render as React.ReactElement | undefined) || asChild ? undefined : "dropdown-menu-trigger"}
+      render={render as React.ReactElement | undefined}
       {...props}
-    />
+    >
+      {asChild ? undefined : children}
+    </MenuPrimitive.Trigger>
   )
-}
+})
+DropdownMenuTrigger.displayName = "DropdownMenuTrigger"
 
 function DropdownMenuContent({
   align = "start",
@@ -104,29 +127,49 @@ function DropdownMenuSub({ ...props }: MenuPrimitive.SubmenuRoot.Props) {
   return <MenuPrimitive.SubmenuRoot data-slot="dropdown-menu-sub" {...props} />
 }
 
-function DropdownMenuSubTrigger({
-  className,
-  inset,
-  children,
-  ...props
-}: MenuPrimitive.SubmenuTrigger.Props & {
-  inset?: boolean
-}) {
+const DropdownMenuSubTrigger = React.forwardRef<
+  HTMLDivElement,
+  MenuPrimitive.SubmenuTrigger.Props & {
+    inset?: boolean
+    asChild?: boolean
+    render?: MenuPrimitive.SubmenuTrigger.Props["render"]
+  }
+>(({ asChild, children, className, inset, render, ...props }, ref) => {
+  if (asChild && React.isValidElement(children)) {
+    const child = children as React.ReactElement<{ children?: React.ReactNode }>
+    return (
+      <MenuPrimitive.SubmenuTrigger
+        ref={ref}
+        render={React.cloneElement(child, {
+          ...(child.props as Record<string, unknown>),
+          ...props,
+        })}
+      >
+        {child.props.children}
+        <ChevronRightIcon className="ml-auto h-4 w-4" />
+      </MenuPrimitive.SubmenuTrigger>
+    )
+  }
+
   return (
     <MenuPrimitive.SubmenuTrigger
+      ref={ref}
       data-slot="dropdown-menu-sub-trigger"
       data-inset={inset}
       className={cn(
-        "flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-popup-open:bg-accent data-popup-open:text-accent-foreground data-open:bg-accent data-open:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent",
+        inset && "pl-8",
         className
       )}
+      render={render}
       {...props}
     >
       {children}
-      <ChevronRightIcon className="ml-auto" />
+      <ChevronRightIcon className="ml-auto h-4 w-4" />
     </MenuPrimitive.SubmenuTrigger>
   )
-}
+})
+DropdownMenuSubTrigger.displayName = "DropdownMenuSubTrigger"
 
 function DropdownMenuSubContent({
   align = "start",

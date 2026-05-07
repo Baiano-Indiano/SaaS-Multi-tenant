@@ -1,6 +1,5 @@
 import { headers } from "next/headers";
-import { NextResponse } from "next/server";
-import { withApiTenantDb } from "@/lib/db/api-db";
+import { withApiTenantDb, apiError, apiSuccess } from "@/lib/db/api-db";
 
 export async function GET() {
   const headerList = await headers();
@@ -9,18 +8,12 @@ export async function GET() {
   const roleId = headerList.get("x-role-id");
 
   if (!tenantId || !tenantSchema) {
-    return NextResponse.json(
-      { error: "Authentication context missing. Ensure you are calling this via the API Proxy." },
-      { status: 401 }
-    );
+    return apiError("Authentication context missing. Ensure you are calling this via the API Proxy.", 401);
   }
 
   try {
     return await withApiTenantDb(tenantSchema, async () => {
-      // Diagnostic check: verify search_path is set correctly by querying current_schema()
-      // or just trust the transaction wrapper and return the context.
-      
-      return NextResponse.json({
+      return apiSuccess({
         tenantId,
         schema: tenantSchema,
         roleId,
@@ -30,9 +23,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error("[API v1/me] Error:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error", message: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
-    );
+    return apiError("Internal Server Error", 500, error instanceof Error ? error.message : String(error));
   }
 }

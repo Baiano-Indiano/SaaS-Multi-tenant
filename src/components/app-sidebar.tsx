@@ -213,7 +213,7 @@ export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarP
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border/50 p-4">
-        <LocaleSwitcher />
+        <LocaleSwitcher side="top" />
       </SidebarFooter>
     </Sidebar>
   );

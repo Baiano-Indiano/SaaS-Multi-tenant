@@ -40,7 +40,7 @@ export default function Verify2FAPage() {
       }
 
       toast.success("Identity verified!");
-      router.push("/dashboard");
+      router.push("/selecionar-org");
       router.refresh();
     } catch {
       toast.error("An unexpected error occurred");

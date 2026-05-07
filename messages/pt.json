@@ -63,6 +63,7 @@
     "creatingAccount": "Criando sua conta...",
     "welcomeBackToast": "Bem-vindo de volta!",
     "accountCreatedToast": "Conta criada com sucesso!",
+    "twoFactorRequiredToast": "Autenticação de dois fatores necessária.",
     "invalidCredentials": "E-mail ou senha inválidos.",
     "emailAlreadyRegistered": "Este e-mail já está cadastrado. Faça login.",
     "userNotFound": "Nenhuma conta encontrada com este e-mail. Clique em \"Registre-se\" para criar sua conta.",
@@ -185,6 +186,7 @@
     "authenticatorApp": "App Autenticador",
     "authenticatorDescription": "Use um app como Google Authenticator ou 1Password para gerar códigos de uso único.",
     "twoFactorStatus": "Autenticação de Dois Fatores",
+    "status": "Status",
     "enabled": "Ativado",
     "disabled": "Desativado",
     "enable": "Ativar",
@@ -237,7 +239,10 @@
     "copy": "Copiar",
     "download": "Baixar",
     "backupCodesCopied": "Códigos de backup copiados para a área de transferência",
-    "backupCodesDownloaded": "Códigos de backup baixados"
+    "backupCodesDownloaded": "Códigos de backup baixados",
+    "TwoFactor": {
+      "BackupCodesWarning": "Se você perder o acesso ao seu aplicativo de autenticação, esses códigos são a ÚNICA maneira de acessar sua conta."
+    }
   },
   "Hero": {
     "totalRevenue": "Receita Total",
@@ -521,6 +526,8 @@
   "Compliance": {
     "title": "Requisito de Segurança",
     "description": "Para proteger os dados organizacionais, este espaço de trabalho exige que todos os membros tenham a Autenticação de Dois Fatores (2FA) ativada.",
+    "mfaRequired": "2FA Necessário",
+    "mfaLockoutWarning": "Esta organização exige autenticação de dois fatores. Por favor, ative-a para garantir acesso total.",
     "setupTitle": "Configurar 2FA Agora",
     "setupDescription": "Configure seu aplicativo autenticador para recuperar o acesso a esta organização.",
     "onEnabledSuccess": "2FA ativado! Acesso concedido.",

@@ -3,11 +3,12 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
-import { organizationDomains, ssoConfigs, organizations } from "@/lib/db/schema";
+import { organizationDomains, ssoConfigs, organizations, ssoProviders } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { verifyDomainTXT, normalizeDomain } from "@/lib/sso/dns";
 import { revalidatePath } from "next/cache";
+import { recordAuditLog } from "@/lib/audit";
 
 export async function addDomainAction(orgId: string, domainRaw: string) {
   const session = await auth.api.getSession({
@@ -21,13 +22,21 @@ export async function addDomainAction(orgId: string, domainRaw: string) {
   const domain = normalizeDomain(domainRaw);
   const verificationToken = uuidv4();
 
-  await db.insert(organizationDomains).values({
-    id: uuidv4(),
-    organizationId: orgId,
-    domain,
-    verificationToken,
-    isVerified: false,
-  });
+  try {
+    await db.insert(organizationDomains).values({
+      id: uuidv4(),
+      organizationId: orgId,
+      domain,
+      verificationToken,
+      isVerified: false,
+    });
+  } catch (err: unknown) {
+    const error = err as { code?: string; message?: string };
+    if (error?.code === '23505' || error?.message?.includes('unique constraint')) {
+      throw new Error("Este domínio já está registrado por outra organização.");
+    }
+    throw err;
+  }
 
   const org = await db.query.organizations.findFirst({
     where: eq(organizations.id, session.session.activeOrganizationId!),
@@ -35,6 +44,18 @@ export async function addDomainAction(orgId: string, domainRaw: string) {
 
   if (org) {
     revalidatePath(`/org/${org.slug}/settings/sso`);
+    
+    await recordAuditLog({
+      organizationId: orgId,
+      action: "DOMAIN_ADDED",
+      entityType: "DOMAIN",
+      details: `Adicionado domínio ${domain} para verificação.`,
+      actor: {
+        id: session.user.id,
+        name: session.user.name,
+        email: session.user.email,
+      }
+    });
   }
   return { success: true, verificationToken };
 }
@@ -66,6 +87,19 @@ export async function verifyDomainAction(orgId: string, domainId: string) {
       .update(organizationDomains)
       .set({ isVerified: true, updatedAt: new Date() })
       .where(eq(organizationDomains.id, domainId));
+
+    await recordAuditLog({
+      organizationId: orgId,
+      action: "DOMAIN_VERIFIED",
+      entityType: "DOMAIN",
+      entityId: domainId,
+      details: `Domínio ${domainRecord.domain} verificado com sucesso via DNS.`,
+      actor: {
+        id: session.user.id,
+        name: session.user.name,
+        email: session.user.email,
+      }
+    });
   }
 
   const org = await db.query.organizations.findFirst({
@@ -151,5 +185,67 @@ export async function updateSSOConfigAction(orgId: string, data: {
   if (org) {
     revalidatePath(`/org/${org.slug}/settings/sso`);
   }
+
+  // Sync to Better-Auth sso_provider table
+  // We sync all verified domains for this organization to use this SSO config
+  const verifiedDomains = await db.query.organizationDomains.findMany({
+    where: and(
+      eq(organizationDomains.organizationId, orgId),
+      eq(organizationDomains.isVerified, true)
+    ),
+  });
+
+  if (verifiedDomains.length > 0) {
+    const oidcConfig = data.issuer ? JSON.stringify({
+      issuer: data.issuer,
+      clientId: data.clientId,
+      clientSecret: data.clientSecret,
+    }) : null;
+
+    // Delete existing providers for this org to resync
+    await db.delete(ssoProviders).where(eq(ssoProviders.organizationId, orgId));
+
+    // Insert new providers for each verified domain
+    if (data.isActive) {
+      for (const domainRecord of verifiedDomains) {
+        await db.insert(ssoProviders).values({
+          id: uuidv4(),
+          issuer: data.issuer || "OIDC Provider",
+          providerId: data.providerId, // e.g., 'oidc'
+          domain: domainRecord.domain,
+          organizationId: orgId,
+          userId: session.user.id,
+          oidcConfig: oidcConfig,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      }
+    }
+  }
+
   return { success: true };
+}
+
+/**
+ * Public action to check if an email domain has an active SSO provider.
+ * Used by the login form for automatic detection.
+ */
+export async function checkSSOAvailabilityAction(email: string) {
+  try {
+    const domain = normalizeDomain(email.split("@")[1] || "");
+    if (!domain) return { available: false };
+
+    const provider = await db.query.ssoProviders.findFirst({
+      where: eq(ssoProviders.domain, domain),
+    });
+
+    return {
+      available: !!provider,
+      domain,
+      providerId: provider?.providerId,
+    };
+  } catch (error) {
+    console.error("Error checking SSO availability:", error);
+    return { available: false };
+  }
 }

@@ -63,7 +63,7 @@ export async function getTenantDb<T>(
     await tx.execute(sql.raw(`SET search_path TO "${tenantSchema}", public`));
     
     // Execute the business logic within this isolated context
-    return await callback(tx);
+    return await callback(tx as unknown as TenantTransaction);
   });
 }
 
@@ -89,6 +89,6 @@ export async function withAdminTenantDb<T>(
 
   return await db.transaction(async (tx) => {
     await tx.execute(sql.raw(`SET search_path TO "${org.tenantSchemaName}", public`));
-    return await callback(tx);
+    return await callback(tx as unknown as TenantTransaction);
   });
 }

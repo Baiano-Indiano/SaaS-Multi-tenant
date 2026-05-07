@@ -1,0 +1,76 @@
+name: Quality Assurance
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: rootpassword
+          POSTGRES_DB: saas_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://root:rootpassword@localhost:5432/saas_db
+      BETTER_AUTH_SECRET: static-test-secret-for-ci-deterministic-logic
+      BETTER_AUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      UPSTASH_REDIS_REST_URL: http://localhost:8079
+      UPSTASH_REDIS_REST_TOKEN: fake-token
+      UPSTASH_VECTOR_REST_URL: http://localhost:8080
+      UPSTASH_VECTOR_REST_TOKEN: fake-token
+      STRIPE_SECRET_KEY: sk_test_mock
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_mock
+      STRIPE_WEBHOOK_SECRET: whsec_mock
+      QSTASH_URL: http://localhost:8081
+      QSTASH_TOKEN: fake-token
+      RESEND_API_KEY: re_mock
+      NEXT_PUBLIC_SENTRY_DSN: ""
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint check
+        run: npm run lint
+
+      - name: DB Schema Sync
+        run: npx drizzle-kit push --force
+
+      - name: Run Seed
+        run: npx tsx src/db/seed-test.ts
+
+      - name: Build Application
+        run: npm run build
+
+      - name: Run Vitest
+        run: npm run test:run
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        run: npx playwright test

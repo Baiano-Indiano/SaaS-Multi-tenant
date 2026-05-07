@@ -31,9 +31,11 @@ export async function proxy(request: NextRequest) {
   requestHeaders.set('x-pathname', pathname);
   requestHeaders.set('x-nonce', nonce);
 
-  // --- 0. Bypass internal routes (Sentry tunnel, Next.js internals) ---
+  // --- 0. Bypass internal and public health routes ---
   const isMonitoring = pathname === '/monitoring' || pathname.match(/^\/[a-z]{2}\/monitoring/);
-  if (isMonitoring || pathname.startsWith('/_next')) {
+  const isPublicHealth = pathname === '/api/v1/health';
+
+  if (isMonitoring || isPublicHealth || pathname.startsWith('/_next')) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
@@ -59,6 +61,26 @@ export async function proxy(request: NextRequest) {
 
           if (!keyData) {
             return NextResponse.json({ error: 'Invalid or expired API Key' }, { status: 401 });
+          }
+
+          // Scope Validation (Simplified Model: Read / Write)
+          // Default to ["read", "write"] for legacy keys if scopes field is missing
+          const scopes = keyData.scopes || ["read", "write"];
+          const method = request.method;
+          const isWriteMethod = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
+
+          if (isWriteMethod && !scopes.includes("write")) {
+            return NextResponse.json(
+              { error: "Forbidden", message: "This API Key does not have 'write' permissions." }, 
+              { status: 403 }
+            );
+          }
+
+          if (!scopes.includes("read")) {
+             return NextResponse.json(
+              { error: "Forbidden", message: "This API Key does not have 'read' permissions." }, 
+              { status: 403 }
+            );
           }
 
           // Tenant-Aware API Rate Limiting
@@ -136,7 +158,7 @@ export async function proxy(request: NextRequest) {
       !pathname.includes('.')
     ) {
       try {
-        return await Sentry.startSpan(
+        const domainResponse = await Sentry.startSpan(
           { name: 'proxy.domain-resolution', op: 'http.proxy', attributes: { 'proxy.hostname': targetHostname } },
           async () => {
             const domainData = await redis.get<{ slug: string; id: string }>(`domain:${targetHostname}`);
@@ -154,7 +176,9 @@ export async function proxy(request: NextRequest) {
             }
             return null;
           }
-        ) ?? undefined; // fall through if no domain match
+        );
+        
+        if (domainResponse) return domainResponse;
       } catch (error) {
         Sentry.captureException(error, { tags: { 'proxy.flow': 'domain-resolution' } });
         console.error('[Proxy] Domain resolution error:', error);

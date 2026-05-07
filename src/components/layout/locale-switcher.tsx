@@ -9,7 +9,7 @@ import { useGSAP } from "@gsap/react";
 import { Languages, Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function LocaleSwitcher() {
+export function LocaleSwitcher({ side = "bottom" }: { side?: "top" | "bottom" }) {
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
@@ -21,8 +21,18 @@ export function LocaleSwitcher() {
   useGSAP(() => {
     if (isOpen) {
       gsap.fromTo(listRef.current,
-        { opacity: 0, y: -10, scale: 0.95 },
-        { opacity: 1, y: 0, scale: 1, duration: 0.3, ease: "power2.out" }
+        { 
+          opacity: 0, 
+          y: side === "bottom" ? -10 : 10, 
+          scale: 0.95 
+        },
+        { 
+          opacity: 1, 
+          y: 0, 
+          scale: 1, 
+          duration: 0.3, 
+          ease: "power2.out" 
+        }
       );
       
       gsap.fromTo(".locale-item",
@@ -64,7 +74,10 @@ export function LocaleSwitcher() {
           />
           <ul
             ref={listRef}
-            className="absolute bottom-full mb-2 right-0 w-32 bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl z-50 p-1"
+            className={cn(
+              "absolute right-0 w-32 bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl z-50 p-1",
+              side === "bottom" ? "top-full mt-2" : "bottom-full mb-2"
+            )}
           >
             {routing.locales.map((cur) => (
               <li key={cur}>

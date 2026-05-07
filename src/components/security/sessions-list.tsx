@@ -205,7 +205,7 @@ export function SessionsList() {
               <div className="flex items-center gap-2">
                 {session.id !== currentSessionId && (
                   <DropdownMenu>
-                    <DropdownMenuTrigger>
+                    <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500">
                         <MoreVertical className="h-4 w-4" />
                       </Button>

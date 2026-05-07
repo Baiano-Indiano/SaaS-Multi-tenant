@@ -75,7 +75,7 @@ export async function updateMemberRoleAction(formData: {
     });
 
     // Trigger Automations (Phase 16)
-    await emitEvent(formData.orgId, "role.updated", { 
+    await emitEvent(formData.orgId, "member.role_updated", { 
       memberId: formData.memberId, 
       roleId: formData.roleId,
       targetName: result.targetMember?.user?.name || result.targetMember?.user?.email,
@@ -342,7 +342,7 @@ export async function acceptInvitationAction(invitationId: string) {
     });
 
     // Trigger Automations (Phase 16)
-    await emitEvent(org.id, "organization.invitation_accepted", {
+    await emitEvent(org.id, "member.joined", {
       userId: session.user.id,
       email: session.user.email,
       invitationId,

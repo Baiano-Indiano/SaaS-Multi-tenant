@@ -5,17 +5,17 @@ export const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
 });
 
-/**
- * API Key Redis Utilities
- * 
- * Storage pattern:
- * key: api_key:[hash] 
- * value: { orgId: string, tenantSchemaName: string, roleId: string }
- */
+export interface ApiKeyData {
+  orgId: string;
+  tenantSchemaName: string;
+  roleId: string;
+  userId: string;
+  scopes?: string[]; // Simplified: ['read', 'write']
+}
 
 export const API_KEY_REDIS_PREFIX = "api_key:";
 
-export async function storeApiKeyInRedis(hash: string, data: { orgId: string; tenantSchemaName: string; roleId: string; userId: string }) {
+export async function storeApiKeyInRedis(hash: string, data: ApiKeyData) {
   await redis.set(`${API_KEY_REDIS_PREFIX}${hash}`, data);
 }
 
@@ -24,5 +24,5 @@ export async function removeApiKeyFromRedis(hash: string) {
 }
 
 export async function getApiKeyFromRedis(hash: string) {
-  return await redis.get<{ orgId: string; tenantSchemaName: string; roleId: string; userId: string }>(`${API_KEY_REDIS_PREFIX}${hash}`);
+  return await redis.get<ApiKeyData>(`${API_KEY_REDIS_PREFIX}${hash}`);
 }

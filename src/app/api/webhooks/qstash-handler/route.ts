@@ -4,6 +4,7 @@ import { withAdminTenantDb } from "@/lib/db/tenant-db";
 import { webhookDeliveries, connectors } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { transformToSlack, transformToDiscord } from "@/lib/integrations/transformer";
+import { generateWebhookSignature } from "@/lib/webhooks";
 
 const receiver = new Receiver({
   currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY!,
@@ -12,11 +13,14 @@ const receiver = new Receiver({
 
 interface QStashPayload {
   orgId: string;
-  workflowId: string;
+  deliveryId: string;
+  workflowId?: string;
+  webhookId?: string;
   connectorId?: string;
   targetUrl: string;
   event: string;
   payload: Record<string, unknown>;
+  secret: string; // Used for HMAC signing
 }
 
 export async function POST(req: NextRequest) {
@@ -27,7 +31,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.text();
   
-  // 1. Verify QStash Signature
+  // 1. Verify QStash Signature (Incoming from our own backend)
   const isValid = await receiver.verify({
     signature,
     body,
@@ -38,9 +42,9 @@ export async function POST(req: NextRequest) {
   }
 
   const data = JSON.parse(body) as QStashPayload;
-  const { orgId, workflowId, connectorId, targetUrl, event, payload } = data;
+  const { orgId, deliveryId, connectorId, targetUrl, event, payload, secret } = data;
 
-  console.log(`[QStash Handler] Processing workflow ${workflowId} for org ${orgId}`);
+  console.log(`[QStash Handler] Processing delivery ${deliveryId} for org ${orgId}, event ${event}`);
 
   let finalUrl = targetUrl;
   let finalPayload = payload;
@@ -50,7 +54,7 @@ export async function POST(req: NextRequest) {
   let responseBody = "";
 
   try {
-    // 1.5 Resolve Connector if present
+    // 1.5 Resolve Connector if present (for Slack/Discord formatting)
     if (connectorId) {
       await withAdminTenantDb(orgId, async (tx) => {
         const results = await tx.select().from(connectors).where(eq(connectors.id, connectorId));
@@ -68,14 +72,19 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 2. Execute Webhook Delivery
+    // 2. Generate HMAC Signature (x-hub-signature-256)
+    const payloadString = JSON.stringify(finalPayload);
+    const hmacSignature = generateWebhookSignature(payloadString, secret);
+
+    // 3. Execute Webhook Delivery
     const response = await fetch(finalUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-Gravity-Event": event,
+        "X-Hub-Signature-256": hmacSignature,
       },
-      body: JSON.stringify(finalPayload),
+      body: payloadString,
     });
 
     responseStatus = response.status;
@@ -87,21 +96,22 @@ export async function POST(req: NextRequest) {
   } finally {
     const duration = `${Date.now() - start}ms`;
 
-    // 3. Record Delivery Log in Tenant Schema
+    // 4. Update Final Delivery Status in Tenant Schema
     try {
       await withAdminTenantDb(orgId, async (tx) => {
-        await tx.insert(webhookDeliveries).values({
-          id: crypto.randomUUID(),
-          workflowId: workflowId, // Use the dedicated column
-          eventType: event,
-          payload: JSON.stringify(finalPayload),
-          responseStatus: responseStatus.toString(),
-          responseBody: responseBody.slice(0, 1000), // Truncate if too large
-          duration,
-        });
+        const isSuccess = responseStatus >= 200 && responseStatus < 300;
+        
+        await tx.update(webhookDeliveries)
+          .set({
+            status: isSuccess ? "delivered" : "failed",
+            responseStatus: responseStatus.toString(),
+            responseBody: responseBody.slice(0, 1000), // Truncate if too large
+            duration,
+          })
+          .where(eq(webhookDeliveries.id, deliveryId));
       });
     } catch (dbError: unknown) {
-      console.error("[QStash Handler] Failed to log delivery:", dbError);
+      console.error(`[QStash Handler] Failed to finalize delivery ${deliveryId}:`, dbError);
     }
   }
 

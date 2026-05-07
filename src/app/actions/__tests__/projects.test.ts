@@ -123,11 +123,20 @@ describe('Projects Server Actions', () => {
       } as unknown as Awaited<ReturnType<typeof auth.api.getSession>>)
       vi.mocked(requirePermission).mockResolvedValue(undefined)
       
+      const mockProject = { id: 'proj-1', name: 'Test Project' }
       const mockTenantDb = {
-        delete: vi.fn().mockReturnThis(),
-        where: vi.fn().mockResolvedValue({}),
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue([mockProject])
+            })
+          })
+        }),
+        delete: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue({})
+        }),
       }
-      vi.mocked(getTenantDb).mockImplementation(async (_uid: string, _oid: string, cb: (db: TenantTransaction) => Promise<unknown>) => cb(mockTenantDb as unknown as TenantTransaction))
+      vi.mocked(getTenantDb).mockImplementation(async (_uid: string, _oid: string, cb: (tx: TenantTransaction) => Promise<unknown>) => cb(mockTenantDb as any))
 
       const result = await deleteProjectAction('proj-1', 'org-1', 'org-slug')
 

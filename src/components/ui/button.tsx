@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
 import gsap from "gsap"
@@ -52,139 +53,146 @@ export interface ButtonProps extends ButtonPrimitive.Props, VariantProps<typeof 
   isLoading?: boolean;
 }
 
-function Button({
-  className,
-  variant = "default",
-  size = "default",
-  "data-slot": dataSlot,
-  isLoading = false,
-  onPointerDown,
-  onPointerUp,
-  onPointerLeave,
-  onClick,
-  children,
-  ...props
-}: ButtonProps) {
-  const containerRef = useRef<HTMLButtonElement>(null);
-  const contentRef = useRef<HTMLSpanElement>(null);
-  const loaderRef = useRef<HTMLDivElement>(null);
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      className,
+      variant = "default",
+      size = "default",
+      "data-slot": dataSlot,
+      isLoading = false,
+      onPointerDown,
+      onPointerUp,
+      onPointerLeave,
+      onClick,
+      children,
+      ...props
+    },
+    ref
+  ) => {
+    const contentRef = useRef<HTMLSpanElement>(null)
+    const loaderRef = useRef<HTMLDivElement>(null)
 
-  const isReducedMotion = () =>
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const isReducedMotion = () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
-  const isDisabled = props.disabled || isLoading;
+    const isDisabled = props.disabled || isLoading
 
-  useGSAP(() => {
-    if (isReducedMotion()) return;
+    useGSAP(
+      () => {
+        if (isReducedMotion()) return
 
-    if (isLoading) {
-      // Premium transition to loading
-      gsap.to(contentRef.current, {
-        opacity: 0,
-        y: -8,
-        duration: 0.15,
-        ease: "power2.in",
-      });
-      gsap.fromTo(loaderRef.current, 
-        { opacity: 0, y: 8, scale: 0.8 },
-        { 
-          opacity: 1, 
-          y: 0, 
-          scale: 1, 
-          duration: 0.25, 
-          delay: 0.1,
-          ease: "back.out(1.7)" 
-        }
-      );
-    } else {
-      // Transition back to content
-      gsap.to(loaderRef.current, {
-        opacity: 0,
-        y: 8,
-        scale: 0.8,
-        duration: 0.15,
-        ease: "power2.in",
-      });
-      gsap.to(contentRef.current, {
-        opacity: 1,
-        y: 0,
-        duration: 0.25,
-        delay: 0.1,
-        ease: "power2.out",
-      });
-    }
-  }, { dependencies: [isLoading], scope: containerRef });
-
-  return (
-    <ButtonPrimitive
-      ref={containerRef}
-      data-slot={dataSlot ?? "button"}
-      className={cn(buttonVariants({ variant, size, className }), "relative")}
-      disabled={isDisabled}
-      onPointerDown={(event) => {
-        onPointerDown?.(event);
-        if (isReducedMotion() || isDisabled) return;
-        gsap.to(event.currentTarget, {
-          scale: 0.97,
-          duration: 0.08,
-          ease: "power2.out",
-          overwrite: "auto",
-        });
-      }}
-      onPointerUp={(event) => {
-        onPointerUp?.(event);
-        if (isReducedMotion() || isDisabled) return;
-        gsap.to(event.currentTarget, {
-          scale: 1,
-          duration: 0.14,
-          ease: "power2.out",
-          overwrite: "auto",
-        });
-      }}
-      onPointerLeave={(event) => {
-        onPointerLeave?.(event);
-        if (isReducedMotion() || isDisabled) return;
-        gsap.to(event.currentTarget, {
-          scale: 1,
-          duration: 0.16,
-          ease: "power2.out",
-          overwrite: "auto",
-        });
-      }}
-      onClick={(event) => {
-        onClick?.(event);
-        if (isReducedMotion() || isDisabled) return;
-        gsap.fromTo(
-          event.currentTarget,
-          { scale: 1 },
-          {
-            scale: 1.03,
-            duration: 0.12,
+        if (isLoading) {
+          // Premium transition to loading
+          gsap.to(contentRef.current, {
+            opacity: 0,
+            y: -8,
+            duration: 0.15,
+            ease: "power2.in",
+          })
+          gsap.fromTo(
+            loaderRef.current,
+            { opacity: 0, y: 8, scale: 0.8 },
+            {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              duration: 0.25,
+              delay: 0.1,
+              ease: "back.out(1.7)",
+            }
+          )
+        } else {
+          // Transition back to content
+          gsap.to(loaderRef.current, {
+            opacity: 0,
+            y: 8,
+            scale: 0.8,
+            duration: 0.15,
+            ease: "power2.in",
+          })
+          gsap.to(contentRef.current, {
+            opacity: 1,
+            y: 0,
+            duration: 0.25,
+            delay: 0.1,
             ease: "power2.out",
-            yoyo: true,
-            repeat: 1,
+          })
+        }
+      },
+      { dependencies: [isLoading], scope: ref as React.RefObject<HTMLButtonElement> }
+    )
+
+    return (
+      <ButtonPrimitive
+        ref={ref}
+        data-slot={dataSlot ?? "button"}
+        className={cn(buttonVariants({ variant, size, className }), "relative")}
+        disabled={isDisabled}
+        onPointerDown={(event) => {
+          onPointerDown?.(event)
+          if (isReducedMotion() || isDisabled) return
+          gsap.to(event.currentTarget, {
+            scale: 0.97,
+            duration: 0.08,
+            ease: "power2.out",
             overwrite: "auto",
-          }
-        );
-      }}
-      {...props}
-    >
-      <span 
-        ref={contentRef}
-        className="flex items-center justify-center gap-2"
+          })
+        }}
+        onPointerUp={(event) => {
+          onPointerUp?.(event)
+          if (isReducedMotion() || isDisabled) return
+          gsap.to(event.currentTarget, {
+            scale: 1,
+            duration: 0.14,
+            ease: "power2.out",
+            overwrite: "auto",
+          })
+        }}
+        onPointerLeave={(event) => {
+          onPointerLeave?.(event)
+          if (isReducedMotion() || isDisabled) return
+          gsap.to(event.currentTarget, {
+            scale: 1,
+            duration: 0.16,
+            ease: "power2.out",
+            overwrite: "auto",
+          })
+        }}
+        onClick={(event) => {
+          onClick?.(event)
+          if (isReducedMotion() || isDisabled) return
+          gsap.fromTo(
+            event.currentTarget,
+            { scale: 1 },
+            {
+              scale: 1.03,
+              duration: 0.12,
+              ease: "power2.out",
+              yoyo: true,
+              repeat: 1,
+              overwrite: "auto",
+            }
+          )
+        }}
+        {...props}
       >
-        {children}
-      </span>
-      <div 
-        ref={loaderRef}
-        className="absolute inset-0 flex items-center justify-center opacity-0 pointer-events-none"
-      >
-        <Loader2 className="h-4 w-4 animate-spin" />
-      </div>
-    </ButtonPrimitive>
-  )
-}
+        <span ref={contentRef} className="flex items-center justify-center gap-2">
+          {children}
+        </span>
+        <div
+          ref={loaderRef}
+          className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0"
+        >
+          <Loader2 className="h-4 w-4 animate-spin" />
+        </div>
+      </ButtonPrimitive>
+    )
+  }
+)
+Button.displayName = "Button"
+
 
 export { Button, buttonVariants }
 

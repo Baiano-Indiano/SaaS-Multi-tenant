@@ -33,3 +33,30 @@ export async function withApiTenantDb<T>(
     return await callback(tx);
   });
 }
+
+/**
+ * Standard API Response Utilities
+ */
+import { NextResponse } from "next/server";
+
+export function apiError(message: string, status = 400, details?: unknown) {
+  return NextResponse.json(
+    { 
+      success: false,
+      error: message, 
+      ...(details ? { details } : {})
+    },
+    { status }
+  );
+}
+
+export function apiSuccess<T>(data: T, status = 200, meta?: Record<string, unknown>) {
+  return NextResponse.json(
+    {
+      success: true,
+      data,
+      ...(meta ? { meta } : {})
+    },
+    { status }
+  );
+}

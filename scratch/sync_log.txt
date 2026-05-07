@@ -1,0 +1,173 @@
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Robust File Copy para Windows                              
+-------------------------------------------------------------------------------
+
+  Iniciado: 6 de maio de 2026 17:14:46
+   Origem : C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\
+     Dest : C:\Users\Bernardo\Documents\Obsidian Vault\Projetos\SaaS-Multi-tenant\.planning\
+
+    Arquivos: *.*
+	    
+  Op‡äes: *.* /V /TEE /S /E /DCOPY:DA /COPY:DAT /Z /NP /MT:32 /R:5 /W:5 
+
+------------------------------------------------------------------------------
+
+	  Novo Arquivo		     262	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\config.json
+	  Novo Arquivo		    4349	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\PROJECT.md
+	  Novo Arquivo		    2894	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\REQUIREMENTS.md
+	  Novo Arquivo		    3384	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\ROADMAP.md
+	  Novo Arquivo		    1265	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\STATE.md
+	  Novo Arquivo		     964	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\v1.0-MILESTONE-AUDIT.md
+	  Novo Arquivo		    3223	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\v2.0-MILESTONE-AUDIT.md
+	  Novo Arquivo		    1010	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\v3.0-MILESTONE-AUDIT.md
+	  Novo Arquivo		    1117	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\v4.0-MILESTONE-AUDIT.md
+	  Novo Arquivo		    1579	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\v5.0-MILESTONE-AUDIT.md
+	  Novo Arquivo		    1262	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\v6.0-MILESTONE-AUDIT.md
+	  Novo Arquivo		    1305	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\v7.0-MILESTONE-AUDIT.md
+	  Novo Arquivo		    2147	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\v8.0-MILESTONE-AUDIT.md
+	  Novo Arquivo		    3278	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\milestones\v1.0-REQUIREMENTS.md
+	  Novo Arquivo		    3399	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\milestones\v1.0-ROADMAP.md
+	  Novo Arquivo		     795	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\milestones\v2.0-REQUIREMENTS.md
+	  Novo Arquivo		    1514	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\milestones\v2.0-ROADMAP.md
+	  Novo Arquivo		    1489	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\milestones\v3.0-REQUIREMENTS.md
+	  Novo Arquivo		    2844	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\milestones\v3.0-ROADMAP.md
+	  Novo Arquivo		    1753	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\milestones\v8.0-ROADMAP.md
+	  Novo Arquivo		    2442	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\research\ARCHITECTURE.md
+	  Novo Arquivo		    2329	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\research\FEATURES.md
+	  Novo Arquivo		    2005	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\research\PITFALLS.md
+	  Novo Arquivo		    2520	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\research\STACK.md
+	  Novo Arquivo		    4684	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\research\SUMMARY.md
+	  Novo Arquivo		    3381	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\02-base-ui\02-CONTEXT.md
+	  Novo Arquivo		    5380	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\02-base-ui\02-PLAN.md
+	  Novo Arquivo		    3092	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\02-base-ui\02-RESEARCH.md
+	  Novo Arquivo		     677	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\02-base-ui\02-SUMMARY.md
+	  Novo Arquivo		    2197	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\03-deep-multi-tenant-context\03-CONTEXT.md
+	  Novo Arquivo		   29976	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\03-deep-multi-tenant-context\03-PLAN.md
+	  Novo Arquivo		     802	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\03-deep-multi-tenant-context\03-SUMMARY.md
+	  Novo Arquivo		     751	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\04-dynamic-rbac\04-SUMMARY.md
+	  Novo Arquivo		    1415	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\04-dynamic-rbac\implementation_plan_refinement.md
+	  Novo Arquivo		    2113	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\04-dynamic-rbac\PLAN.md
+	  Novo Arquivo		    1642	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\04-dynamic-rbac\RESEARCH.md
+	  Novo Arquivo		     293	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\04-dynamic-rbac\task_refinement.md
+	  Novo Arquivo		     533	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\06-billing\06-CONTEXT.md
+	  Novo Arquivo		     687	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\06-billing\06-PLAN.md
+	  Novo Arquivo		     725	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\06-billing\06-SUMMARY.md
+	  Novo Arquivo		     688	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\05-member-invitations\05-PLAN.md
+	  Novo Arquivo		     703	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\05-member-invitations\05-SUMMARY.md
+	  Novo Arquivo		     500	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\07-projects\07-CONTEXT.md
+	  Novo Arquivo		     795	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\07-projects\07-PLAN.md
+	  Novo Arquivo		     816	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\07-projects\07-SUMMARY.md
+	  Novo Arquivo		    2624	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\01-database-auth-foundation\01-CONTEXT.md
+	  Novo Arquivo		     680	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\01-database-auth-foundation\01-SUMMARY.md
+	  Novo Arquivo		    2280	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\08-real-time-foundation\08-CONTEXT.md
+	  Novo Arquivo		    1672	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\08-real-time-foundation\08-PLAN.md
+	  Novo Arquivo		    1031	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\08-real-time-foundation\08-SUMMARY.md
+	  Novo Arquivo		     601	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\08-real-time-foundation\08-VERIFICATION.md
+	  Novo Arquivo		    1645	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\08-real-time-foundation\implementation_plan.md
+	  Novo Arquivo		     269	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\08-real-time-foundation\task.md
+	  Novo Arquivo		    2016	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\09-tenant-analytics-plg-layer\09-CONTEXT.md
+	  Novo Arquivo		     979	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\09-tenant-analytics-plg-layer\09-SUMMARY.md
+	  Novo Arquivo		     629	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\09-tenant-analytics-plg-layer\09-VERIFICATION.md
+	  Novo Arquivo		    1715	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\09-tenant-analytics-plg-layer\implementation_plan.md
+	  Novo Arquivo		     758	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\09-tenant-analytics-plg-layer\PLAN.md
+	  Novo Arquivo		     253	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\09-tenant-analytics-plg-layer\task.md
+	  Novo Arquivo		    1637	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\11-team-activity-audit-logs\11-CONTEXT.md
+	  Novo Arquivo		     935	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\11-team-activity-audit-logs\11-SUMMARY.md
+	  Novo Arquivo		     632	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\11-team-activity-audit-logs\11-VERIFICATION.md
+	  Novo Arquivo		    1637	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\11-team-activity-audit-logs\PLAN.md
+	  Novo Arquivo		     450	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\11-team-activity-audit-logs\task.md
+	  Novo Arquivo		    1487	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\10-enterprise-domains\10-CONTEXT.md
+	  Novo Arquivo		     877	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\10-enterprise-domains\10-SUMMARY.md
+	  Novo Arquivo		     563	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\10-enterprise-domains\10-VERIFICATION.md
+	  Novo Arquivo		    1416	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\10-enterprise-domains\implementation_plan.md
+	  Novo Arquivo		     279	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\10-enterprise-domains\task.md
+	  Novo Arquivo		     767	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\13-enterprise-landing-page-expansion\13-CONTEXT.md
+	  Novo Arquivo		     685	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\13-enterprise-landing-page-expansion\13-SUMMARY.md
+	  Novo Arquivo		     509	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\13-enterprise-landing-page-expansion\13-VERIFICATION.md
+	  Novo Arquivo		     842	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\13-enterprise-landing-page-expansion\PLAN.md
+	  Novo Arquivo		     184	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\13-enterprise-landing-page-expansion\task.md
+	  Novo Arquivo		     752	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\14-dynamic-analytics-dashboards\14-CONTEXT.md
+	  Novo Arquivo		     679	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\14-dynamic-analytics-dashboards\14-SUMMARY.md
+	  Novo Arquivo		     449	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\14-dynamic-analytics-dashboards\14-VERIFICATION.md
+	  Novo Arquivo		     812	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\14-dynamic-analytics-dashboards\PLAN.md
+	  Novo Arquivo		     197	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\14-dynamic-analytics-dashboards\task.md
+	  Novo Arquivo		     973	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\15-external-integrations\15-CONTEXT.md
+	  Novo Arquivo		     771	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\15-external-integrations\15-SUMMARY.md
+	  Novo Arquivo		     532	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\15-external-integrations\15-VERIFICATION.md
+	  Novo Arquivo		     742	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\15-external-integrations\PLAN.md
+	  Novo Arquivo		     215	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\15-external-integrations\task.md
+	  Novo Arquivo		     383	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\16.1-auth-app-refinements\CONTEXT.md
+	  Novo Arquivo		    1952	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\16.1-auth-app-refinements\PLAN.md
+	  Novo Arquivo		     323	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\16.1-auth-app-refinements\SUMMARY.md
+	  Novo Arquivo		     463	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\16.1-auth-app-refinements\task.md
+	  Novo Arquivo		     180	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\16.1-auth-app-refinements\VERIFICATION.md
+	  Novo Arquivo		    1121	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\12-settings-navigation-ui-ux\12-SUMMARY.md
+	  Novo Arquivo		     695	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\12-settings-navigation-ui-ux\12-VERIFICATION.md
+	  Novo Arquivo		    2753	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\12-settings-navigation-ui-ux\PLAN.md
+	  Novo Arquivo		     851	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\12-settings-navigation-ui-ux\task.md
+	  Novo Arquivo		     446	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\16.2-gsap-migration\CONTEXT.md
+	  Novo Arquivo		    1735	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\16.2-gsap-migration\implementation_plan.md
+	  Novo Arquivo		    1610	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\16.2-gsap-migration\PLAN.md
+	  Novo Arquivo		     388	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\16.2-gsap-migration\SUMMARY.md
+	  Novo Arquivo		     352	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\16.2-gsap-migration\task.md
+	  Novo Arquivo		     211	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\16.2-gsap-migration\VERIFICATION.md
+	  Novo Arquivo		     396	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\16.3-ad-hoc-fixes\CONTEXT.md
+	  Novo Arquivo		    1397	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\16.3-ad-hoc-fixes\PLAN.md
+	  Novo Arquivo		     383	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\16.3-ad-hoc-fixes\SUMMARY.md
+	  Novo Arquivo		     221	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\16.3-ad-hoc-fixes\VERIFICATION.md
+	  Novo Arquivo		     990	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\17-member-management\CONTEXT.md
+	  Novo Arquivo		    2728	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\17-member-management\PLAN.md
+	  Novo Arquivo		     692	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\17-member-management\SUMMARY.md
+	  Novo Arquivo		     828	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\17-member-management\VERIFICATION.md
+	  Novo Arquivo		    1513	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\16-workflows-automations-engine\16-CONTEXT.md
+	  Novo Arquivo		     761	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\16-workflows-automations-engine\16-SUMMARY.md
+	  Novo Arquivo		     457	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\16-workflows-automations-engine\16-VERIFICATION.md
+	  Novo Arquivo		     847	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\16-workflows-automations-engine\PLAN.md
+	  Novo Arquivo		     218	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\16-workflows-automations-engine\task.md
+	  Novo Arquivo		    3994	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\20-external-connectors\TECHNICAL.md
+	  Novo Arquivo		    1357	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\19-session-management\PLAN.md
+	  Novo Arquivo		     471	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\19-session-management\task.md
+	  Novo Arquivo		   13127	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\18-two-factor-auth\PLAN.md
+	  Novo Arquivo		    1823	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\18-two-factor-auth\task.md
+	  Novo Arquivo		    1995	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\23-native-api-playground\TECHNICAL.md
+	  Novo Arquivo		    2773	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\26-bilingual-support\TECHNICAL.md
+	  Novo Arquivo		    1686	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\25-kinetic-dashboard-ux\TECHNICAL.md
+	  Novo Arquivo		    1168	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\28-connection-pooling-rate-limiting\01-PLAN.md
+	  Novo Arquivo		    2001	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\28-connection-pooling-rate-limiting\28-CONTEXT.md
+	  Novo Arquivo		     967	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\28-connection-pooling-rate-limiting\28-SUMMARY.md
+	  Novo Arquivo		    3574	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\31-security-audit-csp-hardening\01-PLAN.md
+	  Novo Arquivo		    2549	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\31-security-audit-csp-hardening\31-CONTEXT.md
+	  Novo Arquivo		    1224	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\31-security-audit-csp-hardening\31-SUMMARY.md
+	  Novo Arquivo		    2300	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\21-enterprise-sso\PLAN.md
+	  Novo Arquivo		     540	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\21-enterprise-sso\task.md
+	  Novo Arquivo		    2575	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\21-enterprise-sso\TECHNICAL.md
+	  Novo Arquivo		    1621	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\24-gsap-scroll-reveals\TECHNICAL.md
+	  Novo Arquivo		    1021	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\29-compliance-pii-sanitization\01-PLAN.md
+	  Novo Arquivo		    2009	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\29-compliance-pii-sanitization\29-CONTEXT.md
+	  Novo Arquivo		     971	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\29-compliance-pii-sanitization\29-SUMMARY.md
+	  Novo Arquivo		    2192	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\22-public-status-pages\TECHNICAL.md
+	  Novo Arquivo		    4620	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\30-performance-motion-optimization\01-PLAN.md
+	  Novo Arquivo		    1808	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\30-performance-motion-optimization\30-CONTEXT.md
+	  Novo Arquivo		     969	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\30-performance-motion-optimization\30-SUMMARY.md
+	  Novo Arquivo		    3503	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\32-quality-assurance-core-testing\32-CONTEXT.md
+	  Novo Arquivo		    3325	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\32-quality-assurance-core-testing\32-PLAN.md
+	  Novo Arquivo		    3090	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\32-quality-assurance-core-testing\32-RESEARCH.md
+	  Novo Arquivo		    2351	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\32-quality-assurance-core-testing\32-VALIDATION.md
+	  Novo Arquivo		    1558	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\27-sentry-apm-observability\01-PLAN.md
+	  Novo Arquivo		    2053	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\27-sentry-apm-observability\27-CONTEXT.md
+	  Novo Arquivo		     991	C:\Users\Bernardo\Desktop\SaaS Multi-tenant\.planning\phases\27-sentry-apm-observability\27-SUMMARY.md
+
+------------------------------------------------------------------------------
+
+               Total   Copiada  IgnoradaIncompatibilidade     FALHA    Extras
+Diret¢rios:        39        39         0         0         0         0
+ Arquivos:       144       144         0         0         0         0
+    Bytes:   242.4 k   242.4 k         0         0         0         0
+N.§ de Vezes:   0:00:00   0:00:00                       0:00:00   0:00:00
+
+
+Velocidade:             4355315 Bytes/s.
+Velocidade:             249.213 MegaBytes/min.
+   Finalizado em: 6 de maio de 2026 17:14:46
+

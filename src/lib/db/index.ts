@@ -3,6 +3,7 @@ import postgres from 'postgres';
 import * as schema from './schema';
 
 const connectionString = process.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/saas_db";
+console.log("DB Connection String evaluatated:", connectionString);
 
 if (!process.env.DATABASE_URL && process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE !== 'phase-production-build') {
   console.warn('⚠️ DATABASE_URL is not set. Database operations will fail.');
