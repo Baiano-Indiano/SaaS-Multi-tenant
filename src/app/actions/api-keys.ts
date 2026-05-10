@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { generateApiKey, hashApiKey, getApiKeyDisplayPrefix } from "@/lib/auth/api-key";
 import { recordAuditLog } from "@/lib/audit";
+import { requirePermission } from "@/lib/auth/rbac-utils";
 import { storeApiKeyInRedis, removeApiKeyFromRedis } from "@/lib/redis";
 import { organizations } from "@/lib/db/schema";
 import { db } from "@/lib/db";
@@ -29,6 +30,9 @@ export async function createApiKeyAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // RBAC: Verify user has permission to manage API keys
+    await requirePermission(session.user.id, data.orgId, "org:update");
+
     const rawKey = generateApiKey();
     const keyHash = await hashApiKey(rawKey);
     const keyPrefix = getApiKeyDisplayPrefix(rawKey);
@@ -66,6 +70,7 @@ export async function createApiKeyAction(data: {
         roleId: data.roleId,
         userId: session.user.id,
         scopes: ["read", "write"], // Default simplified scope
+        plan: org.plan,            // Store current plan for tiered rate limiting
       });
     }
 
@@ -103,6 +108,9 @@ export async function deleteApiKeyAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // RBAC: Verify user has permission to manage API keys
+    await requirePermission(session.user.id, data.orgId, "org:update");
+
     const result = await getTenantDb(session.user.id, data.orgId, async (tx) => {
       const deletedKey = await tx.delete(apiKeys)
         .where(eq(apiKeys.id, data.keyId))

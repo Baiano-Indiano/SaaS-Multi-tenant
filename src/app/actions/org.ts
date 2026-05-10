@@ -44,6 +44,12 @@ export async function createOrganizationAction(name: string, slug: string): Prom
     // 2. Provision Tenant Schema (Simple logic for now)
     const tenantSchema = `tenant_${org.slug.replace(/-/g, "_")}`.toLowerCase();
     
+    // Security: Validate schema name to prevent SQL injection in DDL
+    const SAFE_SCHEMA_REGEX = /^tenant_[a-zA-Z0-9_]+$/;
+    if (!SAFE_SCHEMA_REGEX.test(tenantSchema)) {
+      throw new Error("Invalid tenant schema name derived from slug. Aborting provisioning.");
+    }
+
     // Update org with schema name in public database
     await db.update(organizations)
       .set({ tenantSchemaName: tenantSchema })

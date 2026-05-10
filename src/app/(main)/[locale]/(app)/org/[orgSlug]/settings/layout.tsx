@@ -1,4 +1,5 @@
 import { SettingsNav } from "@/components/settings/settings-nav";
+import { getTranslations } from "next-intl/server";
 
 export default async function SettingsLayout({
   children,
@@ -7,39 +8,40 @@ export default async function SettingsLayout({
   children: React.ReactNode;
   params: Promise<{ orgSlug: string }>;
 }) {
+  const t = await getTranslations("Settings.nav");
   const { orgSlug } = await params;
 
   const navItems = [
     {
-      title: "General",
+      title: t("general"),
       href: `/org/${orgSlug}/settings`,
     },
     {
-      title: "Activity",
+      title: t("activity"),
       href: `/org/${orgSlug}/settings/activity`,
     },
     {
-      title: "Security",
+      title: t("security"),
       href: `/org/${orgSlug}/settings/security`,
     },
     {
-      title: "Connectivity",
+      title: t("connectivity"),
       href: `/org/${orgSlug}/settings/connectivity`,
     },
     {
-      title: "Integrations",
+      title: t("integrations"),
       href: `/org/${orgSlug}/settings/integrations`,
     },
     {
-      title: "SSO",
+      title: t("sso"),
       href: `/org/${orgSlug}/settings/sso`,
     },
     {
-      title: "Status Page",
+      title: t("statusPage"),
       href: `/org/${orgSlug}/settings/status`,
     },
     {
-      title: "Billing",
+      title: t("billing"),
       href: `/org/${orgSlug}/settings/billing`,
     },
   ];

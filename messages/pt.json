@@ -75,17 +75,17 @@
     "nameRequired": "Nome é obrigatório"
   },
   "Navigation": {
-    "dashboard": "Dashboard",
+    "dashboard": "Painel de Controle",
     "settings": "Configurações",
     "projects": "Projetos",
     "members": "Membros",
-    "playground": "Playground",
-    "accountSettings": "Configurações da Conta",
+    "playground": "Ambiente de Testes",
+    "accountSettings": "Minha Conta",
     "logout": "Sair",
     "organization": "Organização",
     "user": "Usuário",
     "login": "Entrar",
-    "goToDashboard": "Ir para o Dashboard"
+    "goToDashboard": "Ir para o Painel"
   },
   "Footer": {
     "allRightsReserved": "Todos os direitos reservados.",
@@ -386,6 +386,328 @@
       "enabledSuccess": "Imposição de 2FA ativada para todos os membros.",
       "disabledSuccess": "Imposição de 2FA desativada.",
       "updateError": "Ocorreu um erro ao atualizar as configurações."
+    },
+    "nav": {
+      "general": "Geral",
+      "activity": "Atividade",
+      "security": "Segurança",
+      "connectivity": "Conectividade",
+      "integrations": "Integrações",
+      "sso": "SSO",
+      "statusPage": "Página de Status",
+      "billing": "Faturamento"
+    },
+    "activity": {
+      "title": "Log de Atividades",
+      "description": "Monitore todas as ações administrativas e eventos de segurança em sua organização.",
+      "searchPlaceholder": "Buscar atividades...",
+      "filters": {
+        "all": "Todos",
+        "projects": "Projetos",
+        "members": "Membros",
+        "billing": "Faturamento",
+        "security": "Segurança",
+        "settings": "Configurações"
+      },
+      "relativeTime": {
+        "justNow": "Agora mesmo",
+        "minutes": "há {count}m",
+        "hours": "há {count}h",
+        "days": "há {count}d"
+      },
+      "events": {
+        "memberRoleUpdated": "permissão do membro atualizada",
+        "apiKeyCreated": "chave de API criada",
+        "webhookCreated": "webhook criado",
+        "orgUpdated": "organização atualizada",
+        "projectCreated": "projeto criado"
+      },
+      "types": {
+        "member": "MEMBRO",
+        "apiKey": "API_KEY",
+        "webhook": "WEBHOOK",
+        "org": "ORG",
+        "project": "PROJETO"
+      },
+      "empty": {
+        "title": "Nenhuma atividade corresponde aos seus filtros",
+        "description": "Tente ajustar seus termos de busca ou filtros para encontrar o que procura.",
+        "clear": "Limpar todos os filtros"
+      },
+      "today": "Hoje",
+      "yesterday": "Ontem",
+      "modal": {
+        "title": "Detalhes do Evento",
+        "description": "Detalhes técnicos para este evento de auditoria.",
+        "user": "Usuário",
+        "email": "E-mail",
+        "action": "Ação",
+        "type": "Tipo",
+        "date": "Data",
+        "ip": "Endereço IP",
+        "summary": "Resumo",
+        "userAgent": "User Agent",
+        "close": "Fechar"
+      }
+    },
+    "securityPage": {
+      "title": "Políticas de Segurança",
+      "description": "Configure requisitos de segurança e políticas de autenticação para os membros da sua organização.",
+      "accessDenied": "Acesso Negado",
+      "accessDeniedDesc": "Você não tem as permissões necessárias para gerenciar as políticas de segurança desta organização.",
+      "advancedTitle": "Controles de Segurança Avançados",
+      "advancedDesc": "Recursos futuros incluem gerenciamento de Persistência de Sessão e Lista Branca de IPs. Gerencie as sessões dos membros diretamente na aba Membros."
+    },
+    "connectivity": {
+      "title": "Ecossistema de Conectividade",
+      "description": "Gerencie chaves de API, webhooks e automações para integrar sua organização com serviços externos.",
+      "apiKeys": {
+        "title": "Chaves de API",
+        "description": "Use estas chaves para autenticar requisições em nossa API.",
+        "create": "Criar Nova Chave",
+        "table": {
+          "name": "Nome",
+          "role": "Permissão",
+          "prefix": "Prefixo",
+          "lastUsed": "Último Uso",
+          "created": "Criado em",
+          "actions": "Ações"
+        },
+        "toast": {
+          "revoking": "Revogando chave de API...",
+          "success": "Chave de API revogada com sucesso",
+          "error": "Falha ao revogar chave de API",
+          "genericError": "Ocorreu um erro inesperado"
+        },
+        "noKeys": "Nenhuma chave de API encontrada",
+        "noKeysDesc": "Crie sua primeira chave para começar a integrar.",
+        "revoke": "Revogar Chave",
+        "unknownRole": "Permissão Desconhecida",
+        "never": "Nunca",
+        "actions": {
+          "revoke": {
+            "confirmTitle": "Revogar Chave de API?",
+            "confirmDescription": "Isso invalidará imediatamente a chave. Qualquer sistema que utilize esta chave perderá o acesso à API.",
+            "confirmButton": "Revogar Chave",
+            "cancelButton": "Cancelar"
+          }
+        },
+        "createDialog": {
+          "validation": {
+            "nameRequired": "Por favor, forneça um nome para a chave de API"
+          },
+          "toast": {
+            "generating": "Gerando chave de API...",
+            "success": "Chave de API criada com sucesso!",
+            "copySuccess": "Chave de API copiada para a área de transferência"
+          },
+          "form": {
+            "namePlaceholder": "ex: Backend de Produção",
+            "roleDescription": "A chave de API terá as mesmas permissões que esta função.",
+            "rolePlaceholder": "Selecione uma função",
+            "generateKey": "Gerar Chave"
+          },
+          "cancel": "Cancelar",
+          "success": {
+            "title": "Chave de API Criada",
+            "description": "Por favor, copie sua chave de API agora. Por motivos de segurança, você não poderá vê-la novamente.",
+            "warningTitle": "Aviso",
+            "warningDescription": "Armazene esta chave com segurança. Se você a perder, precisará criar uma nova.",
+            "doneButton": "Eu salvei esta chave"
+          }
+        },
+        "footer": "Motor de Conectividade Premium • Segurança Reforçada"
+      },
+      "webhooks": {
+        "title": "Webhooks",
+        "description": "Receba notificações em tempo real sobre eventos em sua organização.",
+        "add": "Adicionar Webhook",
+        "empty": {
+          "title": "Nenhum webhook registrado",
+          "description": "Registre um webhook para receber notificações em tempo real sobre eventos na sua organização."
+        },
+        "table": {
+          "url": "URL do Endpoint",
+          "events": "Eventos",
+          "status": "Status",
+          "createdAt": "Criado em",
+          "actions": "Ações"
+        },
+        "status": {
+          "active": "Ativo",
+          "inactive": "Inativo"
+        },
+        "menu": {
+          "label": "Configurações de Webhook",
+          "copySecret": "Copiar Segredo de Assinatura",
+          "viewLogs": "Ver Logs de Entrega",
+          "delete": "Excluir Webhook"
+        },
+        "toast": {
+          "deleting": "Excluindo webhook...",
+          "success": "Webhook excluído com sucesso",
+          "error": "Falha ao excluir webhook",
+          "copySuccess": "Segredo de assinatura copiado para a área de transferência"
+        },
+        "actions": {
+          "delete": {
+            "confirmTitle": "Excluir Webhook?",
+            "confirmDescription": "Esta ação é irreversível. O endpoint não receberá mais nenhuma notificação do sistema.",
+            "confirmButton": "Excluir Webhook",
+            "cancelButton": "Cancelar"
+          }
+        },
+        "dialog": {
+          "title": "Registrar Novo Webhook",
+          "description": "Enviaremos requisições POST para esta URL quando os eventos selecionados ocorrerem.",
+          "urlLabel": "URL de Destino",
+          "eventsLabel": "Eventos para enviar",
+          "placeholder": "https://sua-api.com/webhooks",
+          "cancel": "Cancelar",
+          "register": "Registrar",
+          "toast": {
+            "urlRequired": "Por favor, insira uma URL de destino",
+            "eventRequired": "Por favor, selecione pelo menos um evento",
+            "success": "Webhook registrado com sucesso!",
+            "error": "Ocorreu um erro inesperado"
+          }
+        },
+        "logs": {
+          "title": "Logs de Entrega",
+          "description": "Atividade recente para {url}",
+          "loading": "Carregando histórico de entregas...",
+          "empty": "Nenhuma entrega registrada ainda.",
+          "payload": "Payload",
+          "response": "Corpo da Resposta",
+          "failed": "FALHOU"
+        },
+        "events": {
+          "project_created": "Projeto Criado",
+          "project_deleted": "Projeto Excluído",
+          "member_invited": "Membro Convidado",
+          "member_removed": "Membro Removido",
+          "billing_subscription_updated": "Assinatura Atualizada"
+        }
+      },
+      "automations": {
+        "title": "Automações",
+        "description": "Conecte gatilhos do sistema a plataformas externas como Slack, Discord ou endpoints personalizados.",
+        "create": "Criar Automação",
+        "empty": {
+          "title": "Nenhuma automação ativa",
+          "description": "Automatize seus processos conectando gatilhos do sistema a ações externas."
+        },
+        "table": {
+          "name": "Nome da Automação",
+          "trigger": "Gatilho",
+          "action": "Ação",
+          "status": "Status",
+          "actions": "Ações"
+        },
+        "status": {
+          "active": "Ativo",
+          "paused": "Pausado"
+        },
+        "menu": {
+          "label": "Opções de Automação",
+          "viewLogs": "Ver Logs",
+          "delete": "Excluir Automação"
+        },
+        "actions": {
+          "delete": {
+            "confirmTitle": "Excluir Automação?",
+            "confirmDescription": "Esta automação será removida permanentemente. Esta ação não pode ser desfeita.",
+            "confirmButton": "Excluir Automação",
+            "cancelButton": "Cancelar"
+          }
+        },
+        "toast": {
+          "deleting": "Excluindo automação...",
+          "success": "Automação excluída com sucesso",
+          "error": "Falha ao excluir automação"
+        },
+        "builder": {
+          "title": "Construtor de Automação",
+          "step": "Passo {step} de 3: {description}",
+          "steps": {
+            "trigger": "Selecionar Gatilho",
+            "action": "Selecionar Ação",
+            "config": "Configurar Conexão"
+          },
+          "form": {
+            "nameLabel": "Nome da Automação",
+            "namePlaceholder": "Ex: Notificar Slack ao Criar Projeto",
+            "triggerLabel": "Quando isso acontecer...",
+            "actionLabel": "Então faça isso...",
+            "configLabel": "Configurando {type} para {trigger}",
+            "destinationLabel": "Destino",
+            "destinationPlaceholder": "Selecione o tipo de destino",
+            "endpointLabel": "URL do Endpoint (POST)",
+            "endpointPlaceholder": "https://hooks.slack.com/services/...",
+            "endpointDesc": "Enviaremos os dados do evento como um payload JSON para este endereço.",
+            "managedIntegration": "Integração Gerenciada Ativa",
+            "managedIntegrationDesc": "Esta automação usará o conector pré-configurado. Os payloads serão formatados automaticamente para a plataforma de destino (Slack/Discord)."
+          },
+          "buttons": {
+            "cancel": "Cancelar",
+            "back": "Voltar",
+            "continue": "Continuar",
+            "finish": "Finalizar e Ativar"
+          },
+          "triggers": {
+            "project_created": { "label": "Projeto Criado", "description": "Acionado quando um novo projeto é criado." },
+            "project_deleted": { "label": "Projeto Excluído", "description": "Acionado quando um projeto é removido." },
+            "member_invited": { "label": "Membro Convidado", "description": "Acionado quando um convite é enviado." },
+            "member_removed": { "label": "Membro Removido", "description": "Acionado quando um membro é removido." },
+            "organization_invitation_accepted": { "label": "Convite Aceito", "description": "Acionado quando um membro entra na organização." },
+            "role_updated": { "label": "Função Atualizada", "description": "Acionado quando a função de um membro muda." }
+          },
+          "actions": {
+            "webhook": { "label": "Enviar Webhook", "description": "Entrega uma requisição POST com o payload do evento para uma URL." }
+          }
+        },
+        "logs": {
+          "title": "Logs de Automação",
+          "description": "Dados históricos de execução para {name}",
+          "loading": "Recuperando histórico de execução...",
+          "empty": "Nenhum log encontrado para esta automação.",
+          "table": {
+            "timestamp": "Data/Hora",
+            "status": "Status",
+            "trigger": "Evento",
+            "duration": "Duração"
+          },
+          "status": {
+            "success": "Sucesso",
+            "failed": "Falhou"
+          }
+        }
+      },
+      "footer": "Motor de Conectividade Premium • Segurança Reforçada"
+    },
+    "integrations": {
+      "title": "Integrações",
+      "description": "Conecte o Gravity às suas ferramentas favoritas para um fluxo de trabalho empresarial perfeito.",
+      "tabs": {
+        "overview": "Visão Geral",
+        "activity": "Atividade"
+      },
+      "alertTitle": "Formatação Automática",
+      "alertDesc": "Todas as notificações do Slack e Discord são transformadas automaticamente em cartões ricos de alta qualidade. Nenhum payload JSON manual é necessário.",
+      "activeConnections": "Conexões Ativas",
+      "availableIntegrations": "Integrações Disponíveis",
+      "slack": {
+        "title": "Slack",
+        "desc": "Notificações de equipe em tempo real via Block Kit."
+      },
+      "discord": {
+        "title": "Discord",
+        "desc": "Rich embeds para canais de comunidade e desenvolvedores."
+      },
+      "customWebhook": {
+        "title": "Webhook Personalizado",
+        "desc": "Em breve: Payloads JSON puros."
+      }
     }
   },
   "Projects": {
@@ -467,7 +789,15 @@
     "keyName": "Chave de Playground ({date})",
     "keyInjected": "Chave de API de teste gerada e injetada!",
     "failedToGenerate": "Falha ao gerar chave de API",
-    "injected": "injetada"
+    "injected": "injetada",
+    "liveWarning": "Ambiente Real",
+    "liveWarningDescription": "Este playground executa requisições reais contra os dados da sua organização. Tenha cuidado ao realizar operações de escrita.",
+    "selectKey": "Selecionar Chave de API",
+    "manualKey": "Usar chave customizada",
+    "pasteKey": "Cole sua chave de API aqui...",
+    "keySelectionLabel": "Autenticação Ativa",
+    "testKeyLabel": "Temporária (1h)",
+    "persistentKeyLabel": "Chave Padrão"
   },
   "Billing": {
     "title": "Plano e Faturamento",

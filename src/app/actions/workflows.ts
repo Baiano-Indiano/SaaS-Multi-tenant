@@ -7,6 +7,8 @@ import { workflows } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { recordAuditLog } from "@/lib/audit";
+import { requirePermission } from "@/lib/auth/rbac-utils";
+import { validateExternalUrl } from "@/lib/security/url-validator";
 
 /**
  * createWorkflowAction
@@ -23,13 +25,13 @@ export async function createWorkflowAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // RBAC: Verify user has permission to manage workflows
+    await requirePermission(session.user.id, data.orgId, "org:update");
+
     let actionConfig = "{}";
     if (data.targetUrl) {
-      // Basic URL validation
-      const url = new URL(data.targetUrl);
-      if (!['http:', 'https:'].includes(url.protocol)) {
-        throw new Error("Invalid URL protocol. Use HTTP or HTTPS.");
-      }
+      // SSRF-safe URL validation
+      validateExternalUrl(data.targetUrl);
       actionConfig = JSON.stringify({ url: data.targetUrl });
     }
 
@@ -78,6 +80,9 @@ export async function deleteWorkflowAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // RBAC: Verify user has permission to manage workflows
+    await requirePermission(session.user.id, data.orgId, "org:update");
+
     await getTenantDb(session.user.id, data.orgId, async (tx) => {
       await tx.delete(workflows).where(eq(workflows.id, data.workflowId));
     });
@@ -152,6 +157,9 @@ export async function retryWorkflowDeliveryAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // RBAC: Verify user has permission to retry workflow deliveries
+    await requirePermission(session.user.id, data.orgId, "org:update");
+
     const { webhookDeliveries, workflows } = await import("@/lib/db/schema");
     const { Client } = await import("@upstash/qstash");
 

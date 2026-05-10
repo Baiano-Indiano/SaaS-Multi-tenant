@@ -268,6 +268,21 @@ export const connectors = pgTable("connector", {
 	createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
 
+export const auditExportConfigs = pgTable("audit_export_config", {
+	id: text("id").primaryKey(),
+	type: text("type").notNull(), // 's3' | 'gcs' | 'azure'
+	bucketName: text("bucketName").notNull(),
+	region: text("region"),
+	endpoint: text("endpoint"), // For S3-compatible storage
+	accessKeyId: text("accessKeyId"),
+	secretAccessKey: text("secretAccessKey"),
+	frequency: text("frequency").notNull().default("daily"), // 'daily' | 'weekly'
+	isActive: boolean("isActive").notNull().default(true),
+	lastExportAt: timestamp("lastExportAt"),
+	createdAt: timestamp("createdAt").notNull().defaultNow(),
+	updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
 export const webhookDeliveries = pgTable("webhook_delivery", {
 	id: text("id").primaryKey(),
 	webhookId: text("webhookId").references(() => webhooks.id, { onDelete: 'cascade' }), // Optional if it's a workflow

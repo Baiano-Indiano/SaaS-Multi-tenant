@@ -174,8 +174,9 @@ export async function syncRolePermissionsAction(orgId: string) {
   if (!session?.user) throw new Error("Unauthorized");
 
   return await getTenantDb(session.user.id, orgId, async (tx) => {
-    // 1. Verify user is an Admin (we can't use requirePermission here yet as we might be fixing the permissions!)
-    // So we check if the user has a role named 'Admin' or slug 'admin'
+    // Security: Require roles:manage permission to prevent unauthorized permission resets.
+    // This was previously skipped with a TODO comment, but it's critical to enforce.
+    await requirePermission(session.user.id, orgId, "roles:manage");
     
     const standardRoles = await tx.query.roles.findMany({
       where: (roles, { inArray }) => inArray(roles.slug, ["admin", "member", "viewer"])

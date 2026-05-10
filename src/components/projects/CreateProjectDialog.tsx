@@ -102,16 +102,14 @@ export function CreateProjectDialog({ orgId, orgSlug, trigger }: CreateProjectDi
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          trigger || (
-            <Button className="font-semibold shadow-sm transition-all hover:shadow-md">
-              <Plus className="mr-2 h-4 w-4" />
-              {t("newProject")}
-            </Button>
-          )
-        }
-      />
+      <DialogTrigger asChild>
+        {trigger || (
+          <Button className="font-semibold shadow-sm transition-all hover:shadow-md ring-offset-background">
+            <Plus className="h-4 w-4" />
+            {t("newProject")}
+          </Button>
+        )}
+      </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold tracking-tight">{t("createTitle")}</DialogTitle>

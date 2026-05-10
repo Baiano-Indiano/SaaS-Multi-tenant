@@ -10,6 +10,8 @@ import { InviteMemberDialog } from "@/components/members/InviteMemberDialog";
 import { Users } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
+import { GsapEntrance } from "@/components/ui/gsap-entrance";
+
 export default async function MembersPage({
   params,
 }: {
@@ -52,23 +54,25 @@ export default async function MembersPage({
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h3 className="text-xl font-bold text-zinc-100 flex items-center gap-2">
-            <Users className="h-5 w-5 text-zinc-400" />
-            {t("title")}
-          </h3>
-          <p className="text-sm text-zinc-400 mt-1">
-            {t("description")}
-          </p>
+      <GsapEntrance>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-xl font-bold text-zinc-100 flex items-center gap-2">
+              <Users className="h-5 w-5 text-zinc-400" />
+              {t("title")}
+            </h3>
+            <p className="text-sm text-zinc-400 mt-1">
+              {t("description")}
+            </p>
+          </div>
+          
+          <InviteMemberDialog 
+            roles={availableRoles} 
+            orgId={org.id} 
+            orgSlug={org.slug!} 
+          />
         </div>
-        
-        <InviteMemberDialog 
-          roles={availableRoles} 
-          orgId={org.id} 
-          orgSlug={org.slug!} 
-        />
-      </div>
+      </GsapEntrance>
 
       <MemberList 
         members={orgMembers} 
@@ -77,11 +81,13 @@ export default async function MembersPage({
         roles={availableRoles} 
       />
 
-      <div className="bg-zinc-950/30 border border-zinc-900 border-dashed rounded-xl p-6 text-center">
-        <p className="text-xs text-zinc-500 font-medium">
-          {t("upgradeNotice")}
-        </p>
-      </div>
+      <GsapEntrance delay={0.2}>
+        <div className="bg-zinc-950/30 border border-zinc-900 border-dashed rounded-xl p-6 text-center">
+          <p className="text-xs text-zinc-500 font-medium">
+            {t("upgradeNotice")}
+          </p>
+        </div>
+      </GsapEntrance>
     </div>
   );
 }

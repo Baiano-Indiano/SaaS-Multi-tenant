@@ -5,7 +5,7 @@ import * as Sentry from '@sentry/nextjs';
 import { routing } from './i18n/routing';
 import { redis, getApiKeyFromRedis } from './lib/redis';
 import { hashApiKey } from './lib/auth/api-key';
-import { apiRateLimit, authRateLimit } from './lib/rate-limit';
+import { getApiRateLimiter, authRateLimit } from './lib/rate-limit';
 import { generateNonce, buildCspHeader } from './lib/security';
 
 const intlMiddleware = createMiddleware(routing);
@@ -83,9 +83,10 @@ export async function proxy(request: NextRequest) {
             );
           }
 
-          // Tenant-Aware API Rate Limiting
+          // Tenant-Aware API Rate Limiting (Billing-Aware)
           const identifier = `org_${keyData.orgId}`;
-          const { success, limit, remaining, reset } = await apiRateLimit.limit(identifier);
+          const limiter = getApiRateLimiter(keyData.plan);
+          const { success, limit, remaining, reset } = await limiter.limit(identifier);
 
           if (!success) {
             return NextResponse.json(
@@ -290,7 +291,7 @@ export async function proxy(request: NextRequest) {
 
   // --- 5. Security Headers (CSP Hardening) ---
   // Inject CSP and Nonce headers into all document responses
-  response.headers.set('Content-Security-Policy-Report-Only', buildCspHeader(nonce));
+  response.headers.set('Content-Security-Policy', buildCspHeader(nonce));
   response.headers.set('x-nonce', nonce);
 
   return response;

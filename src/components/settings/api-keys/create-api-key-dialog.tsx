@@ -11,6 +11,7 @@ import { createApiKeyAction } from "@/app/actions/api-keys";
 import { TenantRole } from "@/lib/auth/rbac-utils";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useTranslations } from "next-intl";
 
 interface CreateApiKeyDialogProps {
   orgId: string;
@@ -20,6 +21,7 @@ interface CreateApiKeyDialogProps {
 }
 
 export function CreateApiKeyDialog({ orgId, orgSlug, roles, onSuccess }: CreateApiKeyDialogProps) {
+  const t = useTranslations("Settings.connectivity.apiKeys");
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [roleId, setRoleId] = useState<string>("");
@@ -31,7 +33,7 @@ export function CreateApiKeyDialog({ orgId, orgSlug, roles, onSuccess }: CreateA
 
   const handleCreate = async () => {
     if (!name) {
-      toast.error("Please provide a name for the API key");
+      toast.error(t("createDialog.validation.nameRequired"));
       return;
     }
 
@@ -48,11 +50,11 @@ export function CreateApiKeyDialog({ orgId, orgSlug, roles, onSuccess }: CreateA
     });
 
     toast.promise(promise, {
-      loading: "Generating API key...",
+      loading: t("createDialog.toast.generating"),
       success: (result) => {
         setCreatedKey(result.rawKey || null);
         onSuccess();
-        return "API key created successfully!";
+        return t("createDialog.toast.success");
       },
       error: (err) => err.message,
     });
@@ -72,7 +74,7 @@ export function CreateApiKeyDialog({ orgId, orgSlug, roles, onSuccess }: CreateA
       navigator.clipboard.writeText(createdKey);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-      toast.success("API key copied to clipboard");
+      toast.success(t("createDialog.toast.copySuccess"));
     }
   };
 
@@ -90,9 +92,9 @@ export function CreateApiKeyDialog({ orgId, orgSlug, roles, onSuccess }: CreateA
     <Dialog open={open} onOpenChange={(val) => !isLoading && (val ? setOpen(true) : handleClose())}>
       <DialogTrigger
         render={
-          <Button className="bg-zinc-100 text-zinc-950 hover:bg-zinc-200 transition-all font-medium h-9">
-            <Plus className="mr-2 h-4 w-4" />
-            Create New Key
+          <Button className="bg-zinc-100 text-zinc-950 hover:bg-zinc-200 transition-all font-medium h-8 px-3">
+            <Plus className="mr-2 h-3.5 w-3.5" />
+            {t("create")}
           </Button>
         }
       />
@@ -100,27 +102,27 @@ export function CreateApiKeyDialog({ orgId, orgSlug, roles, onSuccess }: CreateA
         {!createdKey ? (
           <>
             <DialogHeader>
-              <DialogTitle>Create API Key</DialogTitle>
+              <DialogTitle>{t("createDialog.success.title")}</DialogTitle>
               <DialogDescription className="text-zinc-400">
-                Give your API key a descriptive name and assign it a role.
+                {t("createDialog.success.description")}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="name" className="text-zinc-300">Name</Label>
+                <Label htmlFor="name" className="text-zinc-300">{t("table.name")}</Label>
                 <Input
                   id="name"
-                  placeholder="e.g. Production Backend"
+                  placeholder={t("createDialog.form.namePlaceholder")}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="bg-zinc-900 border-zinc-800 text-zinc-100 focus:ring-zinc-700"
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="role" className="text-zinc-300">Assigned Role</Label>
+                <Label htmlFor="role" className="text-zinc-300">{t("table.role")}</Label>
                 <Select value={roleId} onValueChange={(val) => val && setRoleId(val)}>
                   <SelectTrigger className="bg-zinc-900 border-zinc-800 text-zinc-100">
-                    <SelectValue placeholder="Select a role" />
+                    <SelectValue placeholder={t("createDialog.form.rolePlaceholder")} />
                   </SelectTrigger>
                   <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
                     {roles.map((role) => (
@@ -131,7 +133,7 @@ export function CreateApiKeyDialog({ orgId, orgSlug, roles, onSuccess }: CreateA
                   </SelectContent>
                 </Select>
                 <p className="text-[10px] text-zinc-500">
-                  The API key will have the same permissions as this role.
+                  {t("createDialog.form.roleDescription")}
                 </p>
               </div>
             </div>
@@ -141,31 +143,31 @@ export function CreateApiKeyDialog({ orgId, orgSlug, roles, onSuccess }: CreateA
                 onClick={handleClose}
                 className="border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
               >
-                Cancel
+                {t("createDialog.cancel")}
               </Button>
               <Button
                 onClick={handleCreate}
                 isLoading={isLoading}
                 className="bg-zinc-100 text-zinc-950 hover:bg-zinc-200"
               >
-                Generate Key
+                {t("createDialog.form.generateKey")}
               </Button>
             </DialogFooter>
           </>
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>API Key Created</DialogTitle>
+              <DialogTitle>{t("createDialog.success.title")}</DialogTitle>
               <DialogDescription className="text-zinc-400">
-                Please copy your API key now. For security reasons, you won&apos;t be able to see it again.
+                {t("createDialog.success.description")}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <Alert className="bg-amber-950/20 border-amber-500/20 text-amber-200/80">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle className="text-xs font-bold uppercase tracking-wider">Warning</AlertTitle>
+                <AlertTitle className="text-xs font-bold uppercase tracking-wider">{t("createDialog.success.warningTitle")}</AlertTitle>
                 <AlertDescription className="text-xs leading-relaxed">
-                  Store this key securely. If you lose it, you will need to create a new one.
+                  {t("createDialog.success.warningDescription")}
                 </AlertDescription>
               </Alert>
               <div className="relative">
@@ -200,7 +202,7 @@ export function CreateApiKeyDialog({ orgId, orgSlug, roles, onSuccess }: CreateA
                 onClick={handleClose}
                 className="bg-zinc-100 text-zinc-950 hover:bg-zinc-200 w-full"
               >
-                I have saved this key
+                {t("createDialog.success.doneButton")}
               </Button>
             </DialogFooter>
           </>

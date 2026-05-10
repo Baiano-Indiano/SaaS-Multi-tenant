@@ -136,7 +136,7 @@ describe('Projects Server Actions', () => {
           where: vi.fn().mockResolvedValue({})
         }),
       }
-      vi.mocked(getTenantDb).mockImplementation(async (_uid: string, _oid: string, cb: (tx: TenantTransaction) => Promise<unknown>) => cb(mockTenantDb as any))
+      vi.mocked(getTenantDb).mockImplementation(async (_uid: string, _oid: string, cb: (tx: TenantTransaction) => Promise<unknown>) => cb(mockTenantDb as unknown as TenantTransaction))
 
       const result = await deleteProjectAction('proj-1', 'org-1', 'org-slug')
 

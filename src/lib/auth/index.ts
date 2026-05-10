@@ -11,6 +11,7 @@ import { recordAuditLog } from "../audit";
 import { v4 as uuidv4 } from "uuid";
 import { redis } from "../redis";
 import type { HookEndpointContext } from "@better-auth/core";
+import { detectSessionAnomaly } from "../security/anomaly-detection";
 
 console.log("[Auth] Initializing betterAuth...");
 export const auth = betterAuth({
@@ -51,6 +52,22 @@ export const auth = betterAuth({
       try {
         if (!ctx) return {};
         
+        // Handle audit logging for specific security actions
+        if (ctx.path?.includes("sign-in/") || ctx.path?.includes("callback")) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const session = (ctx.context as Record<string, any>)?.session;
+          if (session?.user) {
+            const ip = ctx.headers?.get("x-forwarded-for") || ctx.headers?.get("x-real-ip") || "unknown";
+            const userAgent = ctx.headers?.get("user-agent") || "unknown";
+            
+            await detectSessionAnomaly(session.user.id, { ip, userAgent }, {
+              name: session.user.name,
+              email: session.user.email,
+              organizationId: session.session.activeOrganizationId
+            });
+          }
+        }
+
         // Handle audit logging for specific security actions
         if (ctx.path?.includes("two-factor/enable") ||
           ctx.path?.includes("two-factor/disable") ||

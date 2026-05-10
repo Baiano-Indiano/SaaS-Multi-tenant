@@ -11,6 +11,7 @@ export interface ApiKeyData {
   roleId: string;
   userId: string;
   scopes?: string[]; // Simplified: ['read', 'write']
+  plan?: string;     // Added for billing-aware rate limiting
 }
 
 export const API_KEY_REDIS_PREFIX = "api_key:";

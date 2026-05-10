@@ -386,6 +386,328 @@
       "enabledSuccess": "2FA enforcement enabled for all members.",
       "disabledSuccess": "2FA enforcement disabled.",
       "updateError": "An error occurred while updating settings."
+    },
+    "nav": {
+      "general": "General",
+      "activity": "Activity",
+      "security": "Security",
+      "connectivity": "Connectivity",
+      "integrations": "Integrations",
+      "sso": "SSO",
+      "statusPage": "Status Page",
+      "billing": "Billing"
+    },
+    "activity": {
+      "title": "Activity Log",
+      "description": "Monitor all administrative actions and security events within your organization.",
+      "searchPlaceholder": "Search activities...",
+      "filters": {
+        "all": "All",
+        "projects": "Projects",
+        "members": "Members",
+        "billing": "Billing",
+        "security": "Security",
+        "settings": "Settings"
+      },
+      "relativeTime": {
+        "justNow": "Just now",
+        "minutes": "{count}m ago",
+        "hours": "{count}h ago",
+        "days": "{count}d ago"
+      },
+      "events": {
+        "memberRoleUpdated": "member role updated",
+        "apiKeyCreated": "api key created",
+        "webhookCreated": "webhook created",
+        "orgUpdated": "organization updated",
+        "projectCreated": "project created"
+      },
+      "types": {
+        "member": "MEMBER",
+        "apiKey": "API_KEY",
+        "webhook": "WEBHOOK",
+        "org": "ORG",
+        "project": "PROJECT"
+      },
+      "empty": {
+        "title": "No activity matches your filters",
+        "description": "Try adjusting your search terms or filters to find what you're looking for.",
+        "clear": "Clear all filters"
+      },
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "modal": {
+        "title": "Event Details",
+        "description": "Technical details for this audit event.",
+        "user": "User",
+        "email": "Email",
+        "action": "Action",
+        "type": "Type",
+        "date": "Date",
+        "ip": "IP Address",
+        "summary": "Summary",
+        "userAgent": "User Agent",
+        "close": "Close"
+      }
+    },
+    "securityPage": {
+      "title": "Security Policies",
+      "description": "Configure security requirements and authentication policies for your organization members.",
+      "accessDenied": "Access Denied",
+      "accessDeniedDesc": "You do not have the required permissions to manage security policies for this organization.",
+      "advancedTitle": "Advanced Security Controls",
+      "advancedDesc": "Upcoming features include Session Persistence management and IP Whitelisting. Manage member sessions directly from the Members tab."
+    },
+    "connectivity": {
+      "title": "Connectivity Ecosystem",
+      "description": "Manage API keys, webhooks and automations to integrate your organization with external services.",
+      "apiKeys": {
+        "title": "API Keys",
+        "description": "Use these keys to authenticate requests to our API.",
+        "create": "Create New Key",
+        "table": {
+          "name": "Name",
+          "role": "Role",
+          "prefix": "Prefix",
+          "lastUsed": "Last Used",
+          "created": "Created",
+          "actions": "Actions"
+        },
+        "toast": {
+          "revoking": "Revoking API key...",
+          "success": "API key revoked successfully",
+          "error": "Failed to revoke API key",
+          "genericError": "An unexpected error occurred"
+        },
+        "noKeys": "No API keys found",
+        "noKeysDesc": "Create your first key to start integrating.",
+        "revoke": "Revoke Key",
+        "unknownRole": "Unknown Role",
+        "never": "Never",
+        "actions": {
+          "revoke": {
+            "confirmTitle": "Revoke API Key?",
+            "confirmDescription": "This will immediately invalidate the key. Any systems using this key will lose access to the API.",
+            "confirmButton": "Revoke Key",
+            "cancelButton": "Cancel"
+          }
+        },
+        "createDialog": {
+          "validation": {
+            "nameRequired": "Please provide a name for the API key"
+          },
+          "toast": {
+            "generating": "Generating API key...",
+            "success": "API key created successfully!",
+            "copySuccess": "API key copied to clipboard"
+          },
+          "form": {
+            "namePlaceholder": "e.g. Production Backend",
+            "roleDescription": "The API key will have the same permissions as this role.",
+            "rolePlaceholder": "Select a role",
+            "generateKey": "Generate Key"
+          },
+          "cancel": "Cancel",
+          "success": {
+            "title": "API Key Created",
+            "description": "Please copy your API key now. For security reasons, you won't be able to see it again.",
+            "warningTitle": "Warning",
+            "warningDescription": "Store this key securely. If you lose it, you will need to create a new one.",
+            "doneButton": "I have saved this key"
+          }
+        },
+        "footer": "Premium Connectivity Engine • Hardened Security"
+      },
+      "webhooks": {
+        "title": "Webhooks",
+        "description": "Receive real-time notifications about events in your organization.",
+        "add": "Add Webhook",
+        "empty": {
+          "title": "No webhooks registered",
+          "description": "Register a webhook to receive real-time notifications about events in your organization."
+        },
+        "table": {
+          "url": "Endpoint URL",
+          "events": "Events",
+          "status": "Status",
+          "createdAt": "Created at",
+          "actions": "Actions"
+        },
+        "status": {
+          "active": "Active",
+          "inactive": "Inactive"
+        },
+        "menu": {
+          "label": "Webhook Settings",
+          "copySecret": "Copy Signing Secret",
+          "viewLogs": "View Delivery Logs",
+          "delete": "Delete Webhook"
+        },
+        "toast": {
+          "deleting": "Deleting webhook...",
+          "success": "Webhook deleted successfully",
+          "error": "Failed to delete webhook",
+          "copySuccess": "Signing secret copied to clipboard"
+        },
+        "actions": {
+          "delete": {
+            "confirmTitle": "Delete Webhook?",
+            "confirmDescription": "This action is irreversible. The endpoint will no longer receive any system notifications.",
+            "confirmButton": "Delete Webhook",
+            "cancelButton": "Cancel"
+          }
+        },
+        "dialog": {
+          "title": "Register New Webhook",
+          "description": "We'll send POST requests to this URL when the selected events occur.",
+          "urlLabel": "Destination URL",
+          "eventsLabel": "Events to send",
+          "placeholder": "https://your-api.com/webhooks",
+          "cancel": "Cancel",
+          "register": "Register",
+          "toast": {
+            "urlRequired": "Please enter a destination URL",
+            "eventRequired": "Please select at least one event",
+            "success": "Webhook registered successfully!",
+            "error": "An unexpected error occurred"
+          }
+        },
+        "logs": {
+          "title": "Delivery Logs",
+          "description": "Recent activity for {url}",
+          "loading": "Loading delivery history...",
+          "empty": "No deliveries recorded yet.",
+          "payload": "Payload",
+          "response": "Response Body",
+          "failed": "FAILED"
+        },
+        "events": {
+          "project_created": "Project Created",
+          "project_deleted": "Project Deleted",
+          "member_invited": "Member Invited",
+          "member_removed": "Member Removed",
+          "billing_subscription_updated": "Subscription Updated"
+        }
+      },
+      "automations": {
+        "title": "Automations",
+        "description": "Connect system triggers to external platforms like Slack, Discord, or custom endpoints.",
+        "create": "Create Automation",
+        "empty": {
+          "title": "No workflows active",
+          "description": "Automate your processes by connecting system triggers to external actions."
+        },
+        "table": {
+          "name": "Workflow Name",
+          "trigger": "Trigger",
+          "action": "Action",
+          "status": "Status",
+          "actions": "Actions"
+        },
+        "status": {
+          "active": "Active",
+          "paused": "Paused"
+        },
+        "menu": {
+          "label": "Workflow Options",
+          "viewLogs": "View Logs",
+          "delete": "Delete Workflow"
+        },
+        "actions": {
+          "delete": {
+            "confirmTitle": "Delete Workflow?",
+            "confirmDescription": "This automation will be permanently removed. This action cannot be undone.",
+            "confirmButton": "Delete Workflow",
+            "cancelButton": "Cancel"
+          }
+        },
+        "toast": {
+          "deleting": "Deleting workflow...",
+          "success": "Workflow deleted successfully",
+          "error": "Failed to delete workflow"
+        },
+        "builder": {
+          "title": "Automation Builder",
+          "step": "Step {step} of 3: {description}",
+          "steps": {
+            "trigger": "Select Trigger",
+            "action": "Select Action",
+            "config": "Configure Connection"
+          },
+          "form": {
+            "nameLabel": "Workflow Name",
+            "namePlaceholder": "E.g., Notify Slack on Project Create",
+            "triggerLabel": "When this happens...",
+            "actionLabel": "Then do this...",
+            "configLabel": "Configuring {type} for {trigger}",
+            "destinationLabel": "Destination",
+            "destinationPlaceholder": "Select destination type",
+            "endpointLabel": "Endpoint URL (POST)",
+            "endpointPlaceholder": "https://hooks.slack.com/services/...",
+            "endpointDesc": "We'll send the event data as a JSON payload to this address.",
+            "managedIntegration": "Managed Integration Active",
+            "managedIntegrationDesc": "This workflow will use the pre-configured connector. Payloads will be automatically formatted for the destination platform (Slack/Discord)."
+          },
+          "buttons": {
+            "cancel": "Cancel",
+            "back": "Back",
+            "continue": "Continue",
+            "finish": "Finish & Activate"
+          },
+          "triggers": {
+            "project_created": { "label": "Project Created", "description": "Triggered when a new project is created." },
+            "project_deleted": { "label": "Project Deleted", "description": "Triggered when a project is removed." },
+            "member_invited": { "label": "Member Invited", "description": "Triggered when an invitation is sent." },
+            "member_removed": { "label": "Member Removed", "description": "Triggered when a member is removed." },
+            "organization_invitation_accepted": { "label": "Invitation Accepted", "description": "Triggered when a member joins." },
+            "role_updated": { "label": "Role Updated", "description": "Triggered when a member role changes." }
+          },
+          "actions": {
+            "webhook": { "label": "Send Webhook", "description": "Deliver a POST request with the event payload to a URL." }
+          }
+        },
+        "logs": {
+          "title": "Automation Logs",
+          "description": "Historical execution data for {name}",
+          "loading": "Retrieving execution history...",
+          "empty": "No logs found for this automation.",
+          "table": {
+            "timestamp": "Timestamp",
+            "status": "Status",
+            "trigger": "Event",
+            "duration": "Duration"
+          },
+          "status": {
+            "success": "Success",
+            "failed": "Failed"
+          }
+        }
+      },
+      "footer": "Premium Connectivity Engine • Hardened Security"
+    },
+    "integrations": {
+      "title": "Integrations",
+      "description": "Connect Gravity to your favorite tools for a seamless enterprise workflow.",
+      "tabs": {
+        "overview": "Overview",
+        "activity": "Activity"
+      },
+      "alertTitle": "Automatic Formatting",
+      "alertDesc": "All Slack and Discord notifications are automatically transformed into high-quality rich cards. No manual JSON payload required.",
+      "activeConnections": "Active Connections",
+      "availableIntegrations": "Available Integrations",
+      "slack": {
+        "title": "Slack",
+        "desc": "Real-time team notifications via Block Kit."
+      },
+      "discord": {
+        "title": "Discord",
+        "desc": "Rich embeds for community and dev channels."
+      },
+      "customWebhook": {
+        "title": "Custom Webhook",
+        "desc": "Coming soon: Raw JSON payloads."
+      }
     }
   },
   "Projects": {

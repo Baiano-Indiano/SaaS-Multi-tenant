@@ -105,12 +105,29 @@ export async function createTenantSchema(tenantSchemaName: string): Promise<{ ad
       );
     `;
     
-    // Add connectorId column if it doesn't exist (Migration for existing workflows table)
+    // Ensure migration columns exist for workflow
     try {
       await sql`ALTER TABLE ${sql(schemaName)}.workflow ADD COLUMN IF NOT EXISTS "connectorId" TEXT`;
     } catch {
       // Column might already exist
     }
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS ${sql(schemaName)}.audit_export_config (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        "bucketName" TEXT NOT NULL,
+        region TEXT,
+        endpoint TEXT,
+        "accessKeyId" TEXT,
+        "secretAccessKey" TEXT,
+        frequency TEXT NOT NULL DEFAULT 'daily',
+        "isActive" BOOLEAN NOT NULL DEFAULT TRUE,
+        "lastExportAt" TIMESTAMP,
+        "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+        "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+    `;
 
     await sql`
       CREATE TABLE IF NOT EXISTS ${sql(schemaName)}.webhook_delivery (
@@ -119,12 +136,21 @@ export async function createTenantSchema(tenantSchemaName: string): Promise<{ ad
         "workflowId" TEXT REFERENCES ${sql(schemaName)}.workflow(id) ON DELETE CASCADE,
         "eventType" TEXT NOT NULL,
         payload TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'processing',
         "responseStatus" TEXT,
         "responseBody" TEXT,
         duration TEXT,
         "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
       );
     `;
+
+    // Ensure migration columns exist for webhook_delivery
+    try {
+      await sql`ALTER TABLE ${sql(schemaName)}.webhook_delivery ADD COLUMN IF NOT EXISTS "workflowId" TEXT REFERENCES ${sql(schemaName)}.workflow(id) ON DELETE CASCADE`;
+      await sql`ALTER TABLE ${sql(schemaName)}.webhook_delivery ADD COLUMN IF NOT EXISTS "status" TEXT NOT NULL DEFAULT 'processing'`;
+    } catch {
+      // Columns might already exist
+    }
 
     // Check if default roles exist
     const roles = await sql`SELECT id FROM ${sql(schemaName)}.role LIMIT 1`;

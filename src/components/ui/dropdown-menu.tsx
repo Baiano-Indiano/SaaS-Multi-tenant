@@ -78,7 +78,9 @@ function DropdownMenuContent({
   )
 }
 
-const DropdownMenuGroup = MenuPrimitive.Group
+function DropdownMenuGroup({ ...props }: MenuPrimitive.Group.Props) {
+  return <MenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />
+}
 
 function DropdownMenuLabel({
   className,

@@ -162,13 +162,18 @@ export async function updateSSOConfigAction(orgId: string, data: {
     ),
   });
 
+  const dataToStore = { ...data, updatedAt: new Date() };
+  
+  // Encrypt clientSecret at rest
+  if (dataToStore.clientSecret) {
+    const { encrypt } = await import("@/lib/security/crypto");
+    dataToStore.clientSecret = encrypt(dataToStore.clientSecret);
+  }
+
   if (existing) {
     await db
       .update(ssoConfigs)
-      .set({
-        ...data,
-        updatedAt: new Date(),
-      })
+      .set(dataToStore)
       .where(eq(ssoConfigs.id, existing.id));
   } else {
     await db.insert(ssoConfigs).values({

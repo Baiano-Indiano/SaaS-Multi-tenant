@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { SlackIcon, DiscordIcon } from "@/components/icons";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { 
   Select, 
   SelectContent, 
@@ -38,18 +39,7 @@ import { useGSAP } from "@gsap/react";
 import { gsap } from "gsap";
 import { useRef } from "react";
 
-const TRIGGERS = [
-  { id: "project.created", label: "Project Created", description: "Triggered when a new project is created." },
-  { id: "project.deleted", label: "Project Deleted", description: "Triggered when a project is removed." },
-  { id: "member.invited", label: "Member Invited", description: "Triggered when an invitation is sent." },
-  { id: "member.removed", label: "Member Removed", description: "Triggered when a member is removed." },
-  { id: "organization.invitation_accepted", label: "Invitation Accepted", description: "Triggered when a member joins." },
-  { id: "role.updated", label: "Role Updated", description: "Triggered when a member role changes." },
-];
 
-const ACTIONS = [
-  { id: "webhook", label: "Send Webhook", description: "Deliver a POST request with the event payload to a URL.", icon: Globe },
-];
 
 interface Connector {
   id: string;
@@ -66,10 +56,24 @@ interface WorkflowBuilderProps {
 }
 
 export function WorkflowBuilder({ orgId, orgSlug, initialConnectors = [] }: WorkflowBuilderProps) {
+  const t = useTranslations("Settings.connectivity.automations.builder");
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const TRIGGERS = [
+    { id: "project.created", label: t("triggers.project_created.label"), description: t("triggers.project_created.description") },
+    { id: "project.deleted", label: t("triggers.project_deleted.label"), description: t("triggers.project_deleted.description") },
+    { id: "member.invited", label: t("triggers.member_invited.label"), description: t("triggers.member_invited.description") },
+    { id: "member.removed", label: t("triggers.member_removed.label"), description: t("triggers.member_removed.description") },
+    { id: "organization.invitation_accepted", label: t("triggers.organization_invitation_accepted.label"), description: t("triggers.organization_invitation_accepted.description") },
+    { id: "role.updated", label: t("triggers.role_updated.label"), description: t("triggers.role_updated.description") },
+  ];
+
+  const ACTIONS = [
+    { id: "webhook", label: t("actions.webhook.label"), description: t("actions.webhook.description"), icon: Globe },
+  ];
 
   useGSAP(() => {
     if (open) {
@@ -102,12 +106,12 @@ export function WorkflowBuilder({ orgId, orgSlug, initialConnectors = [] }: Work
 
   const handleSave = async () => {
     if (connectorId === "custom" && !targetUrl) {
-      toast.error("Please enter a destination URL");
+      toast.error(t("form.endpointPlaceholder")); // Or a more specific error key if we add one
       return;
     }
 
     if (connectorId !== "custom" && !connectorId) {
-      toast.error("Please select a connector");
+      toast.error(t("form.destinationPlaceholder"));
       return;
     }
 
@@ -125,12 +129,12 @@ export function WorkflowBuilder({ orgId, orgSlug, initialConnectors = [] }: Work
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Workflow created successfully!");
+        toast.success(t("toast.success") || "Workflow created successfully!");
         setOpen(false);
         reset();
       }
     } catch {
-      toast.error("Failed to create workflow");
+      toast.error(t("toast.error") || "Failed to create workflow");
     } finally {
       setLoading(false);
     }
@@ -144,22 +148,23 @@ export function WorkflowBuilder({ orgId, orgSlug, initialConnectors = [] }: Work
       setOpen(val);
       if (!val) reset();
     }}>
-      <DialogTrigger
-        render={
-          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
-            <Plus className="w-4 h-4" />
-            Create Automation
-          </Button>
-        }
-      />
+      <DialogTrigger asChild>
+        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
+          <Plus className="w-4 h-4" />
+          {t("buttons.create")}
+        </Button>
+      </DialogTrigger>
       <DialogContent className="sm:max-w-[500px] overflow-hidden min-h-[450px] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-orange-500" />
-            Automation Builder
+            {t("title")}
           </DialogTitle>
           <DialogDescription>
-            Step {step} of 3: {step === 1 ? "Select Trigger" : step === 2 ? "Select Action" : "Configure Connection"}
+            {t("step", { 
+              step, 
+              description: step === 1 ? t("steps.trigger") : step === 2 ? t("steps.action") : t("steps.config") 
+            })}
           </DialogDescription>
         </DialogHeader>
 
@@ -174,29 +179,29 @@ export function WorkflowBuilder({ orgId, orgSlug, initialConnectors = [] }: Work
                 className="space-y-4 step-content"
               >
                 <div className="space-y-2">
-                  <Label>Workflow Name</Label>
+                  <Label>{t("form.nameLabel")}</Label>
                   <Input 
-                    placeholder="E.g., Notify Slack on Project Create" 
+                    placeholder={t("form.namePlaceholder")} 
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="bg-secondary/30 border-primary/10"
                   />
                 </div>
                 <div className="space-y-3">
-                  <Label>When this happens...</Label>
+                  <Label>{t("form.triggerLabel")}</Label>
                   <div className="grid gap-2">
-                    {TRIGGERS.map((t) => (
+                    {TRIGGERS.map((triggerOption) => (
                       <button
-                        key={t.id}
-                        onClick={() => setTrigger(t.id)}
+                        key={triggerOption.id}
+                        onClick={() => setTrigger(triggerOption.id)}
                         className={`text-left p-3 rounded-lg border transition-all animate-item ${
-                          trigger === t.id 
+                          trigger === triggerOption.id 
                             ? "bg-primary/10 border-primary" 
                             : "bg-secondary/20 border-primary/5 hover:border-primary/20"
                         }`}
                       >
-                        <div className="font-medium text-sm">{t.label}</div>
-                        <div className="text-xs text-muted-foreground">{t.description}</div>
+                        <div className="font-medium text-sm">{triggerOption.label}</div>
+                        <div className="text-xs text-muted-foreground">{triggerOption.description}</div>
                       </button>
                     ))}
                   </div>
@@ -213,7 +218,7 @@ export function WorkflowBuilder({ orgId, orgSlug, initialConnectors = [] }: Work
                 className="space-y-4 step-content"
               >
                 <div className="space-y-3">
-                  <Label>Then do this...</Label>
+                  <Label>{t("form.actionLabel")}</Label>
                   <div className="grid gap-2">
                     {ACTIONS.map((a) => (
                       <button
@@ -248,16 +253,19 @@ export function WorkflowBuilder({ orgId, orgSlug, initialConnectors = [] }: Work
                 <div className="p-4 rounded-xl bg-orange-500/5 border border-orange-500/10 flex items-center gap-3">
                   <Settings2 className="w-5 h-5 text-orange-500" />
                   <div className="text-xs text-muted-foreground italic">
-                    Configuring <strong>Webhook</strong> for <strong>{trigger}</strong>
+                    {t("form.configLabel", { 
+                      type: "Webhook", 
+                      trigger: TRIGGERS.find(t => t.id === trigger)?.label ?? ""
+                    })}
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Destination</Label>
+                    <Label>{t("form.destinationLabel")}</Label>
                     <Select value={connectorId} onValueChange={(val) => val && setConnectorId(val)}>
                       <SelectTrigger className="bg-secondary/30 border-primary/10">
-                        <SelectValue placeholder="Select destination type" />
+                        <SelectValue placeholder={t("form.destinationPlaceholder")} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="custom">
@@ -280,26 +288,26 @@ export function WorkflowBuilder({ orgId, orgSlug, initialConnectors = [] }: Work
 
                   {connectorId === "custom" ? (
                     <div className="space-y-2 animate-item">
-                      <Label htmlFor="targetUrl">Endpoint URL (POST)</Label>
+                      <Label htmlFor="targetUrl">{t("form.endpointLabel")}</Label>
                       <Input
                         id="targetUrl"
-                        placeholder="https://hooks.slack.com/services/..."
+                        placeholder={t("form.endpointPlaceholder")}
                         value={targetUrl}
                         onChange={(e) => setTargetUrl(e.target.value)}
                         className="bg-secondary/30 border-primary/10"
                       />
                       <p className="text-[10px] text-muted-foreground">
-                        {"We'll"} send the event data as a JSON payload to this address.
+                        {t("form.endpointDesc")}
                       </p>
                     </div>
                   ) : (
                     <div className="p-4 rounded-lg bg-primary/5 border border-primary/10 space-y-2 animate-item">
                       <p className="text-xs font-medium flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-primary" />
-                        Managed Integration Active
+                        {t("form.managedIntegration")}
                       </p>
                       <p className="text-[10px] text-muted-foreground">
-                        This workflow will use the pre-configured connector. Payloads will be automatically formatted for the destination platform (Slack/Discord).
+                        {t("form.managedIntegrationDesc")}
                       </p>
                     </div>
                   )}
@@ -315,7 +323,7 @@ export function WorkflowBuilder({ orgId, orgSlug, initialConnectors = [] }: Work
             onClick={step === 1 ? () => setOpen(false) : prevStep}
             className="gap-2"
           >
-            {step === 1 ? "Cancel" : <><ChevronLeft className="w-4 h-4" /> Back</>}
+            {step === 1 ? t("buttons.cancel") : <><ChevronLeft className="w-4 h-4" /> {t("buttons.back")}</>}
           </Button>
           
           {step < 3 ? (
@@ -324,14 +332,14 @@ export function WorkflowBuilder({ orgId, orgSlug, initialConnectors = [] }: Work
               disabled={step === 1 && !trigger}
               className="gap-2"
             >
-              Continue <ChevronRight className="w-4 h-4" />
+              {t("buttons.continue")} <ChevronRight className="w-4 h-4" />
             </Button>
           ) : (
             <Button onClick={handleSave} disabled={loading} className="gap-2 min-w-[120px]">
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <>Finish & Activate <Zap className="w-4 h-4" /></>
+                <>{t("buttons.finish")} <Zap className="w-4 h-4" /></>
               )}
             </Button>
           )}

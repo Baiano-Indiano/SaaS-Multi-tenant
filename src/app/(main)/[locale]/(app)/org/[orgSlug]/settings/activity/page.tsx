@@ -8,6 +8,9 @@ import { getTenantDb } from "@/lib/db/tenant-db";
 import { ActivityLogFeed, type AuditLog } from "@/components/settings/ActivityLog";
 import { Activity } from "lucide-react";
 
+import { GsapEntrance } from "@/components/ui/gsap-entrance";
+import { getTranslations } from "next-intl/server";
+
 export default async function ActivityPage({
   params,
   searchParams,
@@ -17,6 +20,7 @@ export default async function ActivityPage({
 }) {
   const { orgSlug } = await params;
   const { q, type } = await searchParams;
+  const t = await getTranslations("Settings.activity");
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session?.user) redirect("/login");
@@ -55,15 +59,17 @@ export default async function ActivityPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-xl font-bold text-zinc-100 flex items-center gap-2">
-          <Activity className="h-5 w-5 text-zinc-400" />
-          Activity Log
-        </h3>
-        <p className="text-sm text-zinc-400 mt-1">
-          Monitor all administrative actions and security events within your organization.
-        </p>
-      </div>
+      <GsapEntrance>
+        <div>
+          <h3 className="text-xl font-bold text-zinc-100 flex items-center gap-2">
+            <Activity className="h-5 w-5 text-zinc-400" />
+            {t("title")}
+          </h3>
+          <p className="text-sm text-zinc-400 mt-1">
+            {t("description")}
+          </p>
+        </div>
+      </GsapEntrance>
 
       <ActivityLogFeed logs={logs as AuditLog[]} />
     </div>

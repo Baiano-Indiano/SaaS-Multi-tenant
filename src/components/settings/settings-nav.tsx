@@ -84,7 +84,7 @@ export function SettingsNav({ items }: SettingsNavProps) {
   );
 
   return (
-    <nav ref={navRef} className="relative flex flex-row lg:flex-col gap-1 w-fit">
+    <nav ref={navRef} className="relative flex flex-row lg:flex-col gap-2 w-fit">
       <div
         ref={indicatorRef}
         aria-hidden
@@ -98,10 +98,10 @@ export function SettingsNav({ items }: SettingsNavProps) {
             linkRefs.current[item.href] = el;
           }}
           className={cn(
-            "settings-nav-item relative z-10 justify-start rounded-md px-4 py-2.5 text-sm font-medium transition-colors",
+            "settings-nav-item relative z-10 justify-start rounded-md px-4 py-2 text-sm font-medium transition-colors",
             isActive(item.href)
-              ? "text-zinc-50 font-semibold"
-              : "text-zinc-400 hover:text-zinc-200 transition-colors duration-200"
+              ? "text-zinc-50 font-semibold bg-zinc-800/10"
+              : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/5 transition-colors duration-200"
           )}
         >
           {item.title}

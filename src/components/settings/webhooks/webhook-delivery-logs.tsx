@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import {
   Sheet,
   SheetContent,
@@ -39,6 +40,7 @@ export function WebhookDeliveryLogsSheet({
   webhookUrl,
   orgId,
 }: WebhookDeliveryLogsSheetProps) {
+  const t = useTranslations("Settings.connectivity.webhooks.logs");
   const [logs, setLogs] = useState<DeliveryLog[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -65,22 +67,22 @@ export function WebhookDeliveryLogsSheet({
         <SheetHeader className="mb-6">
           <SheetTitle className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-primary" />
-            Delivery Logs
+            {t("title")}
           </SheetTitle>
           <SheetDescription className="truncate">
-            Recent activity for {webhookUrl}
+            {t("description", { url: webhookUrl })}
           </SheetDescription>
         </SheetHeader>
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 space-y-4">
             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-muted-foreground">Loading delivery history...</p>
+            <p className="text-sm text-muted-foreground">{t("loading")}</p>
           </div>
         ) : logs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed rounded-xl bg-secondary/5">
             <CheckCircle2 className="w-12 h-12 text-muted-foreground/20 mb-4" />
-            <p className="text-sm text-muted-foreground">No deliveries recorded yet.</p>
+            <p className="text-sm text-muted-foreground">{t("empty")}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -95,6 +97,7 @@ export function WebhookDeliveryLogsSheet({
 }
 
 function DeliveryLogItem({ log }: { log: DeliveryLog }) {
+  const t = useTranslations("Settings.connectivity.webhooks.logs");
   const [isOpen, setIsOpen] = useState(false);
   const isSuccess = log.responseStatus?.startsWith("2");
 
@@ -117,7 +120,7 @@ function DeliveryLogItem({ log }: { log: DeliveryLog }) {
                 {log.eventType}
               </span>
               <Badge variant={isSuccess ? "outline" : "destructive"} className="text-[10px] h-5">
-                {log.responseStatus || "FAILED"}
+                {log.responseStatus || t("failed")}
               </Badge>
             </div>
             <p className="text-[10px] text-muted-foreground mt-1">
@@ -131,7 +134,7 @@ function DeliveryLogItem({ log }: { log: DeliveryLog }) {
       <CollapsibleContent className="p-4 pt-0 border-t border-primary/5 bg-black/20">
         <div className="mt-4 space-y-4">
           <div>
-            <h5 className="text-[10px] font-bold uppercase text-primary/60 mb-2">Payload</h5>
+            <h5 className="text-[10px] font-bold uppercase text-primary/60 mb-2">{t("payload")}</h5>
             <pre className="p-3 bg-zinc-950 rounded border border-white/5 text-[10px] font-mono overflow-x-auto text-zinc-300">
               {JSON.stringify(JSON.parse(log.payload), null, 2)}
             </pre>
@@ -139,7 +142,7 @@ function DeliveryLogItem({ log }: { log: DeliveryLog }) {
           
           {log.responseBody && (
             <div>
-              <h5 className="text-[10px] font-bold uppercase text-primary/60 mb-2">Response Body</h5>
+              <h5 className="text-[10px] font-bold uppercase text-primary/60 mb-2">{t("response")}</h5>
               <pre className="p-3 bg-zinc-950 rounded border border-white/5 text-[10px] font-mono overflow-x-auto text-zinc-300">
                 {log.responseBody}
               </pre>

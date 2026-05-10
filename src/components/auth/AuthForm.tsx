@@ -22,7 +22,7 @@ import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { Shield } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { checkSSOAvailabilityAction } from "@/app/actions/sso";
 
 interface AuthFormProps {
@@ -51,53 +51,54 @@ export function AuthForm({ type }: AuthFormProps) {
 
   type AuthValues = z.infer<typeof authSchema>;
 
-  const fieldVariants: Variants = {
-    hidden: { opacity: 0, y: 15 },
-    visible: (i: number) => ({
-      opacity: 1,
-      y: 0,
-      transition: {
-        delay: 0.2 + i * 0.08,
-        duration: 0.6,
-        ease: "easeOut",
-      },
-    }),
+  // GSAP will handle field entrance, removing Framer variants
+  const entranceVariants = {
+    initial: { opacity: 0, scale: 0.95 },
+    animate: { opacity: 1, scale: 1 },
+    exit: { opacity: 0, scale: 0.95 }
   };
 
   useGSAP(() => {
-    // Entrance animation for the whole container
-    gsap.to(containerRef.current, {
-      opacity: 1,
-      y: 0,
-      duration: 0.5,
-      ease: "power2.out"
-    });
+    if (!containerRef.current) return;
+    
+    // Premium entrance animation
+    const elements = containerRef.current.querySelector(".auth-card-content")?.children;
+    if (elements) {
+      gsap.from(elements, {
+        opacity: 0,
+        y: 20,
+        blur: 10,
+        scale: 0.98,
+        duration: 0.8,
+        stagger: 0.08,
+        ease: "expo.out",
+        delay: 0.2
+      });
+    }
   }, { scope: containerRef });
 
   useGSAP(() => {
-    if (loading) {
-      // Start progress bar animation
-      gsap.to(progressRef.current, {
+    const el = progressRef.current;
+    if (loading && el) {
+      gsap.to(el, {
         width: "70%",
-        duration: 2,
+        duration: 1.5,
         ease: "power2.out",
+        opacity: 1,
       });
-    } else {
-      // Complete and hide
+    } else if (el) {
       const tl = gsap.timeline();
-      if (progressRef.current) {
-        tl.to(progressRef.current, {
-          width: "100%",
-          duration: 0.3,
-          ease: "power2.inOut",
-        }).to(progressRef.current, {
-          opacity: 0,
-          duration: 0.2,
-          onComplete: () => {
-            gsap.set(progressRef.current, { width: "0%", opacity: 1 });
-          }
-        });
-      }
+      tl.to(el, {
+        width: "100%",
+        duration: 0.4,
+        ease: "expo.out",
+      }).to(el, {
+        opacity: 0,
+        duration: 0.3,
+        onComplete: () => {
+          gsap.set(el, { width: "0%" });
+        }
+      });
     }
   }, { dependencies: [loading], scope: containerRef });
 
@@ -266,7 +267,7 @@ export function AuthForm({ type }: AuthFormProps) {
   return (
     <div
       ref={containerRef}
-      className="w-full max-w-md opacity-0"
+      className="w-full max-w-md"
     >
       <Card className="w-full border-zinc-800 bg-zinc-950/50 backdrop-blur-sm shadow-2xl relative overflow-hidden group">
         {/* GSAP Progress Bar */}
@@ -300,24 +301,17 @@ export function AuthForm({ type }: AuthFormProps) {
           {!showSSO ? (
             <motion.div
               key="standard-form"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
+              variants={entranceVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             >
               <form onSubmit={handleSubmit(onSubmit)}>
-                <CardContent className="space-y-4 relative">
+                <CardContent className="space-y-4 relative auth-card-content">
                   <AnimatePresence mode="popLayout">
                     {type === "register" && (
-                      <motion.div
-                        key="name-field"
-                        custom={0}
-                        variants={fieldVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="hidden"
-                        className="space-y-2 overflow-hidden"
-                      >
+                      <div className="space-y-2">
                         <Label htmlFor="name" className="text-zinc-300">
                           {t("nameLabel")}
                         </Label>
@@ -330,17 +324,11 @@ export function AuthForm({ type }: AuthFormProps) {
                         {errors.name && (
                           <p className="text-xs text-red-500">{errors.name.message}</p>
                         )}
-                      </motion.div>
+                      </div>
                     )}
                   </AnimatePresence>
 
-                  <motion.div
-                    custom={type === "register" ? 1 : 0}
-                    variants={fieldVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className="space-y-2"
-                  >
+                  <div className="space-y-2">
                     <Label htmlFor="email" className="text-zinc-300">
                       {t("emailLabel")}
                     </Label>
@@ -354,18 +342,16 @@ export function AuthForm({ type }: AuthFormProps) {
                     {errors.email && (
                       <p className="text-xs text-red-500">{errors.email.message}</p>
                     )}
-                  </motion.div>
+                  </div>
 
                   <AnimatePresence mode="wait">
                     {!ssoAvailable ? (
                       <motion.div
                         key="password-field"
-                        custom={type === "register" ? 2 : 1}
-                        variants={fieldVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                        className="space-y-2"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="space-y-2 overflow-hidden"
                       >
                         <Label htmlFor="password" className="text-zinc-300">
                           {t("passwordLabel")}
@@ -409,11 +395,7 @@ export function AuthForm({ type }: AuthFormProps) {
                 <CardFooter className="flex flex-col space-y-4 relative">
                   <Button
                     type="submit"
-                    className={`w-full h-11 transition-all active:scale-[0.98] ${
-                      ssoAvailable 
-                        ? "bg-white text-black hover:bg-zinc-200" 
-                        : "bg-white text-black hover:bg-zinc-200"
-                    }`}
+                    className="w-full h-11 bg-white text-black hover:bg-zinc-200 transition-all active:scale-[0.98]"
                     isLoading={loading || isCheckingSSO}
                     onClick={(e) => {
                       if (ssoAvailable) {

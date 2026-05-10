@@ -125,6 +125,11 @@ export async function removeDomainAction(orgId: string) {
 }
 
 export async function checkDomainStatusAction(orgId: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session || session.session.activeOrganizationId !== orgId) {
+    throw new Error("Unauthorized");
+  }
+
   const [org] = await db
     .select()
     .from(organizations)

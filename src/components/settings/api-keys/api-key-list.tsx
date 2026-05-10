@@ -10,8 +10,10 @@ import { deleteApiKeyAction, getApiKeysAction } from "@/app/actions/api-keys";
 import { toast } from "sonner";
 import { CreateApiKeyDialog } from "./create-api-key-dialog";
 import { TenantRole } from "@/lib/auth/rbac-utils";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+import { useTranslations } from "next-intl";
 
 export interface ApiKey {
   id: string;
@@ -30,6 +32,8 @@ interface ApiKeyListProps {
 }
 
 export function ApiKeyList({ initialKeys, roles, orgId, orgSlug }: ApiKeyListProps) {
+  const t = useTranslations("Settings.connectivity.apiKeys");
+  const { confirm } = useConfirm();
   const [keys, setKeys] = useState<ApiKey[]>(initialKeys as ApiKey[]);
   const listRef = useRef<HTMLTableSectionElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -40,6 +44,16 @@ export function ApiKeyList({ initialKeys, roles, orgId, orgSlug }: ApiKeyListPro
   };
 
   const handleDelete = async (keyId: string) => {
+    const isConfirmed = await confirm({
+      title: t("actions.revoke.confirmTitle"),
+      description: t("actions.revoke.confirmDescription"),
+      confirmText: t("actions.revoke.confirmButton"),
+      cancelText: t("actions.revoke.cancelButton"),
+      variant: "destructive",
+    });
+
+    if (!isConfirmed) return;
+
     toast.promise(
       deleteApiKeyAction({
         keyId,
@@ -47,15 +61,15 @@ export function ApiKeyList({ initialKeys, roles, orgId, orgSlug }: ApiKeyListPro
         orgSlug,
       }),
       {
-        loading: "Revoking API key...",
+        loading: t("toast.revoking"),
         success: (result) => {
           if (result.success) {
             refreshKeys();
-            return "API key revoked successfully";
+            return t("toast.success");
           }
-          throw new Error(result.error || "Failed to revoke API key");
+          throw new Error(result.error || t("toast.error"));
         },
-        error: (err) => err.message || "An unexpected error occurred",
+        error: (err) => err.message || t("toast.genericError"),
       }
     );
   };
@@ -83,7 +97,7 @@ export function ApiKeyList({ initialKeys, roles, orgId, orgSlug }: ApiKeyListPro
   }, { scope: listRef, dependencies: [keys] });
 
   const getRoleName = (roleId: string) => {
-    return roles.find(r => r.id === roleId)?.name || "Unknown Role";
+    return roles.find(r => r.id === roleId)?.name || t("unknownRole");
   };
 
   return (
@@ -97,15 +111,15 @@ export function ApiKeyList({ initialKeys, roles, orgId, orgSlug }: ApiKeyListPro
         />
       </div>
 
-      <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 backdrop-blur-sm overflow-hidden">
+      <div className="rounded-xl border border-border bg-secondary/5 backdrop-blur-sm overflow-hidden">
         <Table>
-          <TableHeader className="bg-zinc-900/50">
-            <TableRow className="border-zinc-800 hover:bg-transparent">
-              <TableHead className="text-zinc-400 font-medium">Name</TableHead>
-              <TableHead className="text-zinc-400 font-medium">Role</TableHead>
-              <TableHead className="text-zinc-400 font-medium">Prefix</TableHead>
-              <TableHead className="text-zinc-400 font-medium">Last Used</TableHead>
-              <TableHead className="text-zinc-400 font-medium">Created</TableHead>
+          <TableHeader className="bg-secondary/20">
+            <TableRow className="border-border hover:bg-transparent">
+              <TableHead className="text-muted-foreground font-medium">{t("table.name")}</TableHead>
+              <TableHead className="text-muted-foreground font-medium">{t("table.role")}</TableHead>
+              <TableHead className="text-muted-foreground font-medium">{t("table.prefix")}</TableHead>
+              <TableHead className="text-muted-foreground font-medium">{t("table.lastUsed")}</TableHead>
+              <TableHead className="text-muted-foreground font-medium">{t("table.created")}</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -113,36 +127,36 @@ export function ApiKeyList({ initialKeys, roles, orgId, orgSlug }: ApiKeyListPro
             {keys.length === 0 ? (
               <TableRow className="hover:bg-transparent border-transparent">
                 <TableCell colSpan={6} className="h-32 text-center">
-                  <div className="flex flex-col items-center justify-center text-zinc-500 gap-2">
+                  <div className="flex flex-col items-center justify-center text-muted-foreground gap-2">
                     <Key className="h-8 w-8 opacity-20" />
-                    <p className="text-sm font-medium">No API keys found</p>
-                    <p className="text-xs opacity-60">Create your first key to start integrating.</p>
+                    <p className="text-sm font-medium">{t("noKeys")}</p>
+                    <p className="text-xs opacity-60">{t("noKeysDesc")}</p>
                   </div>
                 </TableCell>
               </TableRow>
             ) : (
               keys.map((key) => (
-                <TableRow key={key.id} className="border-zinc-800 hover:bg-zinc-900/30 transition-colors group">
-                  <TableCell className="font-medium text-zinc-200">
+                <TableRow key={key.id} className="border-border hover:bg-secondary/10 transition-colors group">
+                  <TableCell className="font-medium text-foreground">
                     {key.name}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="border-zinc-700 bg-zinc-800/30 text-zinc-300 font-normal">
+                    <Badge variant="outline" className="border-primary/10 bg-primary/5 text-primary font-normal">
                       <Shield className="mr-1 h-3 w-3 opacity-50" />
                       {getRoleName(key.roleId)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-mono text-xs text-zinc-500">
+                  <TableCell className="font-mono text-xs text-muted-foreground">
                     {key.keyPrefix}...
                   </TableCell>
-                  <TableCell className="text-zinc-500 text-xs">
+                  <TableCell className="text-muted-foreground text-xs">
                     {key.lastUsedAt ? (
                       new Date(key.lastUsedAt).toLocaleDateString()
                     ) : (
-                      "Never"
+                      t("never")
                     )}
                   </TableCell>
-                  <TableCell className="text-zinc-500 text-xs">
+                  <TableCell className="text-muted-foreground text-xs">
                     <div className="flex items-center gap-1">
                       <Calendar className="h-3 w-3 opacity-30" />
                       {new Date(key.createdAt).toLocaleDateString()}
@@ -150,20 +164,18 @@ export function ApiKeyList({ initialKeys, roles, orgId, orgSlug }: ApiKeyListPro
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button variant="ghost" className="h-8 w-8 p-0 text-zinc-500 hover:text-zinc-100">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        }
-                      />
-                      <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800 text-zinc-100">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-popover border-border text-popover-foreground">
                         <DropdownMenuItem 
                           onClick={() => handleDelete(key.id)}
-                          className="text-red-400 focus:bg-red-500/10 focus:text-red-400"
+                          className="text-red-400 focus:bg-red-500/10 focus:text-red-400 cursor-pointer"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Revoke Key
+                          {t("revoke")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -175,8 +187,8 @@ export function ApiKeyList({ initialKeys, roles, orgId, orgSlug }: ApiKeyListPro
         </Table>
       </div>
       
-      <p className="text-[10px] text-zinc-600 text-center uppercase tracking-widest font-bold mt-4">
-        Premium Connectivity Engine • Hardened Security
+      <p className="text-[10px] text-muted-foreground/60 text-center uppercase tracking-widest font-bold mt-4">
+        {t("footer")}
       </p>
     </div>
   );

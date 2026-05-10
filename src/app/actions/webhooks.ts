@@ -8,6 +8,7 @@ import { eq, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { recordAuditLog } from "@/lib/audit";
 import { requirePermission } from "@/lib/auth/rbac-utils";
+import { validateExternalUrl } from "@/lib/security/url-validator";
 
 /**
  * createWebhookAction
@@ -25,11 +26,8 @@ export async function createWebhookAction(data: {
     // RBAC: Verify permission to manage webhooks
     await requirePermission(session.user.id, data.orgId, "org:update");
 
-    // Basic URL validation
-    const url = new URL(data.url);
-    if (!['http:', 'https:'].includes(url.protocol)) {
-      throw new Error("Invalid URL protocol. Use HTTP or HTTPS.");
-    }
+    // SSRF-safe URL validation
+    validateExternalUrl(data.url);
 
     // Generate a signing secret (whsec_...)
     const bytes = crypto.getRandomValues(new Uint8Array(24));
@@ -99,7 +97,8 @@ export async function deleteWebhookAction(data: {
     return { success: true };
   } catch (error: unknown) {
     console.error("Failed to delete webhook:", error);
-    return { error: "Failed to delete webhook" };
+    const message = error instanceof Error ? error.message : "Failed to delete webhook";
+    return { error: message };
   }
 }
 

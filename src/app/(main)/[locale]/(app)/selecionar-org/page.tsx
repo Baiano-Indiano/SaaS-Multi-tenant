@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 import { useRouter } from "@/i18n/routing";
 import { 
   useListOrganizations, 
@@ -26,6 +28,8 @@ import { Loader2, Plus, Building2, Check } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useTranslations } from "next-intl";
 
+gsap.registerPlugin(useGSAP);
+
 export default function SelecionarOrgPage() {
   const t = useTranslations("SelectOrg");
   const tOrg = useTranslations("Organization");
@@ -35,6 +39,47 @@ export default function SelecionarOrgPage() {
   const [newOrgName, setNewOrgName] = useState("");
   const [newOrgSlug, setNewOrgSlug] = useState("");
   const [loading, setLoading] = useState(false);
+  const pageRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    if (isPending || !pageRef.current) return;
+
+    const mm = gsap.matchMedia();
+
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      // Ensure everything is visible if animations are disabled
+      gsap.set(".org-logo, .org-heading, .org-card, .org-create-card", { 
+        autoAlpha: 1, 
+        y: 0, 
+        scale: 1 
+      });
+    });
+
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      const tl = gsap.timeline({ 
+        defaults: { 
+          ease: "power3.out",
+          duration: 0.5
+        } 
+      });
+
+      tl.from(".org-logo", { autoAlpha: 0, scale: 0.8 })
+        .from(".org-heading", { autoAlpha: 0, y: 20 }, "-=0.2")
+        .from(".org-card", { 
+          autoAlpha: 0, 
+          y: 20, 
+          stagger: 0.08,
+          clearProps: "all"
+        }, "-=0.3")
+        .from(".org-create-card", { 
+          autoAlpha: 0, 
+          y: 20,
+          clearProps: "all"
+        }, "-=0.3");
+    });
+
+    return () => mm.revert();
+  }, { scope: pageRef, dependencies: [isPending, orgs?.length] });
 
   useEffect(() => {
     if (!sessionPending && !session?.user) {
@@ -117,18 +162,20 @@ export default function SelecionarOrgPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-6 py-12">
+    <div ref={pageRef} className="flex min-h-screen items-center justify-center bg-zinc-950 px-6 py-12">
       <div className="w-full max-w-2xl space-y-8">
         <div className="flex flex-col items-center text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white mb-4">
+          <div className="org-logo flex h-12 w-12 items-center justify-center rounded-lg bg-white mb-4">
             <span className="text-xl font-bold text-black">G</span>
           </div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-white">
-            {t("title")}
-          </h2>
-          <p className="mt-2 text-sm text-zinc-500">
-            {t("subtitle")}
-          </p>
+          <div className="org-heading">
+            <h2 className="text-3xl font-extrabold tracking-tight text-white">
+              {t("title")}
+            </h2>
+            <p className="mt-2 text-sm text-zinc-500">
+              {t("subtitle")}
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -143,7 +190,7 @@ export default function SelecionarOrgPage() {
                   <button
                     key={org.id}
                     onClick={() => handleSelectOrg(org.id, org.slug)}
-                    className="w-full flex items-center justify-between p-4 rounded-xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 hover:border-zinc-700 transition-all group"
+                    className="org-card w-full flex items-center justify-between p-4 rounded-xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 hover:border-zinc-700 transition-all group"
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-800 group-hover:bg-zinc-700">
@@ -173,7 +220,7 @@ export default function SelecionarOrgPage() {
             <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wider px-1">
               {t("newOrganization")}
             </h3>
-            <Card className="border-zinc-800 bg-zinc-900/50">
+            <Card className="org-create-card border-zinc-800 bg-zinc-900/50">
               <CardHeader className="p-4 pt-6">
                 <CardTitle className="text-lg">{t("createTenant")}</CardTitle>
                 <CardDescription>

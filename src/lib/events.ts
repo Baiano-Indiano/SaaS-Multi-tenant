@@ -1,8 +1,16 @@
 import { Client } from "@upstash/qstash";
+import { randomBytes } from "crypto";
 import { withAdminTenantDb } from "./db/tenant-db";
 import { workflows, webhooks, webhookDeliveries } from "./db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
+
+// Generate a random per-boot secret if INTERNAL_WEBHOOK_SECRET is not set.
+// This prevents using a hardcoded guessable value in source code.
+const internalWebhookFallback = randomBytes(32).toString('hex');
+if (!process.env.INTERNAL_WEBHOOK_SECRET) {
+  console.warn('[Event Hub] ⚠️ INTERNAL_WEBHOOK_SECRET is not set. Using ephemeral random secret.');
+}
 
 export const SUPPORTED_EVENTS = [
   { 
@@ -40,6 +48,12 @@ export const SUPPORTED_EVENTS = [
     label: "Permissions Changed", 
     description: "Notify when a member role is updated",
     iconName: "settings"
+  },
+  { 
+    id: "audit.log_created", 
+    label: "Audit Log Generated", 
+    description: "Real-time export of security audit logs",
+    iconName: "shield-alert"
   },
 ] as const;
 
@@ -115,7 +129,7 @@ export async function emitEvent(orgId: string, event: string, payload: Record<st
             targetUrl: config.url,
             event,
             payload,
-            secret: process.env.INTERNAL_WEBHOOK_SECRET || "internal-fallback",
+            secret: process.env.INTERNAL_WEBHOOK_SECRET || internalWebhookFallback,
           },
           headers: {
             "x-gravity-org-id": orgId,

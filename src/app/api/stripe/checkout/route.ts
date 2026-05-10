@@ -3,9 +3,10 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { organizations } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { organizations, members } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 import { PLANS } from "@/lib/billing/plans";
+import { requirePermission } from "@/lib/auth/rbac-utils";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     // @ts-expect-error - Stripe type definitions mismatches in this specific version
@@ -37,8 +38,9 @@ export async function POST(req: Request) {
         
         const orgId = org.id;
 
-        // Verify if the user is a member of this organization
-        // In a real app, also verify if the user has permission to upgrade
+        // Verify the user is a member and has billing:manage permission
+        await requirePermission(session.user.id, orgId, "billing:manage");
+
         const origin = h.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
         // Create Checkout Session
