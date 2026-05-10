@@ -12,6 +12,7 @@ This roadmap tracks the evolution of the **Multi-Tenant SaaS Starter**.
 - [ ] **Phase 34: Public API & Webhooks Foundation** (API-01, API-02, API-03)
 - [ ] **Phase 35: Enterprise SSO & Domain Verification** (SSO-01, SSO-02, SSO-03)
 - [ ] **Phase 36: Dashboard API Playground** (DX-01, DX-02, DX-03)
+- [x] **Phase 37: Enterprise Security & Scalability** (SEC-01, SEC-02, SEC-03)
 
 ---
 
@@ -44,6 +45,12 @@ This roadmap tracks the evolution of the **Multi-Tenant SaaS Starter**.
 - [ ] Build interactive API explorer (Swagger/OpenAPI-like).
 - [ ] Implement "Try it Out" functionality using live tenant API keys.
 - [ ] Create developer documentation portal inside the app.
+
+### Phase 37: Enterprise Security & Scalability
+**Goal:** Implement critical enterprise features for compliance and high performance.
+- [x] Build SIEM Integration with S3-compatible daily exports.
+- [x] Configure Database Connection Pooling and Read Replica routing.
+- [x] Implement Session Anomaly Detection with automated email alerts.
 
 ---
 
