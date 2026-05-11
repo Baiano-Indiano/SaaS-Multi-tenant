@@ -12,6 +12,8 @@ import { requirePermission } from "@/lib/auth/rbac-utils";
 import { storeApiKeyInRedis, removeApiKeyFromRedis } from "@/lib/redis";
 import { organizations } from "@/lib/db/schema";
 import { db } from "@/lib/db";
+import { createApiKeySchema, deleteApiKeySchema } from "@/lib/validations";
+import { enforceRateLimit, apiKeyActionRateLimit } from "@/lib/rate-limit";
 
 /**
  * createApiKeyAction
@@ -30,8 +32,14 @@ export async function createApiKeyAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // Rate Limiting
+    await enforceRateLimit(apiKeyActionRateLimit, session.user.id);
+
+    // Input Validation
+    const validated = createApiKeySchema.parse(data);
+
     // RBAC: Verify user has permission to manage API keys
-    await requirePermission(session.user.id, data.orgId, "org:update");
+    await requirePermission(session.user.id, validated.orgId, "org:update");
 
     const rawKey = generateApiKey();
     const keyHash = await hashApiKey(rawKey);
@@ -108,8 +116,14 @@ export async function deleteApiKeyAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // Rate Limiting
+    await enforceRateLimit(apiKeyActionRateLimit, session.user.id);
+
+    // Input Validation
+    const validated = deleteApiKeySchema.parse(data);
+
     // RBAC: Verify user has permission to manage API keys
-    await requirePermission(session.user.id, data.orgId, "org:update");
+    await requirePermission(session.user.id, validated.orgId, "org:update");
 
     const result = await getTenantDb(session.user.id, data.orgId, async (tx) => {
       const deletedKey = await tx.delete(apiKeys)

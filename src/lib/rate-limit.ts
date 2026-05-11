@@ -104,6 +104,28 @@ export const ssoActionRateLimit = new Ratelimit({
 });
 
 /**
+ * API Key actions (create, delete): 20 per hour.
+ * Prevents rapid generation of API keys.
+ */
+export const apiKeyActionRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(20, '1 h'),
+  analytics: true,
+  prefix: 'ratelimit:action:api_key',
+});
+
+/**
+ * Webhook/Connector actions (create, update, delete): 20 per hour.
+ * Prevents spamming webhook configurations.
+ */
+export const webhookActionRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(20, '1 h'),
+  analytics: true,
+  prefix: 'ratelimit:action:webhook',
+});
+
+/**
  * Helper to enforce rate limiting in a Server Action.
  * Throws a user-friendly error if the limit is exceeded.
  */

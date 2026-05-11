@@ -276,3 +276,20 @@ export const updateSSOConfigSchema = z.object({
     isActive: z.boolean(),
   }),
 });
+
+// u{2500}u{2500}u{2500} API Key Actions u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}u{2500}
+
+export const createApiKeySchema = z.object({
+  name: nameSchema,
+  roleId: uuidSchema,
+  orgId: uuidSchema,
+  orgSlug: slugSchema,
+  expiresInDays: z.number().int().min(0).max(3650).optional(),
+});
+
+export const deleteApiKeySchema = z.object({
+  keyId: uuidSchema,
+  orgId: uuidSchema,
+  orgSlug: slugSchema,
+});
+

@@ -10,6 +10,7 @@ import { recordAuditLog } from "@/lib/audit";
 import { requirePermission } from "@/lib/auth/rbac-utils";
 import { validateExternalUrl } from "@/lib/security/url-validator";
 import { createWebhookSchema, deleteWebhookSchema } from "@/lib/validations";
+import { enforceRateLimit, webhookActionRateLimit } from "@/lib/rate-limit";
 
 /**
  * createWebhookAction
@@ -24,6 +25,9 @@ export async function createWebhookAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // Rate Limiting
+    await enforceRateLimit(webhookActionRateLimit, session.user.id);
+
     // Input Validation
     const validated = createWebhookSchema.parse(data);
 
@@ -80,6 +84,9 @@ export async function deleteWebhookAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // Rate Limiting
+    await enforceRateLimit(webhookActionRateLimit, session.user.id);
+
     // Input Validation
     const validated = deleteWebhookSchema.parse(data);
 

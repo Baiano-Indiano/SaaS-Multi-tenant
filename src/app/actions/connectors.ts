@@ -12,6 +12,7 @@ import { workflows } from "@/lib/db/schema";
 import { SUPPORTED_EVENTS } from "@/lib/events";
 import { validateExternalUrl } from "@/lib/security/url-validator";
 import { createConnectorSchema, deleteConnectorSchema, testConnectorSchema, toggleConnectorEventSchema } from "@/lib/validations";
+import { enforceRateLimit, webhookActionRateLimit } from "@/lib/rate-limit";
 
 /**
  * createConnectorAction
@@ -29,6 +30,8 @@ export async function createConnectorAction(data: {
   try {
     // Input Validation
     const validated = createConnectorSchema.parse(data);
+
+    await enforceRateLimit(webhookActionRateLimit, session.user.id);
 
     // RBAC: Verify user has permission to manage integrations
     await requirePermission(session.user.id, validated.orgId, "org:update");
@@ -102,6 +105,8 @@ export async function deleteConnectorAction(data: {
     // Input Validation
     const validated = deleteConnectorSchema.parse(data);
 
+    await enforceRateLimit(webhookActionRateLimit, session.user.id);
+
     // RBAC: Verify user has permission to manage integrations
     await requirePermission(session.user.id, validated.orgId, "org:update");
 
@@ -159,6 +164,8 @@ export async function testConnectorAction(data: {
   try {
     // Input Validation
     const validated = testConnectorSchema.parse(data);
+
+    await enforceRateLimit(webhookActionRateLimit, session.user.id);
 
     // RBAC: Verify user has permission to test integrations
     await requirePermission(session.user.id, validated.orgId, "org:update");
@@ -255,6 +262,8 @@ export async function toggleConnectorEventAction(data: {
   try {
     // Input Validation
     const validated = toggleConnectorEventSchema.parse(data);
+
+    await enforceRateLimit(webhookActionRateLimit, session.user.id);
 
     // RBAC: Verify user has permission to manage integrations
     await requirePermission(session.user.id, validated.orgId, "org:update");
