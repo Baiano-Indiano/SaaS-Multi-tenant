@@ -53,7 +53,7 @@ export async function getDashboardStatsAction(orgId: string) {
         projects: projectCountResult,
         rolesCount: roleCountResult[0]?.val || 0,
       };
-    });
+    }, { mode: 'reader' });
 
     const totalProjects = tenantStats.projects.reduce((acc, curr) => acc + curr.val, 0);
 

@@ -14,7 +14,7 @@ import { requirePermission } from "@/lib/auth/rbac-utils";
 import { sendNotification } from "@/lib/notifications";
 import { recordAuditLog } from "@/lib/audit";
 import { emitEvent } from "@/lib/events";
-import { createProjectSchema, deleteProjectSchema, updateProjectSchema, uuidSchema } from "@/lib/validations";
+import { createProjectSchema, deleteProjectSchema, updateProjectSchema } from "@/lib/validations";
 
 export async function createProjectAction(data: {
   name: string;
@@ -109,7 +109,7 @@ export async function getProjectsAction(orgId: string) {
 
     return await getTenantDb(session.user.id, orgId, async (db) => {
       return await db.select().from(projects).orderBy(projects.createdAt);
-    });
+    }, { mode: 'reader' });
   } catch (error) {
     console.error("Failed to fetch projects:", error);
     return [];
@@ -175,7 +175,7 @@ export async function getProjectAction(orgId: string, projectId: string) {
     return await getTenantDb(session.user.id, orgId, async (db) => {
       const result = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
       return result[0] || null;
-    });
+    }, { mode: 'reader' });
   } catch (error) {
     console.error("Failed to fetch project:", error);
     return null;

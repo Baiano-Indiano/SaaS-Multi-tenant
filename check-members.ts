@@ -2,7 +2,7 @@
 import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
-const { db } = require("./src/lib/db");
+import { db } from "./src/lib/db";
 import { members, organizations, users } from "./src/lib/db/schema";
 import { eq } from "drizzle-orm";
 

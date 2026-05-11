@@ -44,15 +44,15 @@ vi.mock('next/cache', () => ({
 }))
 
 describe('Status Server Actions', () => {
-  const mockOrgId = 'org-123'
-  const mockUserId = 'user-456'
+  const mockOrgId = '00000000-0000-4000-a000-000000000123'
+  const mockUserId = '00000000-0000-4000-a000-000000000456'
 
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(auth.api.getSession).mockResolvedValue({
       user: { id: mockUserId, twoFactorEnabled: false },
       session: { 
-        id: 'session-123',
+        id: '00000000-0000-4000-a000-000000000002',
         userId: mockUserId,
         token: 'token-123',
         expiresAt: new Date(),
@@ -66,7 +66,7 @@ describe('Status Server Actions', () => {
   describe('upsertStatusComponentAction()', () => {
     it('should fail if organizationId does not match active organization', async () => {
       await expect(upsertStatusComponentAction({
-        organizationId: 'wrong-org',
+        organizationId: '00000000-0000-4000-a000-000000000009',
         name: 'Test Component',
         status: 'operational',
         isActive: true
@@ -97,7 +97,7 @@ describe('Status Server Actions', () => {
     it('should update an existing component if id is provided', async () => {
       await upsertStatusComponentAction({
         organizationId: mockOrgId,
-        id: 'comp-1',
+        id: '00000000-0000-4000-a000-000000000007',
         name: 'Updated Component',
         status: 'degraded',
         isActive: true
@@ -110,7 +110,7 @@ describe('Status Server Actions', () => {
     it('should delete component and revalidate path', async () => {
       await deleteStatusComponentAction({
         organizationId: mockOrgId,
-        id: 'comp-1'
+        id: '00000000-0000-4000-a000-000000000007'
       })
       expect(db.delete).toHaveBeenCalled()
       expect(revalidatePath).toHaveBeenCalled()
@@ -135,7 +135,7 @@ describe('Status Server Actions', () => {
     it('should update incident status', async () => {
       await updateStatusIncidentAction({
         organizationId: mockOrgId,
-        id: 'inc-1',
+        id: '00000000-0000-4000-a000-000000000008',
         status: 'resolved'
       })
       expect(db.update).toHaveBeenCalled()
@@ -147,7 +147,7 @@ describe('Status Server Actions', () => {
     it('should delete incident', async () => {
       await deleteStatusIncidentAction({
         organizationId: mockOrgId,
-        id: 'inc-1'
+        id: '00000000-0000-4000-a000-000000000008'
       })
       expect(db.delete).toHaveBeenCalled()
     })

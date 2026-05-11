@@ -14,7 +14,7 @@ vi.mock('@/lib/auth', () => ({
 }))
 
 vi.mock('next/headers', () => ({
-  headers: vi.fn().mockResolvedValue({}),
+  headers: vi.fn().mockResolvedValue(new Headers()),
 }))
 
 vi.mock('@/lib/db', () => ({
@@ -56,26 +56,26 @@ describe('SSO Server Actions', () => {
   describe('addDomainAction()', () => {
     it('should fail if user is not authorized for the organization', async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue({
-        user: { id: 'user-1', twoFactorEnabled: false },
+        user: { id: '00000000-0000-4000-a000-000000000001', twoFactorEnabled: false },
         session: { 
-          id: 's1', userId: 'u1', token: 't1', expiresAt: new Date(), createdAt: new Date(), updatedAt: new Date(),
-          activeOrganizationId: 'other-org' 
+          id: '00000000-0000-4000-a000-000000000002', userId: '00000000-0000-4000-a000-000000000001', token: 't1', expiresAt: new Date(), createdAt: new Date(), updatedAt: new Date(),
+          activeOrganizationId: '00000000-0000-4000-a000-000000000005' 
         }
       })
 
-      await expect(addDomainAction('org-1', 'example.com')).rejects.toThrow('Unauthorized')
+      await expect(addDomainAction('00000000-0000-4000-a000-000000000004', 'example.com')).rejects.toThrow('Unauthorized')
     })
 
     it('should successfully add a domain and return verification token', async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue({
-        user: { id: 'user-1', twoFactorEnabled: false },
+        user: { id: '00000000-0000-4000-a000-000000000001', twoFactorEnabled: false },
         session: { 
-          id: 's1', userId: 'u1', token: 't1', expiresAt: new Date(), createdAt: new Date(), updatedAt: new Date(),
-          activeOrganizationId: 'org-1' 
+          id: '00000000-0000-4000-a000-000000000002', userId: '00000000-0000-4000-a000-000000000001', token: 't1', expiresAt: new Date(), createdAt: new Date(), updatedAt: new Date(),
+          activeOrganizationId: '00000000-0000-4000-a000-000000000004' 
         }
       })
       vi.mocked(db.query.organizations.findFirst).mockResolvedValue({ 
-        id: 'org-1', 
+        id: '00000000-0000-4000-a000-000000000004', 
         slug: 'org-slug',
         name: 'Org 1',
         createdAt: new Date(),
@@ -91,7 +91,7 @@ describe('SSO Server Actions', () => {
         require2FA: false
       })
 
-      const result = await addDomainAction('org-1', 'Example.com ')
+      const result = await addDomainAction('00000000-0000-4000-a000-000000000004', 'Example.com ')
 
       expect(result.success).toBe(true)
       expect(result.verificationToken).toBeDefined()
@@ -102,23 +102,23 @@ describe('SSO Server Actions', () => {
   describe('verifyDomainAction()', () => {
     it('should verify domain if TXT record matches', async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue({
-        user: { id: 'user-1', twoFactorEnabled: false },
+        user: { id: '00000000-0000-4000-a000-000000000001', twoFactorEnabled: false },
         session: { 
-          id: 's1', userId: 'u1', token: 't1', expiresAt: new Date(), createdAt: new Date(), updatedAt: new Date(),
-          activeOrganizationId: 'org-1' 
+          id: '00000000-0000-4000-a000-000000000002', userId: '00000000-0000-4000-a000-000000000001', token: 't1', expiresAt: new Date(), createdAt: new Date(), updatedAt: new Date(),
+          activeOrganizationId: '00000000-0000-4000-a000-000000000004' 
         }
       })
       vi.mocked(db.query.organizationDomains.findFirst).mockResolvedValue({
-        id: 'dom-1',
+        id: '00000000-0000-4000-a000-000000000006',
         domain: 'example.com',
         verificationToken: 'token-123',
-        organizationId: 'org-1',
+        organizationId: '00000000-0000-4000-a000-000000000004',
         isVerified: false,
         createdAt: new Date(),
         updatedAt: new Date()
       })
       vi.mocked(db.query.organizations.findFirst).mockResolvedValue({ 
-        id: 'org-1', 
+        id: '00000000-0000-4000-a000-000000000004', 
         slug: 'org-slug',
         name: 'Org 1',
         createdAt: new Date(),
@@ -135,7 +135,7 @@ describe('SSO Server Actions', () => {
       })
       vi.mocked(verifyDomainTXT).mockResolvedValue(true)
 
-      const result = await verifyDomainAction('org-1', 'dom-1')
+      const result = await verifyDomainAction('00000000-0000-4000-a000-000000000004', '00000000-0000-4000-a000-000000000006')
 
       expect(result.success).toBe(true)
       expect(db.update).toHaveBeenCalled()
@@ -143,24 +143,24 @@ describe('SSO Server Actions', () => {
 
     it('should return success false if TXT record does not match', async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue({
-        user: { id: 'user-1', twoFactorEnabled: false },
+        user: { id: '00000000-0000-4000-a000-000000000001', twoFactorEnabled: false },
         session: { 
-          id: 's1', userId: 'u1', token: 't1', expiresAt: new Date(), createdAt: new Date(), updatedAt: new Date(),
-          activeOrganizationId: 'org-1' 
+          id: '00000000-0000-4000-a000-000000000002', userId: '00000000-0000-4000-a000-000000000001', token: 't1', expiresAt: new Date(), createdAt: new Date(), updatedAt: new Date(),
+          activeOrganizationId: '00000000-0000-4000-a000-000000000004' 
         }
       })
       vi.mocked(db.query.organizationDomains.findFirst).mockResolvedValue({
-        id: 'dom-1',
+        id: '00000000-0000-4000-a000-000000000006',
         domain: 'example.com',
         verificationToken: 'token-123',
-        organizationId: 'org-1',
+        organizationId: '00000000-0000-4000-a000-000000000004',
         isVerified: false,
         createdAt: new Date(),
         updatedAt: new Date()
       })
       vi.mocked(verifyDomainTXT).mockResolvedValue(false)
 
-      const result = await verifyDomainAction('org-1', 'dom-1')
+      const result = await verifyDomainAction('00000000-0000-4000-a000-000000000004', '00000000-0000-4000-a000-000000000006')
 
       expect(result.success).toBe(false)
       expect(db.update).not.toHaveBeenCalled()

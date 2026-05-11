@@ -17,21 +17,26 @@ vi.mock('next/navigation', () => ({
 }))
 
 // Mock Upstash Redis
-vi.mock('@upstash/redis', () => ({
-  Redis: {
-    fromEnv: vi.fn().mockReturnValue({
-      get: vi.fn(),
-      set: vi.fn(),
-      del: vi.fn(),
-    }),
-  },
-}))
+vi.mock('@upstash/redis', () => {
+  return {
+    Redis: class {
+      get = vi.fn();
+      set = vi.fn();
+      del = vi.fn();
+    },
+  };
+})
 
 // Mock Upstash Ratelimit
 vi.mock('@upstash/ratelimit', () => ({
-  Ratelimit: vi.fn().mockImplementation(() => ({
-    limit: vi.fn().mockResolvedValue({ success: true, remaining: 10, limit: 10, reset: 0 }),
-  })),
+  Ratelimit: Object.assign(
+    class {
+      limit = vi.fn().mockResolvedValue({ success: true, remaining: 10, limit: 10, reset: 0 });
+    },
+    {
+      slidingWindow: vi.fn().mockReturnValue({}),
+    }
+  ),
 }))
 
 // Mock next/headers

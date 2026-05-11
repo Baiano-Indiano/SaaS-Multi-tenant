@@ -7,7 +7,7 @@ import { organizations, users, sessions } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { recordAuditLog } from "@/lib/audit";
 import { can } from "@/lib/auth/rbac-utils";
-import { toggle2FAEnforcementSchema, check2FAComplianceSchema, listMemberSessionsSchema, revokeMemberSessionsSchema, revokeMemberSessionSchema } from "@/lib/validations";
+import { toggle2FAEnforcementSchema, check2FAComplianceSchema } from "@/lib/validations";
 import { securityActionRateLimit, enforceRateLimit } from "@/lib/rate-limit";
 
 type SecurityActionResponse =

@@ -1,10 +1,19 @@
-import { db } from "../lib/db";
-import { users, accounts, organizations, members, twoFactors } from "../lib/db/schema";
-import { createTenantSchema } from "../lib/db/tenant";
-import { symmetricEncrypt, hashPassword } from "better-auth/crypto";
+import dotenv from "dotenv";
+import path from "path";
+
+// Load environment variables from .env.local (dev) or .env (prod)
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+dotenv.config();
 
 async function main() {
 	console.log("🌱 Starting test data seeding...");
+
+	// Dynamic import ensures env vars are loaded first
+	const { db } = await import("../lib/db");
+	const { users, accounts, organizations, members, twoFactors } = await import("../lib/db/schema");
+	const { createTenantSchema } = await import("../lib/db/tenant");
+	const { symmetricEncrypt, hashPassword } = await import("better-auth/crypto");
+
 	console.log("DATABASE_URL:", process.env.DATABASE_URL);
 
 	const BETTER_AUTH_SECRET = process.env.BETTER_AUTH_SECRET || "static-test-secret-for-ci-deterministic-logic";

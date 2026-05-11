@@ -169,7 +169,7 @@ export async function getApiKeysAction(orgId: string) {
 
     return await getTenantDb(session.user.id, orgId, async (tx) => {
       return await tx.select().from(apiKeys).orderBy(apiKeys.createdAt);
-    });
+    }, { mode: 'reader' });
   } catch (error) {
     console.error("Failed to fetch API keys:", error);
     return [];

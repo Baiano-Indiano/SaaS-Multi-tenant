@@ -71,7 +71,7 @@ export async function getAuditLogsAction(
       .limit(options?.limit || 100);
 
     return logs;
-  });
+  }, { mode: 'reader' });
 }
 
 export async function triggerCleanupAction(organizationId: string) {

@@ -12,10 +12,11 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "db:migrate-tenants": "npx tsx --env-file=.env.local src/scripts/migrate-tenants.ts",
-    "db:sync-permissions": "npx tsx --env-file=.env.local src/scripts/sync-permissions.ts",
-    "db:seed-test": "npx tsx --env-file=.env.local src/db/seed-test.ts",
-    "cli": "tsx --env-file=.env.local src/cli/index.ts"
+    "db:migrate-tenants": "npx tsx src/scripts/migrate-tenants.ts",
+    "db:sync-permissions": "npx tsx src/scripts/sync-permissions.ts",
+    "db:seed-test": "npx tsx src/db/seed-test.ts",
+    "cli": "tsx src/cli/index.ts",
+    "generate-secrets": "node src/scripts/generate-secrets.mjs"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^8.5.0",

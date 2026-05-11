@@ -44,7 +44,7 @@ export async function can(userId: string, organizationId: string, permission: Pe
     });
     
     return !!result;
-  });
+  }, { mode: 'reader' });
 }
 
 /**
@@ -66,7 +66,7 @@ export async function getRoles(organizationId: string): Promise<TenantRole[]> {
       orderBy: (roles, { asc }) => [asc(roles.name)],
     });
     return rows as TenantRole[];
-  });
+  }, { mode: 'reader' });
 }
 
 /**
@@ -91,7 +91,7 @@ export async function getRolesWithPermissions(organizationId: string): Promise<T
         .filter(p => p.roleId === role.id)
         .map(p => p.permissionKey) as PermissionKey[]
     }));
-  });
+  }, { mode: 'reader' });
 }
 
 // Re-exported from shared constants for server-side convenience

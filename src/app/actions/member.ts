@@ -13,7 +13,7 @@ import { can, requirePermission } from "@/lib/auth/rbac-utils";
 import postgres from "postgres";
 import { recordAuditLog } from "@/lib/audit";
 import { emitEvent } from "@/lib/events";
-import { updateMemberRoleSchema, removeMemberSchema, inviteMemberSchema, cancelInvitationSchema, acceptInvitationSchema } from "@/lib/validations";
+import { updateMemberRoleSchema, removeMemberSchema, inviteMemberSchema } from "@/lib/validations";
 import { memberInviteRateLimit, enforceRateLimit } from "@/lib/rate-limit";
 
 const connectionString = process.env.DATABASE_URL!;

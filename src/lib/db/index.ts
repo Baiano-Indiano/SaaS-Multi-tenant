@@ -103,7 +103,7 @@ export const readDb = new Proxy(_readDb, {
           const result = await target.transaction(...args);
           recordReplicaSuccess();
           return result;
-        } catch (error) {
+        } catch {
           recordReplicaFailure();
           // Fallback to primary for this request
           console.warn('[DB Circuit Breaker] Read replica query failed, retrying on primary.');

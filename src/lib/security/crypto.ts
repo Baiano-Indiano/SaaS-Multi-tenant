@@ -94,7 +94,7 @@ export function decrypt(encryptedText: string): string {
     decrypted += decipher.final('utf8');
     
     return decrypted;
-  } catch (error) {
+  } catch {
     console.error('Decryption failed — key may have rotated or data is corrupted.');
     // SECURITY: Do not return the ciphertext. Return empty to signal failure.
     return '';

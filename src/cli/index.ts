@@ -1,3 +1,10 @@
+import dotenv from "dotenv";
+import path from "path";
+
+// Load environment variables from .env.local (dev) or .env (prod)
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+dotenv.config();
+
 import { Command } from 'commander';
 import * as p from '@clack/prompts';
 import { tenantCommands } from '@/cli/commands/tenant';

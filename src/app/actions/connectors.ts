@@ -140,9 +140,9 @@ export async function getConnectorsAction(orgId: string) {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
-    return await getTenantDb(session.user.id, orgId, async (tx) => {
-      return await tx.select().from(connectors).orderBy(desc(connectors.createdAt));
-    });
+    return await getTenantDb(session.user.id, orgId, async (db) => {
+      return await db.select().from(connectors).orderBy(desc(connectors.createdAt));
+    }, { mode: 'reader' });
   } catch (error: unknown) {
     console.error("Failed to fetch connectors:", error);
     return [];

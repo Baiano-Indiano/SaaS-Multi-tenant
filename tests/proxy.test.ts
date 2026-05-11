@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import { proxy } from '../src/proxy'
-import { apiRateLimit, authRateLimit } from '../src/lib/rate-limit'
+import { getApiRateLimiter, authRateLimit } from '../src/lib/rate-limit'
 import { getApiKeyFromRedis, redis } from '../src/lib/redis'
-import { getTenantDb, type TenantTransaction } from '../src/lib/db/tenant-db'
 import { Ratelimit } from '@upstash/ratelimit'
 
 type RateLimitResult = Awaited<ReturnType<Ratelimit['limit']>>
@@ -18,18 +17,27 @@ vi.mock('@sentry/nextjs', () => ({
 // Mock Redis lib
 vi.mock('../src/lib/redis', () => ({
   getApiKeyFromRedis: vi.fn(),
-  getTenantDb: vi.fn(),
   redis: {
     get: vi.fn(),
   },
-  API_KEY_REDIS_PREFIX: 'api_key:'
+  API_KEY_REDIS_PREFIX: 'api_key:',
+}))
+
+vi.mock('../src/lib/auth/api-key', () => ({
+  hashApiKey: vi.fn((k) => `hashed_${k}`)
+}))
+
+vi.mock('../src/lib/security', () => ({
+  generateNonce: vi.fn(() => 'test-nonce'),
+  buildCspHeader: vi.fn((nonce) => `test-csp nonce-${nonce}`),
 }))
 
 // Mock Rate Limit lib
+const mockApiLimit = vi.fn();
 vi.mock('../src/lib/rate-limit', () => ({
-  apiRateLimit: {
-    limit: vi.fn(),
-  },
+  getApiRateLimiter: vi.fn(() => ({
+    limit: mockApiLimit,
+  })),
   authRateLimit: {
     limit: vi.fn(),
   }
@@ -65,7 +73,7 @@ describe('Proxy Logic (src/proxy.ts)', () => {
     
     // Default mock behaviors
     vi.mocked(getApiKeyFromRedis).mockResolvedValue(null)
-    vi.mocked(apiRateLimit.limit).mockResolvedValue({
+    vi.mocked(getApiRateLimiter('free').limit).mockResolvedValue({
       success: true,
       limit: 100,
       remaining: 99,
@@ -112,7 +120,7 @@ describe('Proxy Logic (src/proxy.ts)', () => {
         userId: 'user_123'
       })
       
-      vi.mocked(apiRateLimit.limit).mockResolvedValue({
+      vi.mocked(getApiRateLimiter('free').limit).mockResolvedValue({
         success: false,
         limit: 10,
         remaining: 0,
@@ -138,7 +146,6 @@ describe('Proxy Logic (src/proxy.ts)', () => {
       })
       
       // Org requires MFA
-      vi.mocked(getTenantDb).mockImplementation(async (_uid: string, _oid: string, cb: (tx: TenantTransaction) => Promise<unknown>) => cb({} as TenantTransaction))
       vi.mocked(redis.get).mockImplementation(async (key: string) => {
         if (key === 'org:org_123') return { require2FA: true, id: 'org_123' }
         if (key === 'user:user_123:mfa') return false // User has no MFA
@@ -210,7 +217,7 @@ describe('Proxy Logic (src/proxy.ts)', () => {
       const res = await proxy(req)
       
       expect(res.headers.get('x-nonce')).toBeDefined()
-      expect(res.headers.get('Content-Security-Policy-Report-Only')).toContain('nonce-')
+      expect(res.headers.get('Content-Security-Policy')).toContain('nonce-test-nonce')
     })
   })
 })

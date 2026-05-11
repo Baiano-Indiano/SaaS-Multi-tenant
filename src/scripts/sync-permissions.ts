@@ -1,15 +1,20 @@
 
-import { db } from "../lib/db";
-import { organizations } from "../lib/db/schema";
+import dotenv from "dotenv";
+import path from "path";
 import postgres from "postgres";
-import { 
-  ROLE_PERMISSIONS_MAP 
-} from "../lib/auth/permissions";
-import { eq } from "drizzle-orm";
 
-const connectionString = process.env.DATABASE_URL!;
+// Load environment variables from .env.local (dev) or .env (prod)
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+dotenv.config();
 
 async function sync() {
+  const { db } = await import("../lib/db");
+  const { organizations } = await import("../lib/db/schema");
+  const { ROLE_PERMISSIONS_MAP } = await import("../lib/auth/permissions");
+  const { eq } = await import("drizzle-orm");
+
+  const connectionString = process.env.DATABASE_URL!;
+  
   const specificOrgSlug = process.argv[2];
   
   console.log("🚀 Starting permission synchronization...");

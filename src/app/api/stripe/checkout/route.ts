@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { organizations, members } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { organizations } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { PLANS } from "@/lib/billing/plans";
 import { requirePermission } from "@/lib/auth/rbac-utils";
 
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
         });
 
         return NextResponse.json({ url: stripeSession.url });
-    } catch (error: unknown) {
+    } catch (error) {
         console.error("Stripe Checkout error:", error);
         return new NextResponse("Internal Server Error", { status: 500 });
     }

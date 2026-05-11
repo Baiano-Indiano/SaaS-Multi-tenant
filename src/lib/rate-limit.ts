@@ -133,7 +133,7 @@ export async function enforceRateLimit(
   limiter: Ratelimit,
   identifier: string
 ): Promise<void> {
-  const { success, remaining, reset } = await limiter.limit(identifier);
+  const { success, reset } = await limiter.limit(identifier);
   if (!success) {
     const retryAfterSeconds = Math.ceil((reset - Date.now()) / 1000);
     throw new Error(
