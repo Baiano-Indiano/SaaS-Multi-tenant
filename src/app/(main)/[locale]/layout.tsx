@@ -32,6 +32,8 @@ import { Suspense } from "react";
 
 import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 
+import { Analytics } from "@vercel/analytics/react";
+
 export default async function LocaleLayout({
   children,
   params
@@ -73,6 +75,7 @@ export default async function LocaleLayout({
             </ConfirmProvider>
           </TooltipProvider>
         </NextIntlClientProvider>
+        <Analytics />
       </body>
     </html>
   );
