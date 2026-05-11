@@ -10,6 +10,7 @@ import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { PermissionKey } from "@/lib/auth/permissions";
 import { recordAuditLog } from "@/lib/audit";
+import { createRoleSchema, updateRoleSchema, deleteRoleSchema, syncRolePermissionsSchema } from "@/lib/validations";
 
 /**
  * Creates a new custom role within the organization's tenant schema.
@@ -27,8 +28,11 @@ export async function createRoleAction(formData: {
 
   // Step 1: Permission & Tenant Validation (Rules 1 & 2)
   return await getTenantDb(session.user.id, formData.orgId, async (tx) => {
+    // Input Validation
+    const validated = createRoleSchema.parse(formData);
+
     // Verify user has 'roles:manage' permission in this context
-    await requirePermission(session.user.id, formData.orgId, "roles:manage");
+    await requirePermission(session.user.id, validated.orgId, "roles:manage");
 
     const roleId = randomUUID();
 
@@ -80,7 +84,10 @@ export async function updateRoleAction(formData: {
   if (!session?.user) throw new Error("Unauthorized");
 
   return await getTenantDb(session.user.id, formData.orgId, async (tx) => {
-    await requirePermission(session.user.id, formData.orgId, "roles:manage");
+    // Input Validation
+    const validated = updateRoleSchema.parse(formData);
+
+    await requirePermission(session.user.id, validated.orgId, "roles:manage");
 
     // Security check: Verify if the role is a protected system role
     const existingRole = await tx.query.roles.findFirst({
@@ -135,7 +142,10 @@ export async function deleteRoleAction(roleId: string, orgId: string, orgSlug: s
   if (!session?.user) throw new Error("Unauthorized");
 
   return await getTenantDb(session.user.id, orgId, async (tx) => {
-    await requirePermission(session.user.id, orgId, "roles:manage");
+    // Input Validation
+    const validated = deleteRoleSchema.parse({ roleId, orgId, orgSlug });
+
+    await requirePermission(session.user.id, validated.orgId, "roles:manage");
 
     // Security check: Verify if the role is a protected system role
     const existingRole = await tx.query.roles.findFirst({
@@ -174,9 +184,12 @@ export async function syncRolePermissionsAction(orgId: string) {
   if (!session?.user) throw new Error("Unauthorized");
 
   return await getTenantDb(session.user.id, orgId, async (tx) => {
+    // Input Validation
+    const validated = syncRolePermissionsSchema.parse({ orgId });
+
     // Security: Require roles:manage permission to prevent unauthorized permission resets.
     // This was previously skipped with a TODO comment, but it's critical to enforce.
-    await requirePermission(session.user.id, orgId, "roles:manage");
+    await requirePermission(session.user.id, validated.orgId, "roles:manage");
     
     const standardRoles = await tx.query.roles.findMany({
       where: (roles, { inArray }) => inArray(roles.slug, ["admin", "member", "viewer"])

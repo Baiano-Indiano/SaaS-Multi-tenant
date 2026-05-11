@@ -6,6 +6,7 @@ import { getTenantDb as getDb } from "@/lib/db/tenant-db";
 import { auditLogs } from "@/lib/db/schema";
 import { desc, and, ilike, or, eq } from "drizzle-orm";
 import { cleanupAuditLogs } from "@/lib/audit";
+import { requirePermission } from "@/lib/auth/rbac-utils";
 
 export async function getAuditLogsAction(
   organizationId: string, 
@@ -24,6 +25,9 @@ export async function getAuditLogsAction(
   }
 
   const { user } = session;
+
+  // RBAC: Verify user has permission to read audit logs
+  await requirePermission(user.id, organizationId, "audit_logs:read");
 
   return await getDb(user.id, organizationId, async (tx) => {
     let conditions = undefined;
@@ -78,6 +82,9 @@ export async function triggerCleanupAction(organizationId: string) {
   if (!session) throw new Error("Unauthorized");
   
   const { user } = session;
+
+  // RBAC: Verify user has permission to manage org/audit logs
+  await requirePermission(user.id, organizationId, "org:update");
 
   return await getDb(user.id, organizationId, async (tx) => {
     await cleanupAuditLogs(tx);

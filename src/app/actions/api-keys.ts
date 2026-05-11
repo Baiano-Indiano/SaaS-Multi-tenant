@@ -150,6 +150,9 @@ export async function getApiKeysAction(orgId: string) {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // RBAC: Verify user has permission to view API keys
+    await requirePermission(session.user.id, orgId, "org:update");
+
     return await getTenantDb(session.user.id, orgId, async (tx) => {
       return await tx.select().from(apiKeys).orderBy(apiKeys.createdAt);
     });

@@ -11,6 +11,12 @@ import { revalidatePath } from "next/cache";
 import { PLANS, PlanType } from "@/lib/billing/plans";
 import { recordAuditLog } from "@/lib/audit";
 import { can } from "@/lib/auth/rbac-utils";
+import { 
+  addCustomDomainSchema, 
+  removeCustomDomainSchema, 
+  checkDomainStatusSchema 
+} from "@/lib/validations";
+import { enforceRateLimit, domainActionRateLimit } from "@/lib/rate-limit";
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || '',
@@ -18,6 +24,8 @@ const redis = new Redis({
 });
 
 export async function addDomainAction(orgId: string, domain: string) {
+  const validated = addCustomDomainSchema.parse({ orgId, domain });
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -25,7 +33,7 @@ export async function addDomainAction(orgId: string, domain: string) {
   if (!session) throw new Error("Não autorizado");
 
   // RBAC: Verify permission to manage org settings
-  const allowed = await can(session.user.id, orgId, "org:update");
+  const allowed = await can(session.user.id, validated.orgId, "org:update");
   if (!allowed) {
     return { error: "Você não tem permissão para gerenciar domínios." };
   }
@@ -33,7 +41,7 @@ export async function addDomainAction(orgId: string, domain: string) {
   const [org] = await db
     .select()
     .from(organizations)
-    .where(eq(organizations.id, orgId));
+    .where(eq(organizations.id, validated.orgId));
 
   if (!org) throw new Error("Organização não encontrada");
 
@@ -44,7 +52,7 @@ export async function addDomainAction(orgId: string, domain: string) {
   }
 
   // 1. Add to Vercel
-  const vercelResult = await addDomainToProject(domain);
+  const vercelResult = await addDomainToProject(validated.domain);
   if (vercelResult.error) {
     return { error: vercelResult.error };
   }
@@ -53,28 +61,30 @@ export async function addDomainAction(orgId: string, domain: string) {
   await db
     .update(organizations)
     .set({
-      customDomain: domain,
+      customDomain: validated.domain,
       domainVerified: false,
     })
-    .where(eq(organizations.id, orgId));
+    .where(eq(organizations.id, validated.orgId));
 
   // 3. Sync to Redis for Middleware (DOM-03)
-  await redis.set(`domain:${domain}`, { slug: org.slug, id: org.id });
+  await redis.set(`domain:${validated.domain}`, { slug: org.slug, id: org.id });
 
   revalidatePath(`/org/${org.slug}/settings/domains`);
 
   // Record Audit Log (Phase 11)
   await recordAuditLog({
-    organizationId: orgId,
+    organizationId: validated.orgId,
     action: "DOMAIN_ADDED",
     entityType: "DOMAIN",
-    details: `Added custom domain: ${domain}`
+    details: `Added custom domain: ${validated.domain}`
   });
 
   return { success: true };
 }
 
 export async function removeDomainAction(orgId: string) {
+  const validated = removeCustomDomainSchema.parse({ orgId });
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -82,7 +92,7 @@ export async function removeDomainAction(orgId: string) {
   if (!session) throw new Error("Não autorizado");
 
   // RBAC: Verify permission to manage org settings
-  const allowed = await can(session.user.id, orgId, "org:update");
+  const allowed = await can(session.user.id, validated.orgId, "org:update");
   if (!allowed) {
     return { error: "Você não tem permissão para gerenciar domínios." };
   }
@@ -90,7 +100,7 @@ export async function removeDomainAction(orgId: string) {
   const [org] = await db
     .select()
     .from(organizations)
-    .where(eq(organizations.id, orgId));
+    .where(eq(organizations.id, validated.orgId));
 
   if (!org || !org.customDomain) return { success: true };
 
@@ -106,7 +116,7 @@ export async function removeDomainAction(orgId: string) {
       customDomain: null,
       domainVerified: false,
     })
-    .where(eq(organizations.id, orgId));
+    .where(eq(organizations.id, validated.orgId));
 
   // 3. Remove from Redis
   await redis.del(`domain:${domainToRemove}`);
@@ -115,7 +125,7 @@ export async function removeDomainAction(orgId: string) {
 
   // Record Audit Log (Phase 11)
   await recordAuditLog({
-    organizationId: orgId,
+    organizationId: validated.orgId,
     action: "DOMAIN_REMOVED",
     entityType: "DOMAIN",
     details: `Removed custom domain: ${domainToRemove}`
@@ -125,15 +135,19 @@ export async function removeDomainAction(orgId: string) {
 }
 
 export async function checkDomainStatusAction(orgId: string) {
+  const validated = checkDomainStatusSchema.parse({ orgId });
+
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session || session.session.activeOrganizationId !== orgId) {
+  if (!session || session.session.activeOrganizationId !== validated.orgId) {
     throw new Error("Unauthorized");
   }
+
+  await enforceRateLimit(domainActionRateLimit, session.user.id);
 
   const [org] = await db
     .select()
     .from(organizations)
-    .where(eq(organizations.id, orgId));
+    .where(eq(organizations.id, validated.orgId));
 
   if (!org || !org.customDomain) return null;
 
@@ -144,8 +158,15 @@ export async function checkDomainStatusAction(orgId: string) {
     await db
       .update(organizations)
       .set({ domainVerified: true })
-      .where(eq(organizations.id, orgId));
+      .where(eq(organizations.id, validated.orgId));
     
+    await recordAuditLog({
+      organizationId: validated.orgId,
+      action: "DOMAIN_VERIFIED",
+      entityType: "DOMAIN",
+      details: `Custom domain ${org.customDomain} verified successfully.`
+    });
+
     revalidatePath(`/org/${org.slug}/settings/domains`);
   }
 

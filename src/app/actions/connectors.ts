@@ -11,6 +11,7 @@ import { requirePermission } from "@/lib/auth/rbac-utils";
 import { workflows } from "@/lib/db/schema";
 import { SUPPORTED_EVENTS } from "@/lib/events";
 import { validateExternalUrl } from "@/lib/security/url-validator";
+import { createConnectorSchema, deleteConnectorSchema, testConnectorSchema, toggleConnectorEventSchema } from "@/lib/validations";
 
 /**
  * createConnectorAction
@@ -26,8 +27,11 @@ export async function createConnectorAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // Input Validation
+    const validated = createConnectorSchema.parse(data);
+
     // RBAC: Verify user has permission to manage integrations
-    await requirePermission(session.user.id, data.orgId, "org:update");
+    await requirePermission(session.user.id, validated.orgId, "org:update");
 
     // SSRF-safe URL validation
     validateExternalUrl(data.webhookUrl);
@@ -95,8 +99,11 @@ export async function deleteConnectorAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // Input Validation
+    const validated = deleteConnectorSchema.parse(data);
+
     // RBAC: Verify user has permission to manage integrations
-    await requirePermission(session.user.id, data.orgId, "org:update");
+    await requirePermission(session.user.id, validated.orgId, "org:update");
 
     await getTenantDb(session.user.id, data.orgId, async (tx) => {
       await tx.delete(connectors).where(eq(connectors.id, data.connectorId));
@@ -150,8 +157,11 @@ export async function testConnectorAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // Input Validation
+    const validated = testConnectorSchema.parse(data);
+
     // RBAC: Verify user has permission to test integrations
-    await requirePermission(session.user.id, data.orgId, "org:update");
+    await requirePermission(session.user.id, validated.orgId, "org:update");
 
     const connector = await getTenantDb(session.user.id, data.orgId, async (tx) => {
       const results = await tx.select().from(connectors).where(eq(connectors.id, data.connectorId));
@@ -243,8 +253,11 @@ export async function toggleConnectorEventAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // Input Validation
+    const validated = toggleConnectorEventSchema.parse(data);
+
     // RBAC: Verify user has permission to manage integrations
-    await requirePermission(session.user.id, data.orgId, "org:update");
+    await requirePermission(session.user.id, validated.orgId, "org:update");
 
     await getTenantDb(session.user.id, data.orgId, async (tx) => {
       if (data.isActive) {

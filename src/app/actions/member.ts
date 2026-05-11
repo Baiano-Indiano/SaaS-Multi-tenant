@@ -13,6 +13,8 @@ import { can, requirePermission } from "@/lib/auth/rbac-utils";
 import postgres from "postgres";
 import { recordAuditLog } from "@/lib/audit";
 import { emitEvent } from "@/lib/events";
+import { updateMemberRoleSchema, removeMemberSchema, inviteMemberSchema, cancelInvitationSchema, acceptInvitationSchema } from "@/lib/validations";
+import { memberInviteRateLimit, enforceRateLimit } from "@/lib/rate-limit";
 
 const connectionString = process.env.DATABASE_URL!;
 
@@ -26,8 +28,12 @@ export async function updateMemberRoleAction(formData: {
   if (!session?.user) return { success: false, error: "Sessão expirada. Faça login novamente." };
 
   try {
+    // Input Validation
+    const validated = updateMemberRoleSchema.parse(formData);
+    formData = validated;
+
     // RBAC: Verify user has permission to assign roles
-    await requirePermission(session.user.id, formData.orgId, "roles:assign");
+    await requirePermission(session.user.id, validated.orgId, "roles:assign");
 
     // getTenantDb performs the Membership check (Rule 1)
     const result = await getTenantDb(session.user.id, formData.orgId, async (tx) => {
@@ -95,16 +101,41 @@ export async function removeMemberAction(memberId: string, orgId: string, orgSlu
   if (!session?.user) return { success: false, error: "Sessão expirada. Faça login novamente." };
 
   try {
+    // Input Validation
+    const validated = removeMemberSchema.parse({ memberId, orgId, orgSlug });
+    memberId = validated.memberId;
+    orgId = validated.orgId;
+    orgSlug = validated.orgSlug;
+
     const allowed = await can(session.user.id, orgId, "members:remove");
     if (!allowed) return { success: false, error: "Você não tem permissão para remover membros." };
 
-    // Prevent removing the last admin (complex check, for now simple delete)
-    // In a real app, you'd check if this is the only admin.
-
+    // Last Admin Protection: prevent orphaning the org
     const memberToRemove = await db.query.members.findFirst({
       where: eq(members.id, memberId),
       with: { user: true }
     });
+
+    if (memberToRemove) {
+      const isAdminOrOwner = memberToRemove.role === "admin" || memberToRemove.role === "owner";
+      if (isAdminOrOwner) {
+        const adminMembers = await db.query.members.findMany({
+          where: and(
+            eq(members.organizationId, orgId),
+          ),
+        });
+        const adminCount = adminMembers.filter(
+          m => m.role === "admin" || m.role === "owner"
+        ).length;
+
+        if (adminCount <= 1) {
+          return {
+            success: false,
+            error: "Não é possível remover o último administrador da organização. Promova outro membro antes."
+          };
+        }
+      }
+    }
 
     await db.delete(members)
       .where(
@@ -149,8 +180,14 @@ export async function inviteMemberAction(data: {
   if (!session?.user) return { success: false, error: "Sessão expirada. Faça login novamente." };
 
   try {
+    // Input Validation
+    const validated = inviteMemberSchema.parse(data);
+
+    // Rate Limiting: 20 invites per hour per user
+    await enforceRateLimit(memberInviteRateLimit, session.user.id);
+
     // RBAC: Verify user has permission to invite members
-    await requirePermission(session.user.id, data.orgId, "members:invite");
+    await requirePermission(session.user.id, validated.orgId, "members:invite");
 
     const result = await getTenantDb(session.user.id, data.orgId, async (tx) => {
       // 1. Plan validation

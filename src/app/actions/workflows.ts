@@ -9,6 +9,7 @@ import { revalidatePath } from "next/cache";
 import { recordAuditLog } from "@/lib/audit";
 import { requirePermission } from "@/lib/auth/rbac-utils";
 import { validateExternalUrl } from "@/lib/security/url-validator";
+import { createWorkflowSchema, deleteWorkflowSchema, retryWorkflowDeliverySchema } from "@/lib/validations";
 
 /**
  * createWorkflowAction
@@ -25,8 +26,11 @@ export async function createWorkflowAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // Input Validation
+    const validated = createWorkflowSchema.parse(data);
+
     // RBAC: Verify user has permission to manage workflows
-    await requirePermission(session.user.id, data.orgId, "org:update");
+    await requirePermission(session.user.id, validated.orgId, "org:update");
 
     let actionConfig = "{}";
     if (data.targetUrl) {
@@ -80,8 +84,11 @@ export async function deleteWorkflowAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // Input Validation
+    const validated = deleteWorkflowSchema.parse(data);
+
     // RBAC: Verify user has permission to manage workflows
-    await requirePermission(session.user.id, data.orgId, "org:update");
+    await requirePermission(session.user.id, validated.orgId, "org:update");
 
     await getTenantDb(session.user.id, data.orgId, async (tx) => {
       await tx.delete(workflows).where(eq(workflows.id, data.workflowId));
@@ -157,8 +164,11 @@ export async function retryWorkflowDeliveryAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // Input Validation
+    const validated = retryWorkflowDeliverySchema.parse(data);
+
     // RBAC: Verify user has permission to retry workflow deliveries
-    await requirePermission(session.user.id, data.orgId, "org:update");
+    await requirePermission(session.user.id, validated.orgId, "org:update");
 
     const { webhookDeliveries, workflows } = await import("@/lib/db/schema");
     const { Client } = await import("@upstash/qstash");

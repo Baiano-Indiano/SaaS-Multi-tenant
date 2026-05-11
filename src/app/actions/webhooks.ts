@@ -9,6 +9,7 @@ import { revalidatePath } from "next/cache";
 import { recordAuditLog } from "@/lib/audit";
 import { requirePermission } from "@/lib/auth/rbac-utils";
 import { validateExternalUrl } from "@/lib/security/url-validator";
+import { createWebhookSchema, deleteWebhookSchema } from "@/lib/validations";
 
 /**
  * createWebhookAction
@@ -23,8 +24,11 @@ export async function createWebhookAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // Input Validation
+    const validated = createWebhookSchema.parse(data);
+
     // RBAC: Verify permission to manage webhooks
-    await requirePermission(session.user.id, data.orgId, "org:update");
+    await requirePermission(session.user.id, validated.orgId, "org:update");
 
     // SSRF-safe URL validation
     validateExternalUrl(data.url);
@@ -76,8 +80,11 @@ export async function deleteWebhookAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // Input Validation
+    const validated = deleteWebhookSchema.parse(data);
+
     // RBAC: Verify permission to manage webhooks
-    await requirePermission(session.user.id, data.orgId, "org:update");
+    await requirePermission(session.user.id, validated.orgId, "org:update");
 
     await getTenantDb(session.user.id, data.orgId, async (tx) => {
       await tx.delete(webhooks).where(eq(webhooks.id, data.webhookId));

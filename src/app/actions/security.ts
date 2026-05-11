@@ -7,6 +7,8 @@ import { organizations, users, sessions } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { recordAuditLog } from "@/lib/audit";
 import { can } from "@/lib/auth/rbac-utils";
+import { toggle2FAEnforcementSchema, check2FAComplianceSchema, listMemberSessionsSchema, revokeMemberSessionsSchema, revokeMemberSessionSchema } from "@/lib/validations";
+import { securityActionRateLimit, enforceRateLimit } from "@/lib/rate-limit";
 
 type SecurityActionResponse =
   | { success: true }
@@ -27,6 +29,14 @@ export async function toggle2FAEnforcementAction(
   }
 
   try {
+    // Input Validation
+    const validated = toggle2FAEnforcementSchema.parse({ organizationId, enabled });
+    organizationId = validated.organizationId;
+    enabled = validated.enabled;
+
+    // Rate Limiting
+    await enforceRateLimit(securityActionRateLimit, session.user.id);
+
     // 1. Verify Permission
     const allowed = await can(session.user.id, organizationId, "security:manage");
     if (!allowed) {
@@ -67,6 +77,11 @@ export async function check2FAComplianceAction(
     if (!session?.user) {
       return { isCompliant: true };
     }
+
+    // Input Validation
+    const validated = check2FAComplianceSchema.parse({ userId, organizationId });
+    userId = validated.userId;
+    organizationId = validated.organizationId;
 
     // Prevent IDOR: only allow checking own compliance or with security:manage
     if (session.user.id !== userId) {
