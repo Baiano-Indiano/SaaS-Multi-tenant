@@ -13,6 +13,7 @@ This roadmap tracks the evolution of the **Multi-Tenant SaaS Starter**.
 - [ ] **Phase 35: Enterprise SSO & Domain Verification** (SSO-01, SSO-02, SSO-03)
 - [ ] **Phase 36: Dashboard API Playground** (DX-01, DX-02, DX-03)
 - [x] **Phase 37: Enterprise Security & Scalability** (SEC-01, SEC-02, SEC-03)
+- [x] **Phase 38: Infrastructure Robustness Hardening** (ROB-01, ROB-02, ROB-03, ROB-04)
 
 ---
 
@@ -51,6 +52,13 @@ This roadmap tracks the evolution of the **Multi-Tenant SaaS Starter**.
 - [x] Build SIEM Integration with S3-compatible daily exports.
 - [x] Configure Database Connection Pooling and Read Replica routing.
 - [x] Implement Session Anomaly Detection with automated email alerts.
+
+### Phase 38: Infrastructure Robustness Hardening
+**Goal:** Harden the platform against runtime failures, alert spam, and configuration errors.
+- [x] Zod boot-time validation for all critical environment variables.
+- [x] Circuit Breaker for DB read replicas (auto-fallback after 3 failures).
+- [x] SIEM export observability (exportStatus/lastError + retry with backoff).
+- [x] Alert rate limiting (30-min email cooldown for anomaly detection).
 
 ---
 
