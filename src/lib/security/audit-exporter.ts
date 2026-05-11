@@ -61,13 +61,37 @@ export async function getLogsForExport(orgId: string, from: Date, to: Date) {
   }, { mode: 'reader' });
 }
 
-
 /**
  * runDailyAuditExport
  * 
  * Logic for the daily cron job. Finds organizations with active S3/GCS exports,
  * aggregates their logs for the last 24h, and uploads them.
+ * 
+ * Hardened with:
+ * - Retry with exponential backoff (3 attempts)
+ * - Error state persistence for admin observability
  */
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 1000;
+
+async function uploadWithRetry(
+  s3Client: S3Client,
+  params: { Bucket: string; Key: string; Body: string; ContentType: string },
+  retries = MAX_RETRIES
+): Promise<void> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await s3Client.send(new PutObjectCommand(params));
+      return;
+    } catch (error) {
+      if (attempt === retries) throw error;
+      const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+      console.warn(`[Audit Exporter] Upload attempt ${attempt}/${retries} failed. Retrying in ${delay}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+}
+
 export async function runDailyAuditExport(orgId: string) {
   console.log(`[Audit Exporter] Starting daily export for organization ${orgId}`);
 
@@ -102,7 +126,7 @@ export async function runDailyAuditExport(orgId: string) {
     const s3Client = new S3Client({
       region: config.region || 'us-east-1',
       endpoint: config.endpoint || undefined,
-      forcePathStyle: !!config.endpoint, // Often needed for S3-compatible APIs
+      forcePathStyle: !!config.endpoint,
       credentials: {
         accessKeyId: config.accessKeyId ? decrypt(config.accessKeyId) : '',
         secretAccessKey: config.secretAccessKey ? decrypt(config.secretAccessKey) : '',
@@ -111,24 +135,47 @@ export async function runDailyAuditExport(orgId: string) {
 
     console.log(`[Audit Exporter] Uploading ${logs.length} logs to S3 bucket "${config.bucketName}" as "${fileName}"`);
 
-    await s3Client.send(new PutObjectCommand({
+    await uploadWithRetry(s3Client, {
       Bucket: config.bucketName,
       Key: `exports/${fileName}`,
       Body: exportData,
       ContentType: 'application/json',
-    }));
+    });
 
-    // Update last export timestamp
+    // Success: update status and clear any previous error
     await withAdminTenantDb(orgId, async (tx) => {
       await tx
         .update(auditExportConfigs)
-        .set({ lastExportAt: now, updatedAt: now })
+        .set({
+          lastExportAt: now,
+          exportStatus: "success",
+          lastError: null,
+          updatedAt: now,
+        })
         .where(eq(auditExportConfigs.id, config.id));
     });
 
     return { success: true, count: logs.length, fileName };
   } catch (error) {
-    console.error(`[Audit Exporter] Failed to upload logs for ${orgId}:`, error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown export error";
+    console.error(`[Audit Exporter] Failed to upload logs for ${orgId}:`, errorMessage);
+
+    // Persist error state so admin can see it in the dashboard
+    try {
+      await withAdminTenantDb(orgId, async (tx) => {
+        await tx
+          .update(auditExportConfigs)
+          .set({
+            exportStatus: "error",
+            lastError: errorMessage.substring(0, 500),
+            updatedAt: now,
+          })
+          .where(eq(auditExportConfigs.id, config.id));
+      });
+    } catch (dbError) {
+      console.error(`[Audit Exporter] Could not persist error state:`, dbError);
+    }
+
     throw error;
   }
 }

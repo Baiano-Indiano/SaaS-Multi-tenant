@@ -278,6 +278,8 @@ export const auditExportConfigs = pgTable("audit_export_config", {
 	secretAccessKey: text("secretAccessKey"),
 	frequency: text("frequency").notNull().default("daily"), // 'daily' | 'weekly'
 	isActive: boolean("isActive").notNull().default(true),
+	exportStatus: text("exportStatus").notNull().default("idle"), // 'idle' | 'success' | 'error'
+	lastError: text("lastError"), // Human-readable error message for admin UI
 	lastExportAt: timestamp("lastExportAt"),
 	createdAt: timestamp("createdAt").notNull().defaultNow(),
 	updatedAt: timestamp("updatedAt").notNull().defaultNow(),
