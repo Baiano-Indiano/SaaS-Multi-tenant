@@ -42,29 +42,29 @@ export function HeroAssembly() {
       // Animate the plates from scattered to assembled
       // Plate 1: Sidebar
       timeline.fromTo(".plate-sidebar", 
-        { x: -300, y: 150, opacity: 0, rotateY: 30, rotateX: 5, skewX: 10, scale: 0.8 },
-        { x: 0, y: 0, opacity: 1, rotateY: 0, rotateX: 0, skewX: 0, scale: 1, ease: "power2.inOut" },
+        { x: -300, y: 150, opacity: 0, rotateY: 30, rotateX: 5, skewX: 10, scale: 0.8, filter: "blur(20px)" },
+        { x: 0, y: 0, opacity: 1, rotateY: 0, rotateX: 0, skewX: 0, scale: 1, filter: "blur(0px)", ease: "expo.inOut" },
         0
       );
 
       // Plate 2: Main Content / Header
       timeline.fromTo(".plate-header", 
-        { y: -200, opacity: 0, rotateX: -15, scale: 1.1 },
-        { y: 0, opacity: 1, rotateX: 0, scale: 1, ease: "power2.inOut" },
+        { y: -200, opacity: 0, rotateX: -15, scale: 1.1, filter: "blur(20px)" },
+        { y: 0, opacity: 1, rotateX: 0, scale: 1, filter: "blur(0px)", ease: "expo.inOut" },
         0.1
       );
 
       // Plate 3: Analytics Card
       timeline.fromTo(".plate-analytics", 
-        { x: 400, y: 300, opacity: 0, rotateZ: 5, rotateY: -20, scale: 0.9 },
-        { x: 0, y: 0, opacity: 1, rotateZ: 0, rotateY: 0, scale: 1, ease: "power2.inOut" },
+        { x: 400, y: 300, opacity: 0, rotateZ: 5, rotateY: -20, scale: 0.9, filter: "blur(20px)" },
+        { x: 0, y: 0, opacity: 1, rotateZ: 0, rotateY: 0, scale: 1, filter: "blur(0px)", ease: "expo.inOut" },
         0.2
       );
 
       // Plate 4: Activity Log
       timeline.fromTo(".plate-activity", 
-        { x: 250, y: -250, opacity: 0, rotateY: -25, skewY: 5, scale: 0.85 },
-        { x: 0, y: 0, opacity: 1, rotateY: 0, skewY: 0, scale: 1, ease: "power2.inOut" },
+        { x: 250, y: -250, opacity: 0, rotateY: -25, skewY: 5, scale: 0.85, filter: "blur(20px)" },
+        { x: 0, y: 0, opacity: 1, rotateY: 0, skewY: 0, scale: 1, filter: "blur(0px)", ease: "expo.inOut" },
         0.15
       );
 

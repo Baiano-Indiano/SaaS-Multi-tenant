@@ -7,6 +7,7 @@ export const PLANS = {
 		maxProjects: 3,
 		customRoles: false,
 		customDomains: false,
+		rateLimit: 600, // 10 req/s (600/min)
 		price: "R$ 0",
 		priceId: null,
 		features: [
@@ -23,6 +24,7 @@ export const PLANS = {
 		maxProjects: 10,
 		customRoles: true,
 		customDomains: false,
+		rateLimit: 3000, // 50 req/s (3000/min)
 		price: "R$ 19,90",
 		priceId: "price_1TOSU9Kgmt5iTW4YF8ea1wPQ",
 		features: [
@@ -41,6 +43,7 @@ export const PLANS = {
 		maxProjects: 999,
 		customRoles: true,
 		customDomains: true,
+		rateLimit: 6000, // 100 req/s (6000/min)
 		price: "R$ 49,90",
 		priceId: "price_1TOSUAKgmt5iTW4YAkDAJSxn",
 		features: [

@@ -126,7 +126,7 @@ export function OrgSwitcher({ organizations, activeOrgId }: OrgSwitcherProps) {
       <DropdownMenu>
         <DropdownMenuTrigger
           ref={triggerRef}
-          className="flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm h-12 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors outline-none"
+          className="flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm h-10 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors outline-none"
           onMouseEnter={() => onTriggerEnterRef.current()}
           onMouseLeave={() => onTriggerLeaveRef.current()}
         >

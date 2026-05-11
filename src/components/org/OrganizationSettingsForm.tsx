@@ -106,7 +106,7 @@ export function OrganizationSettingsForm({ organization }: OrganizationSettingsF
                 <Input
                   id="name"
                   {...register("name")}
-                  className="bg-zinc-900/50 border-zinc-800 text-zinc-100 focus:ring-1 focus:ring-zinc-700 h-11"
+                  className="bg-zinc-900/50 border-zinc-800 text-zinc-100 focus:ring-1 focus:ring-zinc-700 h-10"
                   placeholder={t("displayNamePlaceholder")}
                 />
                 {errors.name && (
@@ -120,13 +120,13 @@ export function OrganizationSettingsForm({ organization }: OrganizationSettingsF
                   {t("orgUrl")}
                 </Label>
                 <div className="flex items-center group">
-                  <div className="bg-zinc-900 border border-r-0 border-zinc-800 px-3 h-11 flex items-center rounded-l-md text-zinc-500 text-sm font-mono transition-colors group-focus-within:border-zinc-700">
+                  <div className="bg-zinc-900 border border-r-0 border-zinc-800 px-3 h-10 flex items-center rounded-l-md text-zinc-500 text-sm font-mono transition-colors group-focus-within:border-zinc-700">
                     /
                   </div>
                   <Input
                     id="slug"
                     {...register("slug")}
-                    className="bg-zinc-900/50 border-zinc-800 text-zinc-100 focus:ring-1 focus:ring-zinc-700 rounded-l-none h-11 font-mono text-sm"
+                    className="bg-zinc-900/50 border-zinc-800 text-zinc-100 focus:ring-1 focus:ring-zinc-700 rounded-l-none h-10 font-mono text-sm"
                     placeholder={t("orgUrlPlaceholder")}
                   />
                 </div>
@@ -141,7 +141,7 @@ export function OrganizationSettingsForm({ organization }: OrganizationSettingsF
               type="submit"
               isLoading={isLoading}
               disabled={isLoading || !isDirty}
-              className="bg-zinc-100 text-zinc-950 hover:bg-white font-bold px-10 h-11 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+              className="bg-zinc-100 text-zinc-950 hover:bg-white font-bold px-10 h-10 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100"
             >
               {t("saveChanges")}
             </Button>

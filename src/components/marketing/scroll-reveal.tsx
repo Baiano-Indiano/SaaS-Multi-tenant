@@ -14,6 +14,7 @@ interface ScrollRevealProps {
   duration?: number;
   distance?: number;
   stagger?: number;
+  blur?: number;
   once?: boolean;
   className?: string;
 }
@@ -25,6 +26,7 @@ export function ScrollReveal({
   duration = 1,
   distance = 30,
   stagger = 0,
+  blur = 10,
   once = true,
   className,
 }: ScrollRevealProps) {
@@ -45,6 +47,7 @@ export function ScrollReveal({
         x,
         y,
         opacity: 0,
+        filter: blur > 0 ? `blur(${blur}px)` : "none",
         duration,
         delay,
         stagger,

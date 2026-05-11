@@ -1,4 +1,4 @@
-import { db } from "./index";
+import { db, readDb } from "./index";
 import { members, organizations } from "./schema";
 import { and, eq, sql } from "drizzle-orm";
 import type { ExtractTablesWithRelations } from "drizzle-orm";
@@ -19,20 +19,20 @@ export type TenantTransaction = PgTransaction<
  * 
  * The core utility for Hardenend Multi-Tenancy.
  * 
- * 1. Validates that the userId actually belongs to the organization (Rule 1).
- * 2. Sets the PostgreSQL search_path to the tenant's schema.
- * 3. Returns a Drizzle instance restricted to that context.
- * 
- * @param userId - The ID of the user making the request (from session).
+ * @param userId - The ID of the user making the request.
  * @param organizationId - The target organization ID.
+ * @param callback - Logic to execute.
+ * @param options - Options like choosing between 'writer' or 'reader'.
  */
 export async function getTenantDb<T>(
   userId: string,
   organizationId: string,
-  callback: (tx: TenantTransaction) => Promise<T>
+  callback: (tx: TenantTransaction) => Promise<T>,
+  options: { mode?: 'writer' | 'reader' } = { mode: 'writer' }
 ): Promise<T> {
-  // 1. Pre-flight Membership check (Rule 1: Schema-Owner Validation)
-  // We query the public schema to verify if this user is a member of the org.
+  const targetDb = options.mode === 'reader' ? readDb : db;
+
+  // 1. Pre-flight Membership check
   const member = await db.query.members.findFirst({
     where: and(
       eq(members.userId, userId),
@@ -49,32 +49,30 @@ export async function getTenantDb<T>(
 
   const tenantSchema = member.organization.tenantSchemaName;
 
-  /**
-   * 2. Transaction-level Isolation
-   * 
-   * We use a transaction to ensure that the 'SET search_path' only affects 
-   * the current connection for the duration of the query callback.
-   */
   if (!SAFE_SCHEMA_REGEX.test(tenantSchema)) {
     throw new Error("Invalid tenant schema name detected. Aborting.");
   }
 
-  return await db.transaction(async (tx) => {
+  /**
+   * 2. Transaction-level Isolation
+   * Note: We use a transaction to set search_path safely.
+   */
+  return await targetDb.transaction(async (tx) => {
     await tx.execute(sql.raw(`SET search_path TO "${tenantSchema}", public`));
-    
-    // Execute the business logic within this isolated context
-    return await callback(tx);
+    return await callback(tx as unknown as TenantTransaction);
   });
 }
 
 /**
  * Administrative bypass for getTenantDb (use with CAUTION)
- * Only for background jobs or migrations where no User is present.
  */
 export async function withAdminTenantDb<T>(
   organizationId: string,
-  callback: (tx: TenantTransaction) => Promise<T>
+  callback: (tx: TenantTransaction) => Promise<T>,
+  options: { mode?: 'writer' | 'reader' } = { mode: 'writer' }
 ): Promise<T> {
+  const targetDb = options.mode === 'reader' ? readDb : db;
+
   const org = await db.query.organizations.findFirst({
     where: eq(organizations.id, organizationId),
   });
@@ -87,8 +85,9 @@ export async function withAdminTenantDb<T>(
     throw new Error("Invalid tenant schema name detected. Aborting.");
   }
 
-  return await db.transaction(async (tx) => {
+  return await targetDb.transaction(async (tx) => {
     await tx.execute(sql.raw(`SET search_path TO "${org.tenantSchemaName}", public`));
-    return await callback(tx);
+    return await callback(tx as unknown as TenantTransaction);
   });
 }
+

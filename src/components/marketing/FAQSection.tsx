@@ -28,15 +28,15 @@ function FAQItem({ question, answer }: { question: string; answer: string; index
         gsap.to(contentRef.current, {
           height: "auto",
           opacity: 1,
-          duration: 0.4,
-          ease: "power2.out",
+          duration: 0.6,
+          ease: "expo.out",
         });
       } else {
         gsap.to(contentRef.current, {
           height: 0,
           opacity: 0,
-          duration: 0.3,
-          ease: "power2.in",
+          duration: 0.4,
+          ease: "expo.inOut",
         });
       }
     });

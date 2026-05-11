@@ -8,6 +8,9 @@ import { eq, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { recordAuditLog } from "@/lib/audit";
 import { requirePermission } from "@/lib/auth/rbac-utils";
+import { validateExternalUrl } from "@/lib/security/url-validator";
+import { createWebhookSchema, deleteWebhookSchema } from "@/lib/validations";
+import { enforceRateLimit, webhookActionRateLimit } from "@/lib/rate-limit";
 
 /**
  * createWebhookAction
@@ -22,14 +25,17 @@ export async function createWebhookAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
-    // RBAC: Verify permission to manage webhooks
-    await requirePermission(session.user.id, data.orgId, "org:update");
+    // Rate Limiting
+    await enforceRateLimit(webhookActionRateLimit, session.user.id);
 
-    // Basic URL validation
-    const url = new URL(data.url);
-    if (!['http:', 'https:'].includes(url.protocol)) {
-      throw new Error("Invalid URL protocol. Use HTTP or HTTPS.");
-    }
+    // Input Validation
+    const validated = createWebhookSchema.parse(data);
+
+    // RBAC: Verify permission to manage webhooks
+    await requirePermission(session.user.id, validated.orgId, "org:update");
+
+    // SSRF-safe URL validation
+    validateExternalUrl(data.url);
 
     // Generate a signing secret (whsec_...)
     const bytes = crypto.getRandomValues(new Uint8Array(24));
@@ -78,8 +84,14 @@ export async function deleteWebhookAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // Rate Limiting
+    await enforceRateLimit(webhookActionRateLimit, session.user.id);
+
+    // Input Validation
+    const validated = deleteWebhookSchema.parse(data);
+
     // RBAC: Verify permission to manage webhooks
-    await requirePermission(session.user.id, data.orgId, "org:update");
+    await requirePermission(session.user.id, validated.orgId, "org:update");
 
     await getTenantDb(session.user.id, data.orgId, async (tx) => {
       await tx.delete(webhooks).where(eq(webhooks.id, data.webhookId));
@@ -99,7 +111,8 @@ export async function deleteWebhookAction(data: {
     return { success: true };
   } catch (error: unknown) {
     console.error("Failed to delete webhook:", error);
-    return { error: "Failed to delete webhook" };
+    const message = error instanceof Error ? error.message : "Failed to delete webhook";
+    return { error: message };
   }
 }
 

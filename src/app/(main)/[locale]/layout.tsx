@@ -27,7 +27,10 @@ import { Toaster } from "sonner";
 import { NotificationProvider } from "@/components/notifications/notification-provider";
 
 import { GSAPProgressBar } from "@/components/layout/gsap-progress-bar";
+import { CommandMenu } from "@/components/layout/command-menu";
 import { Suspense } from "react";
+
+import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 
 export default async function LocaleLayout({
   children,
@@ -59,15 +62,19 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={messages}>
           <Suspense fallback={null}>
             <GSAPProgressBar />
+            <CommandMenu />
           </Suspense>
           <TooltipProvider>
-            <NotificationProvider>
-              {children}
-              <Toaster position="top-right" richColors />
-            </NotificationProvider>
+            <ConfirmProvider>
+              <NotificationProvider>
+                {children}
+                <Toaster position="top-right" richColors />
+              </NotificationProvider>
+            </ConfirmProvider>
           </TooltipProvider>
         </NextIntlClientProvider>
       </body>
     </html>
   );
 }
+

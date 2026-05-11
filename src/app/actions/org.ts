@@ -11,6 +11,8 @@ import postgres from "postgres";
 import { randomUUID } from "crypto";
 
 import { recordAuditLog } from "@/lib/audit";
+import { createOrgSchema, updateOrgSchema } from "@/lib/validations";
+import { orgCreateRateLimit, enforceRateLimit } from "@/lib/rate-limit";
 
 const connectionString = process.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/saas_db";
 
@@ -29,6 +31,13 @@ export async function createOrganizationAction(name: string, slug: string): Prom
   }
 
   try {
+    // Input Validation
+    const validated = createOrgSchema.parse({ name, slug });
+    name = validated.name;
+    slug = validated.slug;
+
+    // Rate Limiting: 3 orgs per hour per user
+    await enforceRateLimit(orgCreateRateLimit, session.user.id);
     // 1. Create organization using Better-Auth
     const org = await auth.api.createOrganization({
       headers: await headers(),
@@ -44,6 +53,12 @@ export async function createOrganizationAction(name: string, slug: string): Prom
     // 2. Provision Tenant Schema (Simple logic for now)
     const tenantSchema = `tenant_${org.slug.replace(/-/g, "_")}`.toLowerCase();
     
+    // Security: Validate schema name to prevent SQL injection in DDL
+    const SAFE_SCHEMA_REGEX = /^tenant_[a-zA-Z0-9_]+$/;
+    if (!SAFE_SCHEMA_REGEX.test(tenantSchema)) {
+      throw new Error("Invalid tenant schema name derived from slug. Aborting provisioning.");
+    }
+
     // Update org with schema name in public database
     await db.update(organizations)
       .set({ tenantSchemaName: tenantSchema })
@@ -173,6 +188,12 @@ export async function updateOrganizationAction(orgId: string, name: string, slug
   }
 
   try {
+    // Input Validation
+    const validated = updateOrgSchema.parse({ orgId, name, slug });
+    orgId = validated.orgId;
+    name = validated.name;
+    slug = validated.slug;
+
     // 1. Verify Permission via RBAC
     const allowed = await can(session.user.id, orgId, "org:update");
     if (!allowed) {

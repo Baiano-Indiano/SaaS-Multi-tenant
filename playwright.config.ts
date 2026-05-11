@@ -6,7 +6,7 @@ import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '.env.local') });
 
 export default defineConfig({
-  testDir: './tests',
+  testDir: './tests/e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -23,9 +23,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev',
+    command: process.env.CI ? 'npm run start' : 'npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
+    timeout: 180 * 1000,
   },
 });

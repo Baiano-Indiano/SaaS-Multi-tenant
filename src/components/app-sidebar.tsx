@@ -104,6 +104,16 @@ export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarP
         ease: "power2.out",
         delay: 0.08,
       });
+
+      // Initialize Floating Pill position
+      const activeItem = containerRef.current?.querySelector('li:has([data-active="true"])') as HTMLElement;
+      const indicator = containerRef.current?.querySelector('.active-indicator');
+      if (activeItem && indicator) {
+        gsap.set(indicator, {
+          y: activeItem.offsetTop,
+          opacity: 1
+        });
+      }
     });
 
     onMouseEnterRef.current = safe((e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -149,26 +159,76 @@ export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarP
           <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-4 mb-2">
             {t("organization")}
           </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="px-2">
+          <SidebarGroupContent className="relative">
+            {/* Floating Pill Indicator */}
+            <div 
+              className="active-indicator absolute left-2 h-8 rounded-md bg-zinc-800/80 ring-1 ring-zinc-700/50 z-0 pointer-events-none opacity-0"
+              style={{ width: "calc(100% - 16px)", top: 0 }}
+            />
+            
+            <SidebarMenu className="px-2 relative z-10 gap-2.5">
               {menuItems.map((item) => {
                 const active = isRouteActive(item.url);
                 return (
                   <SidebarMenuItem key={item.url} className="sidebar-item">
                     <SidebarMenuButton
                       isActive={active}
+                      data-active={active}
+                      size="sm"
                       render={
                         <Link
                           href={item.url}
-                          onMouseEnter={(e) => onMouseEnterRef.current(e)}
-                          onMouseLeave={(e) => onMouseLeaveRef.current(e)}
+                          className="nav-link"
+                          onMouseEnter={(e) => {
+                            onMouseEnterRef.current(e);
+                            // Animate indicator to this item
+                            const target = e.currentTarget.closest('li');
+                            if (target && containerRef.current) {
+                              const indicator = containerRef.current.querySelector('.active-indicator');
+                              if (indicator) {
+                                gsap.to(indicator, {
+                                  y: target.offsetTop,
+                                  opacity: 1,
+                                  duration: 0.3,
+                                  ease: "power2.out",
+                                  overwrite: "auto"
+                                });
+                              }
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            onMouseLeaveRef.current(e);
+                            // Return indicator to active item or fade out
+                            if (containerRef.current) {
+                              const indicator = containerRef.current.querySelector('.active-indicator');
+                              const activeItem = containerRef.current.querySelector('li:has([data-active="true"])') as HTMLElement;
+                              
+                              if (indicator) {
+                                if (activeItem) {
+                                  gsap.to(indicator, {
+                                    y: activeItem.offsetTop,
+                                    opacity: 1,
+                                    duration: 0.4,
+                                    ease: "power2.out",
+                                    overwrite: "auto"
+                                  });
+                                } else {
+                                  gsap.to(indicator, {
+                                    opacity: 0,
+                                    duration: 0.3,
+                                    overwrite: "auto"
+                                  });
+                                }
+                              }
+                            }
+                          }}
                         />
                       }
                       className={cn(
-                        "transition-all duration-200",
+                        "transition-colors duration-200",
                         active 
-                          ? "bg-zinc-800/50 text-zinc-50 shadow-sm ring-1 ring-zinc-700/50" 
-                          : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
+                          ? "text-zinc-50 hover:bg-transparent" 
+                          : "text-zinc-400 hover:text-zinc-200"
                       )}
                     >
                       <item.icon className={cn("h-4 w-4", active ? "text-zinc-50" : "text-zinc-400")} />
@@ -185,23 +245,70 @@ export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarP
           <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-4 mb-2">
             {t("user")}
           </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="px-2">
+          <SidebarGroupContent className="relative">
+             {/* Floating Pill Indicator (User Section) */}
+             <div 
+              className="user-active-indicator absolute left-2 h-8 rounded-md bg-zinc-800/80 ring-1 ring-zinc-700/50 z-0 pointer-events-none opacity-0"
+              style={{ width: "calc(100% - 16px)", top: 0 }}
+            />
+            <SidebarMenu className="px-2 relative z-10 gap-2.5">
               <SidebarMenuItem className="sidebar-item">
                 <SidebarMenuButton
                   isActive={pathname.startsWith("/account")}
+                  data-active={pathname.startsWith("/account")}
+                  size="sm"
                   render={
                     <Link
                       href="/account"
-                      onMouseEnter={(e) => onMouseEnterRef.current(e)}
-                      onMouseLeave={(e) => onMouseLeaveRef.current(e)}
+                      className="nav-link"
+                      onMouseEnter={(e) => {
+                        onMouseEnterRef.current(e);
+                        const target = e.currentTarget.closest('li');
+                        if (target && containerRef.current) {
+                          const indicator = containerRef.current.querySelector('.user-active-indicator');
+                          if (indicator) {
+                            gsap.to(indicator, {
+                              y: target.offsetTop,
+                              opacity: 1,
+                              duration: 0.3,
+                              ease: "power2.out",
+                              overwrite: "auto"
+                            });
+                          }
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        onMouseLeaveRef.current(e);
+                        if (containerRef.current) {
+                          const indicator = containerRef.current.querySelector('.user-active-indicator');
+                          const activeItem = containerRef.current.querySelector('.user-active-indicator ~ ul li:has([data-active="true"])') as HTMLElement;
+                          
+                          if (indicator) {
+                            if (activeItem) {
+                              gsap.to(indicator, {
+                                y: activeItem.offsetTop,
+                                opacity: 1,
+                                duration: 0.4,
+                                ease: "power2.out",
+                                overwrite: "auto"
+                              });
+                            } else {
+                              gsap.to(indicator, {
+                                opacity: 0,
+                                duration: 0.3,
+                                overwrite: "auto"
+                              });
+                            }
+                          }
+                        }
+                      }}
                     />
                   }
                   className={cn(
-                    "transition-all duration-200",
+                    "transition-colors duration-200",
                     pathname.startsWith("/account")
-                      ? "bg-zinc-800/50 text-zinc-50 shadow-sm ring-1 ring-zinc-700/50"
-                      : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
+                      ? "text-zinc-50 hover:bg-transparent"
+                      : "text-zinc-400 hover:text-zinc-200"
                   )}
                 >
                   <UserCog className={cn("h-4 w-4", pathname.startsWith("/account") ? "text-zinc-50" : "text-zinc-400")} />
@@ -213,7 +320,7 @@ export function AppSidebar({ organizations, activeOrgId, ...props }: AppSidebarP
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border/50 p-4">
-        <LocaleSwitcher />
+        <LocaleSwitcher side="top" />
       </SidebarFooter>
     </Sidebar>
   );

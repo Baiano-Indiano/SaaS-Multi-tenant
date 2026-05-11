@@ -17,14 +17,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { createWebhookAction } from "@/app/actions/webhooks";
 import { Plus, Globe } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 const SUPPORTED_EVENTS = [
-  { id: "project.created", label: "Project Created" },
-  { id: "project.deleted", label: "Project Deleted" },
-  { id: "member.invited", label: "Member Invited" },
-  { id: "member.removed", label: "Member Removed" },
-  { id: "billing.plan_updated", label: "Subscription Updated" },
-];
+  "project.created",
+  "project.deleted",
+  "member.invited",
+  "member.removed",
+  "billing.plan_updated",
+] as const;
 
 interface CreateWebhookDialogProps {
   orgId: string;
@@ -32,6 +33,9 @@ interface CreateWebhookDialogProps {
 }
 
 export function CreateWebhookDialog({ orgId, orgSlug }: CreateWebhookDialogProps) {
+  const t = useTranslations("Settings.connectivity.webhooks.dialog");
+  const te = useTranslations("Settings.connectivity.webhooks.events");
+  
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [url, setUrl] = useState("");
@@ -47,12 +51,12 @@ export function CreateWebhookDialog({ orgId, orgSlug }: CreateWebhookDialogProps
 
   const handleCreate = async () => {
     if (!url) {
-      toast.error("Please enter a destination URL");
+      toast.error(t("toast.urlRequired"));
       return;
     }
 
     if (selectedEvents.length === 0) {
-      toast.error("Please select at least one event");
+      toast.error(t("toast.eventRequired"));
       return;
     }
 
@@ -68,13 +72,13 @@ export function CreateWebhookDialog({ orgId, orgSlug }: CreateWebhookDialogProps
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Webhook registered successfully!");
+        toast.success(t("toast.success"));
         setOpen(false);
         setUrl("");
         setSelectedEvents([]);
       }
     } catch {
-      toast.error("An unexpected error occurred");
+      toast.error(t("toast.error"));
     } finally {
       setLoading(false);
     }
@@ -82,31 +86,29 @@ export function CreateWebhookDialog({ orgId, orgSlug }: CreateWebhookDialogProps
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
-            <Plus className="w-4 h-4" />
-            Add Webhook
-          </Button>
-        }
-      />
+      <DialogTrigger asChild>
+        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
+          <Plus className="w-4 h-4" />
+          {useTranslations("Settings.connectivity.webhooks")("add")}
+        </Button>
+      </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Globe className="w-5 h-5 text-primary" />
-            Register New Webhook
+            {t("title")}
           </DialogTitle>
           <DialogDescription>
-            We&apos;ll send POST requests to this URL when the selected events occur.
+            {t("description")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-6 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="url">Payload URL</Label>
+            <Label htmlFor="url">{t("urlLabel")}</Label>
             <Input
               id="url"
-              placeholder="https://your-api.com/webhooks"
+              placeholder={t("placeholder")}
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               className="bg-secondary/30 border-primary/10 focus-visible:ring-primary/20"
@@ -114,20 +116,20 @@ export function CreateWebhookDialog({ orgId, orgSlug }: CreateWebhookDialogProps
           </div>
 
           <div className="grid gap-3">
-            <Label>Events to send</Label>
+            <Label>{t("eventsLabel")}</Label>
             <div className="grid grid-cols-1 gap-2 border rounded-lg p-3 bg-secondary/10 border-primary/5">
-              {SUPPORTED_EVENTS.map((event) => (
-                <div key={event.id} className="flex items-center space-x-2">
+              {SUPPORTED_EVENTS.map((eventId) => (
+                <div key={eventId} className="flex items-center space-x-2">
                   <Checkbox
-                    id={event.id}
-                    checked={selectedEvents.includes(event.id)}
-                    onCheckedChange={() => toggleEvent(event.id)}
+                    id={eventId}
+                    checked={selectedEvents.includes(eventId)}
+                    onCheckedChange={() => toggleEvent(eventId)}
                   />
                   <label
-                    htmlFor={event.id}
+                    htmlFor={eventId}
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                   >
-                    {event.label}
+                    {te(eventId.replace(".", "_") as Parameters<typeof te>[0])}
                   </label>
                 </div>
               ))}
@@ -137,10 +139,10 @@ export function CreateWebhookDialog({ orgId, orgSlug }: CreateWebhookDialogProps
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
+            {t("cancel")}
           </Button>
           <Button onClick={handleCreate} isLoading={loading} className="min-w-[100px]">
-            Register
+            {t("register")}
           </Button>
         </DialogFooter>
       </DialogContent>

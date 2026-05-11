@@ -14,6 +14,7 @@ import { requirePermission } from "@/lib/auth/rbac-utils";
 import { sendNotification } from "@/lib/notifications";
 import { recordAuditLog } from "@/lib/audit";
 import { emitEvent } from "@/lib/events";
+import { createProjectSchema, deleteProjectSchema, updateProjectSchema } from "@/lib/validations";
 
 export async function createProjectAction(data: {
   name: string;
@@ -25,6 +26,12 @@ export async function createProjectAction(data: {
   if (!session?.user) return { success: false, error: "Sessão expirada. Faça login novamente." };
 
   try {
+    // Input Validation
+    const validated = createProjectSchema.parse(data);
+
+    // RBAC: Verify user has permission to create projects
+    await requirePermission(session.user.id, validated.orgId, "projects:create");
+
     // 1. Check Quota
     const org = await db.query.organizations.findFirst({
       where: eq(organizations.id, data.orgId),
@@ -85,7 +92,7 @@ export async function createProjectAction(data: {
     return result;
   } catch (error) {
     console.error("Failed to create project:", error);
-    return { success: false, error: "Falha ao criar projeto." };
+    return { success: false, error: error instanceof Error ? error.message : "Falha ao criar projeto." };
   }
 }
 
@@ -97,9 +104,12 @@ export async function getProjectsAction(orgId: string) {
   if (!session?.user) return []; // Return empty list for unauthenticated
 
   try {
+    // RBAC: Verify user has permission to read projects
+    await requirePermission(session.user.id, orgId, "projects:read");
+
     return await getTenantDb(session.user.id, orgId, async (db) => {
       return await db.select().from(projects).orderBy(projects.createdAt);
-    });
+    }, { mode: 'reader' });
   } catch (error) {
     console.error("Failed to fetch projects:", error);
     return [];
@@ -114,8 +124,11 @@ export async function deleteProjectAction(projectId: string, orgId: string, orgS
   if (!session?.user) return { success: false, error: "Sessão expirada. Faça login novamente." };
 
   try {
+    // Input Validation
+    const validated = deleteProjectSchema.parse({ projectId, orgId, orgSlug });
+
     // RBAC: Verify user has permission to delete projects
-    await requirePermission(session.user.id, orgId, "projects:delete");
+    await requirePermission(session.user.id, validated.orgId, "projects:delete");
 
     const projectToDelete = await getTenantDb(session.user.id, orgId, async (db) => {
       const p = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
@@ -156,10 +169,13 @@ export async function getProjectAction(orgId: string, projectId: string) {
   if (!session?.user) return null;
 
   try {
+    // RBAC: Verify user has permission to read projects
+    await requirePermission(session.user.id, orgId, "projects:read");
+
     return await getTenantDb(session.user.id, orgId, async (db) => {
       const result = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
       return result[0] || null;
-    });
+    }, { mode: 'reader' });
   } catch (error) {
     console.error("Failed to fetch project:", error);
     return null;
@@ -183,6 +199,9 @@ export async function updateProjectAction(
   if (!session?.user) return { success: false, error: "Sessão expirada." };
 
   try {
+    // Input Validation
+    updateProjectSchema.parse({ orgId, projectId, orgSlug, data });
+
     // RBAC: Verify user has permission to edit projects
     await requirePermission(session.user.id, orgId, "projects:update");
 

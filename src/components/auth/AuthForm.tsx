@@ -22,7 +22,8 @@ import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { Shield } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { checkSSOAvailabilityAction } from "@/app/actions/sso";
 
 interface AuthFormProps {
   type: "login" | "register";
@@ -35,8 +36,12 @@ export function AuthForm({ type }: AuthFormProps) {
   const [loading, setLoading] = useState(false);
   const [showSSO, setShowSSO] = useState(false);
   const [ssoEmail, setSsoEmail] = useState("");
-  const progressRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
+  
+  const [ssoAvailable, setSsoAvailable] = useState(false);
+  const [detectedDomain, setDetectedDomain] = useState("");
+  const [isCheckingSSO, setIsCheckingSSO] = useState(false);
 
   const authSchema = useMemo(() => z.object({
     email: z.string().email(t("invalidEmail")),
@@ -46,49 +51,52 @@ export function AuthForm({ type }: AuthFormProps) {
 
   type AuthValues = z.infer<typeof authSchema>;
 
-  const fieldVariants: Variants = {
-    hidden: { opacity: 0, y: 15 },
-    visible: (i: number) => ({
-      opacity: 1,
-      y: 0,
-      transition: {
-        delay: 0.2 + i * 0.08,
-        duration: 0.6,
-        ease: "easeOut",
-      },
-    }),
+  // GSAP will handle field entrance, removing Framer variants
+  const entranceVariants = {
+    initial: { opacity: 0, scale: 0.95 },
+    animate: { opacity: 1, scale: 1 },
+    exit: { opacity: 0, scale: 0.95 }
   };
 
   useGSAP(() => {
-    // Entrance animation for the whole container
-    gsap.to(containerRef.current, {
-      opacity: 1,
-      y: 0,
-      duration: 0.5,
-      ease: "power2.out"
-    });
+    if (!containerRef.current) return;
+    
+    // Premium entrance animation
+    const elements = containerRef.current.querySelector(".auth-card-content")?.children;
+    if (elements) {
+      gsap.from(elements, {
+        opacity: 0,
+        y: 20,
+        blur: 10,
+        scale: 0.98,
+        duration: 0.8,
+        stagger: 0.08,
+        ease: "expo.out",
+        delay: 0.2
+      });
+    }
   }, { scope: containerRef });
 
   useGSAP(() => {
-    if (loading) {
-      // Start progress bar animation
-      gsap.to(progressRef.current, {
+    const el = progressRef.current;
+    if (loading && el) {
+      gsap.to(el, {
         width: "70%",
-        duration: 2,
+        duration: 1.5,
         ease: "power2.out",
+        opacity: 1,
       });
-    } else {
-      // Complete and hide
+    } else if (el) {
       const tl = gsap.timeline();
-      tl.to(progressRef.current, {
+      tl.to(el, {
         width: "100%",
-        duration: 0.3,
-        ease: "power2.inOut",
-      }).to(progressRef.current, {
+        duration: 0.4,
+        ease: "expo.out",
+      }).to(el, {
         opacity: 0,
-        duration: 0.2,
+        duration: 0.3,
         onComplete: () => {
-          gsap.set(progressRef.current, { width: "0%", opacity: 1 });
+          gsap.set(el, { width: "0%" });
         }
       });
     }
@@ -98,10 +106,40 @@ export function AuthForm({ type }: AuthFormProps) {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<AuthValues>({
     resolver: zodResolver(authSchema),
   });
+
+  const email = watch("email");
+
+  // Detect SSO Domain
+  useEffect(() => {
+    if (type !== "login" || !email || !email.includes("@") || email.length < 5) {
+      setSsoAvailable(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsCheckingSSO(true);
+      try {
+        const result = await checkSSOAvailabilityAction(email);
+        if (result.available) {
+          setSsoAvailable(true);
+          setDetectedDomain(result.domain || "");
+        } else {
+          setSsoAvailable(false);
+        }
+      } catch (error) {
+        console.error("SSO check failed:", error);
+      } finally {
+        setIsCheckingSSO(false);
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [email, type]);
 
   useEffect(() => {
     const emailFromQuery = searchParams.get("email");
@@ -143,6 +181,11 @@ export function AuthForm({ type }: AuthFormProps) {
       }
 
       if (response?.error) {
+        // If 2FA is required, it's not an error in this flow, it's a redirect state
+        if (response.error.code === "TWO_FACTOR_REQUIRED") {
+          return { twoFactorRequired: true };
+        }
+
         const raw =
           typeof response.error === "string"
             ? response.error
@@ -151,19 +194,31 @@ export function AuthForm({ type }: AuthFormProps) {
         throw new Error(mapped);
       }
 
-      if (!response?.data?.user?.id) {
+      const data = response?.data;
+      if (type === "login" && data && (
+        ('twoFactorRequired' in data && (data as { twoFactorRequired?: boolean }).twoFactorRequired) || 
+        ('twoFactorRedirect' in data && (data as { twoFactorRedirect?: boolean }).twoFactorRedirect)
+      )) {
+        return { twoFactorRequired: true };
+      }
+
+      if (!data?.user?.id) {
         const msg = type === "login"
           ? t("couldNotSignIn")
           : t("couldNotCreateAccount");
         throw new Error(msg);
       }
 
-      return response.data;
+      return data;
     })();
 
     toast.promise(authPromise, {
       loading: type === "login" ? t("verifyingCredentials") : t("creatingAccount"),
-      success: () => {
+      success: (data) => {
+        if (data && 'twoFactorRequired' in data && data.twoFactorRequired) {
+          router.push("/verify-2fa");
+          return t("twoFactorRequiredToast"); // We might need to add this to i18n
+        }
         router.push("/selecionar-org");
         return type === "login" ? t("welcomeBackToast") : t("accountCreatedToast");
       },
@@ -212,7 +267,7 @@ export function AuthForm({ type }: AuthFormProps) {
   return (
     <div
       ref={containerRef}
-      className="w-full max-w-md opacity-0"
+      className="w-full max-w-md"
     >
       <Card className="w-full border-zinc-800 bg-zinc-950/50 backdrop-blur-sm shadow-2xl relative overflow-hidden group">
         {/* GSAP Progress Bar */}
@@ -246,24 +301,17 @@ export function AuthForm({ type }: AuthFormProps) {
           {!showSSO ? (
             <motion.div
               key="standard-form"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
+              variants={entranceVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             >
               <form onSubmit={handleSubmit(onSubmit)}>
-                <CardContent className="space-y-4 relative">
+                <CardContent className="space-y-4 relative auth-card-content">
                   <AnimatePresence mode="popLayout">
                     {type === "register" && (
-                      <motion.div
-                        key="name-field"
-                        custom={0}
-                        variants={fieldVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="hidden"
-                        className="space-y-2 overflow-hidden"
-                      >
+                      <div className="space-y-2">
                         <Label htmlFor="name" className="text-zinc-300">
                           {t("nameLabel")}
                         </Label>
@@ -276,17 +324,11 @@ export function AuthForm({ type }: AuthFormProps) {
                         {errors.name && (
                           <p className="text-xs text-red-500">{errors.name.message}</p>
                         )}
-                      </motion.div>
+                      </div>
                     )}
                   </AnimatePresence>
 
-                  <motion.div
-                    custom={type === "register" ? 1 : 0}
-                    variants={fieldVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className="space-y-2"
-                  >
+                  <div className="space-y-2">
                     <Label htmlFor="email" className="text-zinc-300">
                       {t("emailLabel")}
                     </Label>
@@ -300,36 +342,72 @@ export function AuthForm({ type }: AuthFormProps) {
                     {errors.email && (
                       <p className="text-xs text-red-500">{errors.email.message}</p>
                     )}
-                  </motion.div>
+                  </div>
 
-                  <motion.div
-                    custom={type === "register" ? 2 : 1}
-                    variants={fieldVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className="space-y-2"
-                  >
-                    <Label htmlFor="password" className="text-zinc-300">
-                      {t("passwordLabel")}
-                    </Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      className="bg-zinc-900 border-zinc-800 text-white focus-visible:ring-zinc-700 h-10 transition-all focus:bg-zinc-900/80"
-                      {...register("password")}
-                    />
-                    {errors.password && (
-                      <p className="text-xs text-red-500">{errors.password.message}</p>
+                  <AnimatePresence mode="wait">
+                    {!ssoAvailable ? (
+                      <motion.div
+                        key="password-field"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="space-y-2 overflow-hidden"
+                      >
+                        <Label htmlFor="password" className="text-zinc-300">
+                          {t("passwordLabel")}
+                        </Label>
+                        <Input
+                          id="password"
+                          type="password"
+                          className="bg-zinc-900 border-zinc-800 text-white focus-visible:ring-zinc-700 h-10 transition-all focus:bg-zinc-900/80"
+                          {...register("password")}
+                        />
+                        {errors.password && (
+                          <p className="text-xs text-red-500">{errors.password.message}</p>
+                        )}
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="sso-hint"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-3 rounded-lg bg-white/5 border border-white/10 flex items-center gap-3"
+                      >
+                        <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
+                          <Shield className="h-4 w-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-white">Enterprise SSO Ativo</p>
+                          <p className="text-[10px] text-zinc-500">Faça login com sua conta corporativa de {detectedDomain}</p>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="ml-auto text-[10px] h-7 px-2 text-zinc-400 hover:text-white"
+                          onClick={() => setSsoAvailable(false)}
+                        >
+                          Usar senha
+                        </Button>
+                      </motion.div>
                     )}
-                  </motion.div>
+                  </AnimatePresence>
                 </CardContent>
                 <CardFooter className="flex flex-col space-y-4 relative">
                   <Button
                     type="submit"
-                    className="w-full bg-white text-black hover:bg-zinc-200 h-11 transition-all active:scale-[0.98]"
-                    isLoading={loading}
+                    className="w-full h-11 bg-white text-black hover:bg-zinc-200 transition-all active:scale-[0.98]"
+                    isLoading={loading || isCheckingSSO}
+                    onClick={(e) => {
+                      if (ssoAvailable) {
+                        e.preventDefault();
+                        setSsoEmail(email);
+                        onSSOSubmit(e);
+                      }
+                    }}
                   >
-                    {type === "login" ? t("signInButton") : t("signUpButton")}
+                    {ssoAvailable 
+                      ? `Entrar com SSO` 
+                      : (type === "login" ? t("signInButton") : t("signUpButton"))}
                   </Button>
 
                   {type === "login" && (

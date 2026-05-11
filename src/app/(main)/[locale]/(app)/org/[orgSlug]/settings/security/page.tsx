@@ -8,6 +8,9 @@ import { ShieldCheck, Lock } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Org2FAEnforcement } from "@/components/security/org-2fa-enforcement";
 import { can } from "@/lib/auth/rbac-utils";
+import { AuditLogExportSettings } from "@/components/security/audit-log-export-settings";
+import { getAuditExportConfig } from "@/lib/actions/audit-export";
+import { getTranslations } from "next-intl/server";
 
 export default async function SecuritySettingsPage({
   params,
@@ -15,6 +18,7 @@ export default async function SecuritySettingsPage({
   params: Promise<{ orgSlug: string }>;
 }) {
   const { orgSlug } = await params;
+  const t = await getTranslations("Settings.securityPage");
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session?.user) redirect("/login");
@@ -34,24 +38,26 @@ export default async function SecuritySettingsPage({
           <Lock className="h-10 w-10 text-red-500" />
         </div>
         <div className="space-y-2">
-          <h3 className="text-xl font-bold text-zinc-100">Access Denied</h3>
+          <h3 className="text-xl font-bold text-zinc-100">{t("accessDenied")}</h3>
           <p className="text-zinc-500 max-w-xs mx-auto">
-            You do not have the required permissions to manage security policies for this organization.
+            {t("accessDeniedDesc")}
           </p>
         </div>
       </div>
     );
   }
 
+  const auditExportConfig = await getAuditExportConfig(org.id);
+
   return (
     <div className="space-y-8 max-w-5xl">
       <div>
         <h3 className="text-2xl font-bold text-zinc-100 flex items-center gap-2 tracking-tight">
           <ShieldCheck className="h-6 w-6 text-emerald-500" />
-          Security Policies
+          {t("title")}
         </h3>
         <p className="text-sm text-zinc-400 mt-1">
-          Configure security requirements and authentication policies for your organization members.
+          {t("description")}
         </p>
       </div>
 
@@ -63,16 +69,20 @@ export default async function SecuritySettingsPage({
           initialEnabled={org.require2FA} 
         />
 
+        <AuditLogExportSettings 
+          organizationId={org.id} 
+          initialConfig={auditExportConfig} 
+        />
+
         <div className="bg-zinc-950/20 border border-zinc-900 border-dashed rounded-xl p-8">
           <div className="flex gap-4">
             <div className="p-2 bg-zinc-900/50 rounded-lg h-fit">
               <Lock className="h-5 w-5 text-zinc-600" />
             </div>
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-zinc-400">Additional Security Controls</h4>
+              <h4 className="text-sm font-semibold text-zinc-400">{t("advancedTitle")}</h4>
               <p className="text-xs text-zinc-500 leading-relaxed max-w-2xl">
-                Upcoming features include Session Persistence management, IP Whitelisting, and Advanced Audit Log exports. 
-                Manage member sessions directly from the <strong>Members</strong> tab.
+                {t("advancedDesc")}
               </p>
             </div>
           </div>

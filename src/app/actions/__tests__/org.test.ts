@@ -14,7 +14,7 @@ vi.mock('@/lib/auth', () => ({
 }))
 
 vi.mock('next/headers', () => ({
-  headers: vi.fn().mockResolvedValue({}),
+  headers: vi.fn().mockResolvedValue(new Headers()),
 }))
 
 vi.mock('@/lib/auth/rbac-utils', () => ({
@@ -42,7 +42,7 @@ describe('Organization Server Actions', () => {
     it('should fail if the user is not authenticated', async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue(null)
       
-      const result = await updateOrganizationAction('org-1', 'New Name', 'new-slug')
+      const result = await updateOrganizationAction('00000000-0000-4000-a000-000000000004', 'New Name', 'new-slug')
       
       expect(result).toEqual({ 
         success: false, 
@@ -52,27 +52,27 @@ describe('Organization Server Actions', () => {
 
     it('should fail if the user lacks "org:update" permission', async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue({ 
-        user: { id: 'user-1', twoFactorEnabled: false }, 
-        session: { id: 'session-1' } 
+        user: { id: '00000000-0000-4000-a000-000000000001', twoFactorEnabled: false }, 
+        session: { id: '00000000-0000-4000-a000-000000000002' } 
       } as unknown as Awaited<ReturnType<typeof auth.api.getSession>>)
       vi.mocked(can).mockResolvedValue(false)
 
-      const result = await updateOrganizationAction('org-1', 'New Name', 'new-slug')
+      const result = await updateOrganizationAction('00000000-0000-4000-a000-000000000004', 'New Name', 'new-slug')
 
       expect(result).toEqual({ 
         success: false, 
         error: 'Você não tem permissão para editar esta organização.' 
       })
-      expect(can).toHaveBeenCalledWith('user-1', 'org-1', 'org:update')
+      expect(can).toHaveBeenCalledWith('00000000-0000-4000-a000-000000000001', '00000000-0000-4000-a000-000000000004', 'org:update')
     })
 
     it('should successfully update and log the action if permitted', async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue({ 
-        user: { id: 'user-1', twoFactorEnabled: false }, 
-        session: { id: 'session-1' } 
+        user: { id: '00000000-0000-4000-a000-000000000001', twoFactorEnabled: false }, 
+        session: { id: '00000000-0000-4000-a000-000000000002' } 
       } as unknown as Awaited<ReturnType<typeof auth.api.getSession>>)
       vi.mocked(can).mockResolvedValue(true)
-      const result = await updateOrganizationAction('org-1', 'New Name', 'new-slug')
+      const result = await updateOrganizationAction('00000000-0000-4000-a000-000000000004', 'New Name', 'new-slug')
 
       expect(result.success).toBe(true)
       expect(db.update).toHaveBeenCalled()

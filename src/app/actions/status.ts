@@ -43,7 +43,9 @@ export const UpdateIncidentSchema = z.object({
 
 // --- ACTIONS ---
 
-export const upsertStatusComponentAction = async (data: z.infer<typeof UpsertComponentSchema>) => {
+export const upsertStatusComponentAction = async (inputData: z.infer<typeof UpsertComponentSchema>) => {
+  const data = UpsertComponentSchema.parse(inputData);
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -72,7 +74,9 @@ export const upsertStatusComponentAction = async (data: z.infer<typeof UpsertCom
   revalidatePath(`/status/${organizationId}`); // Future proofing
 };
 
-export const deleteStatusComponentAction = async (data: z.infer<typeof DeleteComponentSchema>) => {
+export const deleteStatusComponentAction = async (inputData: z.infer<typeof DeleteComponentSchema>) => {
+  const data = DeleteComponentSchema.parse(inputData);
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -89,7 +93,9 @@ export const deleteStatusComponentAction = async (data: z.infer<typeof DeleteCom
   revalidatePath(`/org/${data.organizationId}/settings/status`);
 };
 
-export const createStatusIncidentAction = async (data: z.infer<typeof CreateIncidentSchema>) => {
+export const createStatusIncidentAction = async (inputData: z.infer<typeof CreateIncidentSchema>) => {
+  const data = CreateIncidentSchema.parse(inputData);
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -102,13 +108,19 @@ export const createStatusIncidentAction = async (data: z.infer<typeof CreateInci
 
   await db.insert(statusIncidents).values({
     id: createId(),
-    ...data,
+    organizationId: data.organizationId,
+    title: data.title,
+    description: data.description,
+    status: data.status,
+    severity: data.severity,
   });
 
   revalidatePath(`/org/${data.organizationId}/settings/status`);
 };
 
-export const updateStatusIncidentAction = async (data: z.infer<typeof UpdateIncidentSchema>) => {
+export const updateStatusIncidentAction = async (inputData: z.infer<typeof UpdateIncidentSchema>) => {
+  const data = UpdateIncidentSchema.parse(inputData);
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -132,7 +144,14 @@ export const updateStatusIncidentAction = async (data: z.infer<typeof UpdateInci
   revalidatePath(`/org/${organizationId}/settings/status`);
 };
 
-export const deleteStatusIncidentAction = async (data: { organizationId: string, id: string }) => {
+export const DeleteIncidentSchema = z.object({
+  organizationId: z.string(),
+  id: z.string(),
+});
+
+export const deleteStatusIncidentAction = async (inputData: z.infer<typeof DeleteIncidentSchema>) => {
+  const data = DeleteIncidentSchema.parse(inputData);
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });

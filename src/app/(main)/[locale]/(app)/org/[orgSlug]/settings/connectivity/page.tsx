@@ -17,12 +17,15 @@ import { getWorkflowsAction } from "@/app/actions/workflows";
 import { Separator } from "@/components/ui/separator";
 import { Zap } from "lucide-react";
 
+import { getTranslations } from "next-intl/server";
+
 export default async function ConnectivitySettingsPage({
   params,
 }: {
   params: Promise<{ orgSlug: string }>;
 }) {
   const { orgSlug } = await params;
+  const t = await getTranslations("Settings.connectivity");
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session?.user) redirect("/login");
@@ -45,10 +48,10 @@ export default async function ConnectivitySettingsPage({
       <div>
         <h3 className="text-xl font-bold text-zinc-100 flex items-center gap-2">
           <Key className="h-5 w-5 text-zinc-400" />
-          Connectivity Ecosystem
+          {t("title")}
         </h3>
         <p className="text-sm text-zinc-400 mt-1">
-          Manage API keys, webhooks and automations to integrate your organization with external services.
+          {t("description")}
         </p>
       </div>
 
@@ -56,9 +59,9 @@ export default async function ConnectivitySettingsPage({
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="text-sm font-semibold text-zinc-200">API Keys</h4>
+              <h4 className="text-sm font-semibold text-zinc-200">{t("apiKeys.title")}</h4>
               <p className="text-xs text-zinc-500">
-                Use these keys to authenticate requests to our API.
+                {t("apiKeys.description")}
               </p>
             </div>
           </div>
@@ -77,10 +80,10 @@ export default async function ConnectivitySettingsPage({
             <div>
               <h4 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
                 <WebhookIcon className="h-4 w-4" />
-                Webhooks
+                {t("webhooks.title")}
               </h4>
               <p className="text-xs text-zinc-500">
-                Receive real-time notifications about events in your organization.
+                {t("webhooks.description")}
               </p>
             </div>
             <CreateWebhookDialog orgId={org.id} orgSlug={org.slug || ""} />
@@ -99,10 +102,10 @@ export default async function ConnectivitySettingsPage({
             <div>
               <h4 className="text-sm font-semibold text-zinc-200 flex items-center gap-2 text-orange-500">
                 <Zap className="h-4 w-4" />
-                Automations (Workflows)
+                {t("automations.title")}
               </h4>
               <p className="text-xs text-zinc-500">
-                Connect system triggers to external actions and webhooks.
+                {t("automations.description")}
               </p>
             </div>
             <WorkflowBuilder orgId={org.id} orgSlug={org.slug || ""} />

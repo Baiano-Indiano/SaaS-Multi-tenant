@@ -16,7 +16,7 @@ vi.mock('@/lib/auth', () => ({
 }))
 
 vi.mock('next/headers', () => ({
-  headers: vi.fn().mockResolvedValue({}),
+  headers: vi.fn().mockResolvedValue(new Headers()),
 }))
 
 vi.mock('@/lib/auth/rbac-utils', () => ({
@@ -58,15 +58,15 @@ describe('Member Server Actions', () => {
   describe('inviteMemberAction()', () => {
     it('should fail if user lacks "members:invite" permission', async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue({ 
-        user: { id: 'user-1', twoFactorEnabled: false }, 
-        session: { id: 'session-1' } 
+        user: { id: '00000000-0000-4000-a000-000000000001', twoFactorEnabled: false }, 
+        session: { id: '00000000-0000-4000-a000-000000000002' } 
       } as unknown as Awaited<ReturnType<typeof auth.api.getSession>>)
       vi.mocked(requirePermission).mockRejectedValue(new Error('Forbidden: Missing required permission'))
 
       const result = await inviteMemberAction({
         email: 'test@test.com',
-        roleId: 'role-1',
-        orgId: 'org-1',
+        roleId: '00000000-0000-4000-a000-000000000003',
+        orgId: '00000000-0000-4000-a000-000000000004',
         orgSlug: 'slug'
       })
 
@@ -76,8 +76,8 @@ describe('Member Server Actions', () => {
 
     it('should reject invitation if organization member quota is reached', async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue({ 
-        user: { id: 'user-1', twoFactorEnabled: false }, 
-        session: { id: 'session-1' } 
+        user: { id: '00000000-0000-4000-a000-000000000001', twoFactorEnabled: false }, 
+        session: { id: '00000000-0000-4000-a000-000000000002' } 
       } as unknown as Awaited<ReturnType<typeof auth.api.getSession>>)
       vi.mocked(requirePermission).mockResolvedValue(undefined)
       
@@ -92,8 +92,8 @@ describe('Member Server Actions', () => {
 
       const result = await inviteMemberAction({
         email: 'new@test.com',
-        roleId: 'role-1',
-        orgId: 'org-1',
+        roleId: '00000000-0000-4000-a000-000000000003',
+        orgId: '00000000-0000-4000-a000-000000000004',
         orgSlug: 'slug'
       })
 
@@ -106,17 +106,17 @@ describe('Member Server Actions', () => {
 
     it('should successfully send invitation when permitted and quota allows', async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue({ 
-        user: { id: 'user-1', twoFactorEnabled: false }, 
-        session: { id: 'session-1' } 
+        user: { id: '00000000-0000-4000-a000-000000000001', twoFactorEnabled: false }, 
+        session: { id: '00000000-0000-4000-a000-000000000002' } 
       } as unknown as Awaited<ReturnType<typeof auth.api.getSession>>)
       vi.mocked(requirePermission).mockResolvedValue(undefined)
-      vi.mocked(auth.api.createInvitation).mockResolvedValue({ id: 'invite-123' } as unknown as Awaited<ReturnType<typeof auth.api.createInvitation>>)
+      vi.mocked(auth.api.createInvitation).mockResolvedValue({ id: '00000000-0000-4000-a000-000000000123' } as unknown as Awaited<ReturnType<typeof auth.api.createInvitation>>)
       
       const mockTenantDb = {
         query: {
           organizations: { findFirst: vi.fn().mockResolvedValue({ plan: 'pro' }) },
           members: { findMany: vi.fn().mockResolvedValue([]) },
-          roles: { findFirst: vi.fn().mockResolvedValue({ id: 'role-1', slug: 'admin' }) },
+          roles: { findFirst: vi.fn().mockResolvedValue({ id: '00000000-0000-4000-a000-000000000003', slug: 'admin' }) },
         },
         update: vi.fn().mockReturnThis(),
         set: vi.fn().mockReturnThis(),
@@ -126,8 +126,8 @@ describe('Member Server Actions', () => {
 
       const result = await inviteMemberAction({
         email: 'new@test.com',
-        roleId: 'role-1',
-        orgId: 'org-1',
+        roleId: '00000000-0000-4000-a000-000000000003',
+        orgId: '00000000-0000-4000-a000-000000000004',
         orgSlug: 'slug'
       })
 
@@ -136,7 +136,7 @@ describe('Member Server Actions', () => {
         body: {
           email: 'new@test.com',
           role: 'admin',
-          organizationId: 'org-1'
+          organizationId: '00000000-0000-4000-a000-000000000004'
         }
       }))
     })

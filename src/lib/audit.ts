@@ -4,6 +4,7 @@ import { getTenantDb, withAdminTenantDb } from "./db/tenant-db";
 import { auditLogs } from "./db/schema";
 import { lt } from "drizzle-orm";
 import type { TenantTransaction } from "./db/tenant-db";
+import { emitEvent } from "./events";
 
 const SENSITIVE_KEYWORDS = [
   "password", "token", "secret", "session",
@@ -129,6 +130,27 @@ export async function recordAuditLog(params: {
     } else {
       await getTenantDb(userId!, params.organizationId, insertLog);
     }
+
+    // Trigger SIEM/Webhook Export
+    // Use fire-and-forget (or non-blocking) to avoid slowing down the main action
+    const eventPayload = {
+      timestamp: new Date().toISOString(),
+      tenant_id: params.organizationId,
+      actor_id: userId,
+      actor_name: userName,
+      actor_email: userEmail,
+      action: params.action,
+      resource_type: params.entityType,
+      resource_id: params.entityId,
+      ip_address: ipAddress,
+      user_agent: userAgent,
+      details: params.details ? sanitizeAuditDetails(params.details) : {},
+    };
+
+    emitEvent(params.organizationId, "audit.log_created", eventPayload).catch(err => 
+      console.error("[Audit SIEM] Failed to emit audit event:", err)
+    );
+
   } catch (error) {
     console.error("Failed to record audit log:", error);
   }

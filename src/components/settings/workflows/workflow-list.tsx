@@ -22,7 +22,6 @@ import {
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuLabel, 
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
@@ -30,6 +29,8 @@ import { deleteWorkflowAction } from "@/app/actions/workflows";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { WorkflowLogsModal } from "./workflow-logs";
+import { useTranslations } from "next-intl";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export interface Workflow {
   id: string;
@@ -48,37 +49,45 @@ interface WorkflowListProps {
 }
 
 export function WorkflowList({ workflows, orgId, orgSlug }: WorkflowListProps) {
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const t = useTranslations("Settings.connectivity.automations");
+  const { confirm } = useConfirm();
   const [logWorkflow, setLogWorkflow] = useState<Workflow | null>(null);
 
   const handleDelete = async (id: string) => {
-    setDeletingId(id);
-    try {
-      const result = await deleteWorkflowAction({
+    const isConfirmed = await confirm({
+      title: t("actions.delete.confirmTitle"),
+      description: t("actions.delete.confirmDescription"),
+      confirmText: t("actions.delete.confirmButton"),
+      cancelText: t("actions.delete.cancelButton"),
+      variant: "destructive",
+    });
+
+    if (!isConfirmed) return;
+
+    toast.promise(
+      deleteWorkflowAction({
         workflowId: id,
         orgId,
         orgSlug,
-      });
-
-      if (result.error) {
-        toast.error(result.error);
-      } else {
-        toast.success("Workflow deleted successfully");
+      }),
+      {
+        loading: t("toast.deleting"),
+        success: (result: { error?: string }) => {
+          if (result.error) throw new Error(result.error);
+          return t("toast.success");
+        },
+        error: (err: { message?: string }) => err.message || t("toast.error"),
       }
-    } catch {
-      toast.error("Failed to delete workflow");
-    } finally {
-      setDeletingId(null);
-    }
+    );
   };
 
   if (workflows.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4 border-2 border-dashed rounded-xl bg-secondary/10 border-primary/10">
         <Zap className="w-12 h-12 text-primary/20 mb-4" />
-        <h3 className="text-lg font-semibold text-foreground/80">No workflows active</h3>
+        <h3 className="text-lg font-semibold text-foreground/80">{t("empty.title")}</h3>
         <p className="text-sm text-muted-foreground text-center max-w-[400px] mt-1">
-          Automate your processes by connecting system triggers to external actions.
+          {t("empty.description")}
         </p>
       </div>
     );
@@ -89,17 +98,22 @@ export function WorkflowList({ workflows, orgId, orgSlug }: WorkflowListProps) {
       <Table>
         <TableHeader className="bg-secondary/20">
           <TableRow className="hover:bg-transparent border-primary/10">
-            <TableHead className="w-[30%]">Workflow Name</TableHead>
-            <TableHead>Trigger</TableHead>
-            <TableHead>Action</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className="w-[30%]">{t("table.name")}</TableHead>
+            <TableHead>{t("table.trigger")}</TableHead>
+            <TableHead>{t("table.action")}</TableHead>
+            <TableHead>{t("table.status")}</TableHead>
+            <TableHead className="text-right">{t("table.actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           <AnimatePresence mode="popLayout">
             {workflows.map((workflow, index) => {
-              const config = JSON.parse(workflow.actionConfig);
+              let config = { url: "" };
+              try {
+                config = JSON.parse(workflow.actionConfig);
+              } catch (e) {
+                console.error("Failed to parse workflow config", e);
+              }
               
               return (
                 <motion.tr
@@ -131,33 +145,28 @@ export function WorkflowList({ workflows, orgId, orgSlug }: WorkflowListProps) {
                   </TableCell>
                   <TableCell>
                     <Badge variant={workflow.isActive ? "default" : "secondary"}>
-                      {workflow.isActive ? "Active" : "Paused"}
+                      {workflow.isActive ? t("status.active") : t("status.paused")}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button variant="ghost" size="icon" className="hover:bg-primary/10">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        }
-                      />
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="hover:bg-primary/10">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuLabel>Workflow Options</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => setLogWorkflow(workflow)}>
                           <Activity className="mr-2 h-4 w-4" />
-                          <span>View Logs</span>
+                          <span>{t("menu.viewLogs")}</span>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 
                           className="text-destructive focus:text-destructive"
                           onClick={() => handleDelete(workflow.id)}
-                          disabled={deletingId === workflow.id}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          <span>Delete Workflow</span>
+                          <span>{t("menu.delete")}</span>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

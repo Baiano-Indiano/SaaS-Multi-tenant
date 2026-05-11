@@ -39,7 +39,7 @@ export function BackupCodesDisplay({ codes }: BackupCodesDisplayProps) {
         <ShieldAlert className="h-4 w-4 text-amber-500" />
         <AlertTitle className="font-bold">{t("saveBackupCodes")}</AlertTitle>
         <AlertDescription className="text-zinc-400">
-          {t("backupCodesWarning")}
+          {t("TwoFactor.BackupCodesWarning")}
         </AlertDescription>
       </Alert>
 

@@ -46,16 +46,16 @@ describe('RBAC Utils', () => {
     it('should return true if user has the required permission', async () => {
       // 1. Mock public schema membership check
       vi.mocked(db.query.members.findFirst).mockResolvedValue({
-        id: 'member-1',
-        userId: 'user-1',
-        organizationId: 'org-1',
+        id: '00000000-0000-4000-a000-000000000005',
+        userId: '00000000-0000-4000-a000-000000000001',
+        organizationId: '00000000-0000-4000-a000-000000000004',
         role: 'admin',
-        roleId: 'role-admin',
+        roleId: '00000000-0000-4000-a000-000000000003',
         createdAt: new Date(),
         organization: {
-          id: 'org-1',
+          id: '00000000-0000-4000-a000-000000000004',
           name: 'Atomic Inc',
-          tenantSchemaName: 'tenant_org_1',
+          tenantSchemaName: 'tenant_00000000_0000_4000_a000_000000000004',
           createdAt: new Date(),
           plan: 'free',
           domainVerified: false,
@@ -78,32 +78,32 @@ describe('RBAC Utils', () => {
         return cb(mockTx as unknown as TenantTransaction)
       })
 
-      const result = await can('user-1', 'org-1', 'org:update')
+      const result = await can('00000000-0000-4000-a000-000000000001', '00000000-0000-4000-a000-000000000004', 'org:update')
       expect(result).toBe(true)
       expect(db.query.members.findFirst).toHaveBeenCalled()
-      expect(withAdminTenantDb).toHaveBeenCalledWith('org-1', expect.any(Function))
+      expect(withAdminTenantDb).toHaveBeenCalledWith('00000000-0000-4000-a000-000000000004', expect.any(Function), { mode: 'reader' })
     })
 
     it('should return false if user is not a member of the organization', async () => {
       vi.mocked(db.query.members.findFirst).mockResolvedValue(undefined)
       
-      const result = await can('user-1', 'org-1', 'org:update')
+      const result = await can('00000000-0000-4000-a000-000000000001', '00000000-0000-4000-a000-000000000004', 'org:update')
       expect(result).toBe(false)
       expect(withAdminTenantDb).not.toHaveBeenCalled()
     })
 
     it('should return false if the role does not have the permission', async () => {
       vi.mocked(db.query.members.findFirst).mockResolvedValue({
-        id: 'member-1',
-        userId: 'user-1',
-        organizationId: 'org-1',
+        id: '00000000-0000-4000-a000-000000000005',
+        userId: '00000000-0000-4000-a000-000000000001',
+        organizationId: '00000000-0000-4000-a000-000000000004',
         role: 'viewer',
-        roleId: 'role-viewer',
+        roleId: '00000000-0000-4000-a000-000000000006',
         createdAt: new Date(),
         organization: {
-          id: 'org-1',
+          id: '00000000-0000-4000-a000-000000000004',
           name: 'Atomic Inc',
-          tenantSchemaName: 'tenant_org_1',
+          tenantSchemaName: 'tenant_00000000_0000_4000_a000_000000000004',
           createdAt: new Date(),
           plan: 'free',
           domainVerified: false,
@@ -122,7 +122,7 @@ describe('RBAC Utils', () => {
         return cb(mockTx as unknown as TenantTransaction)
       })
 
-      const result = await can('user-1', 'org-1', 'org:update')
+      const result = await can('00000000-0000-4000-a000-000000000001', '00000000-0000-4000-a000-000000000004', 'org:update')
       expect(result).toBe(false)
     })
   })
@@ -131,16 +131,16 @@ describe('RBAC Utils', () => {
     it('should throw a Forbidden error if permission is missing', async () => {
       // Mock 'can' returning false
       vi.mocked(db.query.members.findFirst).mockResolvedValue({
-        id: 'member-1',
-        userId: 'user-1',
-        organizationId: 'org-1',
+        id: '00000000-0000-4000-a000-000000000005',
+        userId: '00000000-0000-4000-a000-000000000001',
+        organizationId: '00000000-0000-4000-a000-000000000004',
         role: 'viewer',
-        roleId: 'role-viewer',
+        roleId: '00000000-0000-4000-a000-000000000006',
         createdAt: new Date(),
         organization: {
-          id: 'org-1',
+          id: '00000000-0000-4000-a000-000000000004',
           name: 'Atomic Inc',
-          tenantSchemaName: 'tenant_org_1',
+          tenantSchemaName: 'tenant_00000000_0000_4000_a000_000000000004',
           createdAt: new Date(),
           plan: 'free',
           domainVerified: false,
@@ -158,22 +158,22 @@ describe('RBAC Utils', () => {
         return cb(mockTx as unknown as TenantTransaction)
       })
 
-      await expect(requirePermission('user-1', 'org-1', 'org:update'))
+      await expect(requirePermission('00000000-0000-4000-a000-000000000001', '00000000-0000-4000-a000-000000000004', 'org:update'))
         .rejects.toThrow('Forbidden: Missing required permission: org:update')
     })
 
     it('should not throw if permission is granted', async () => {
       vi.mocked(db.query.members.findFirst).mockResolvedValue({
-        id: 'member-1',
-        userId: 'user-1',
-        organizationId: 'org-1',
+        id: '00000000-0000-4000-a000-000000000005',
+        userId: '00000000-0000-4000-a000-000000000001',
+        organizationId: '00000000-0000-4000-a000-000000000004',
         role: 'admin',
-        roleId: 'role-admin',
+        roleId: '00000000-0000-4000-a000-000000000003',
         createdAt: new Date(),
         organization: {
-          id: 'org-1',
+          id: '00000000-0000-4000-a000-000000000004',
           name: 'Atomic Inc',
-          tenantSchemaName: 'tenant_org_1',
+          tenantSchemaName: 'tenant_00000000_0000_4000_a000_000000000004',
           createdAt: new Date(),
           plan: 'free',
           domainVerified: false,
@@ -195,7 +195,7 @@ describe('RBAC Utils', () => {
         return cb(mockTx as unknown as TenantTransaction)
       })
 
-      await expect(requirePermission('user-1', 'org-1', 'org:update'))
+      await expect(requirePermission('00000000-0000-4000-a000-000000000001', '00000000-0000-4000-a000-000000000004', 'org:update'))
         .resolves.not.toThrow()
     })
   })

@@ -18,6 +18,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, ShieldCheck, ShieldX, Smartphone, Key, RefreshCw, CheckCircle2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
+import * as React from "react";
+
 
 export function TwoFactorSetup({ onEnabled }: { onEnabled: () => void }) {
   const t = useTranslations("Security");
@@ -102,7 +104,7 @@ export function TwoFactorSetup({ onEnabled }: { onEnabled: () => void }) {
       setIsOpen(open);
       if (!open) reset();
     }}>
-      <DialogTrigger>
+      <DialogTrigger asChild>
         <Button className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200 transition-all duration-300 gap-2 group overflow-hidden relative">
           <Smartphone className="w-4 h-4 transition-transform group-hover:scale-110" />
           <span>{t("enable2FA")}</span>
@@ -115,7 +117,7 @@ export function TwoFactorSetup({ onEnabled }: { onEnabled: () => void }) {
             {t("setup2FA")}
           </DialogTitle>
           <DialogDescription className="text-zinc-400">
-            {t("setup2FADescription")}
+            {t("backupCodesWarning")}
           </DialogDescription>
         </DialogHeader>
 
@@ -231,7 +233,7 @@ export function TwoFactorSetup({ onEnabled }: { onEnabled: () => void }) {
                       {t("verifiedSuccess") || "Security Verified!"}
                     </p>
                     <p className="text-xs text-emerald-200/60 leading-relaxed">
-                      {t("TwoFactor.BackupCodesWarning") || "Final step: Save these backup codes. They are the only way to recover access if you lose your device."}
+                      {t("backupCodesWarning")}
                     </p>
                   </div>
                 </div>
@@ -303,7 +305,7 @@ export function DisableTwoFactor({ onDisabled }: { onDisabled: () => void }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger>
+      <DialogTrigger asChild>
         <Button variant="destructive" className="bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20">
           {t("disable2FA")}
         </Button>

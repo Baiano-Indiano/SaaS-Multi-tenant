@@ -7,8 +7,12 @@ import { connectors } from "@/lib/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { recordAuditLog } from "@/lib/audit";
+import { requirePermission } from "@/lib/auth/rbac-utils";
 import { workflows } from "@/lib/db/schema";
 import { SUPPORTED_EVENTS } from "@/lib/events";
+import { validateExternalUrl } from "@/lib/security/url-validator";
+import { createConnectorSchema, deleteConnectorSchema, testConnectorSchema, toggleConnectorEventSchema } from "@/lib/validations";
+import { enforceRateLimit, webhookActionRateLimit } from "@/lib/rate-limit";
 
 /**
  * createConnectorAction
@@ -24,11 +28,16 @@ export async function createConnectorAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
-    // Basic URL validation
-    const url = new URL(data.webhookUrl);
-    if (!['http:', 'https:'].includes(url.protocol)) {
-      throw new Error("Invalid URL protocol. Use HTTP or HTTPS.");
-    }
+    // Input Validation
+    const validated = createConnectorSchema.parse(data);
+
+    await enforceRateLimit(webhookActionRateLimit, session.user.id);
+
+    // RBAC: Verify user has permission to manage integrations
+    await requirePermission(session.user.id, validated.orgId, "org:update");
+
+    // SSRF-safe URL validation
+    validateExternalUrl(data.webhookUrl);
 
     const config = JSON.stringify({ url: data.webhookUrl });
 
@@ -93,6 +102,14 @@ export async function deleteConnectorAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // Input Validation
+    const validated = deleteConnectorSchema.parse(data);
+
+    await enforceRateLimit(webhookActionRateLimit, session.user.id);
+
+    // RBAC: Verify user has permission to manage integrations
+    await requirePermission(session.user.id, validated.orgId, "org:update");
+
     await getTenantDb(session.user.id, data.orgId, async (tx) => {
       await tx.delete(connectors).where(eq(connectors.id, data.connectorId));
     });
@@ -123,9 +140,9 @@ export async function getConnectorsAction(orgId: string) {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
-    return await getTenantDb(session.user.id, orgId, async (tx) => {
-      return await tx.select().from(connectors).orderBy(desc(connectors.createdAt));
-    });
+    return await getTenantDb(session.user.id, orgId, async (db) => {
+      return await db.select().from(connectors).orderBy(desc(connectors.createdAt));
+    }, { mode: 'reader' });
   } catch (error: unknown) {
     console.error("Failed to fetch connectors:", error);
     return [];
@@ -145,6 +162,14 @@ export async function testConnectorAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // Input Validation
+    const validated = testConnectorSchema.parse(data);
+
+    await enforceRateLimit(webhookActionRateLimit, session.user.id);
+
+    // RBAC: Verify user has permission to test integrations
+    await requirePermission(session.user.id, validated.orgId, "org:update");
+
     const connector = await getTenantDb(session.user.id, data.orgId, async (tx) => {
       const results = await tx.select().from(connectors).where(eq(connectors.id, data.connectorId));
       return results[0];
@@ -173,8 +198,7 @@ export async function testConnectorAction(data: {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`External service failed (${response.status}): ${errorText}`);
+      throw new Error(`External service returned an error (HTTP ${response.status}).`);
     }
 
     return { success: true };
@@ -236,6 +260,14 @@ export async function toggleConnectorEventAction(data: {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
+    // Input Validation
+    const validated = toggleConnectorEventSchema.parse(data);
+
+    await enforceRateLimit(webhookActionRateLimit, session.user.id);
+
+    // RBAC: Verify user has permission to manage integrations
+    await requirePermission(session.user.id, validated.orgId, "org:update");
+
     await getTenantDb(session.user.id, data.orgId, async (tx) => {
       if (data.isActive) {
         // Fetch connector details for the webhook URL

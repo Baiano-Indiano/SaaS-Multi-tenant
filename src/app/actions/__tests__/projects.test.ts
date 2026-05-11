@@ -60,14 +60,14 @@ describe('Projects Server Actions', () => {
     it('should fail if user is not authenticated', async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue(null)
       
-      const result = await deleteProjectAction('proj-1', 'org-1', 'org-slug')
+      const result = await deleteProjectAction('550e8400-e29b-41d4-a716-446655440000', '660e8400-e29b-41d4-a716-446655440000', 'org-slug')
       expect(result).toEqual({ success: false, error: 'Sessão expirada. Faça login novamente.' })
     })
 
     it('should enforce RBAC before deletion', async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue({
         user: { 
-          id: 'user-1', 
+          id: '00000000-0000-4000-a000-000000000001', 
           email: 'test@example.com', 
           emailVerified: true, 
           name: 'Test User', 
@@ -77,8 +77,8 @@ describe('Projects Server Actions', () => {
           image: null 
         },
         session: { 
-          id: 'session-1', 
-          userId: 'user-1', 
+          id: '00000000-0000-4000-a000-000000000002', 
+          userId: '00000000-0000-4000-a000-000000000001', 
           expiresAt: new Date(), 
           token: 'token', 
           createdAt: new Date(), 
@@ -90,18 +90,18 @@ describe('Projects Server Actions', () => {
       // requirePermission throws if denied, but our action now catches and returns it
       vi.mocked(requirePermission).mockRejectedValue(new Error('Forbidden: Missing required permission'))
 
-      const result = await deleteProjectAction('proj-1', 'org-1', 'org-slug')
-
+      const result = await deleteProjectAction('550e8400-e29b-41d4-a716-446655440000', '660e8400-e29b-41d4-a716-446655440000', 'org-slug')
+      
       expect(result.success).toBe(false)
       expect(result.error).toContain('Forbidden')
-      expect(requirePermission).toHaveBeenCalledWith('user-1', 'org-1', 'projects:delete')
+      expect(requirePermission).toHaveBeenCalledWith('00000000-0000-4000-a000-000000000001', '660e8400-e29b-41d4-a716-446655440000', 'projects:delete')
       expect(getTenantDb).not.toHaveBeenCalled()
     })
 
     it('should successfully delete project when permitted', async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue({
         user: { 
-          id: 'user-1', 
+          id: '00000000-0000-4000-a000-000000000001', 
           email: 'test@example.com', 
           emailVerified: true, 
           name: 'Test User', 
@@ -111,8 +111,8 @@ describe('Projects Server Actions', () => {
           image: null 
         },
         session: { 
-          id: 'session-1', 
-          userId: 'user-1', 
+          id: '00000000-0000-4000-a000-000000000002', 
+          userId: '00000000-0000-4000-a000-000000000001', 
           expiresAt: new Date(), 
           token: 'token', 
           createdAt: new Date(), 
@@ -123,17 +123,26 @@ describe('Projects Server Actions', () => {
       } as unknown as Awaited<ReturnType<typeof auth.api.getSession>>)
       vi.mocked(requirePermission).mockResolvedValue(undefined)
       
+      const mockProject = { id: '00000000-0000-4000-a000-000000000999', name: 'Test Project' }
       const mockTenantDb = {
-        delete: vi.fn().mockReturnThis(),
-        where: vi.fn().mockResolvedValue({}),
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue([mockProject])
+            })
+          })
+        }),
+        delete: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue({})
+        }),
       }
-      vi.mocked(getTenantDb).mockImplementation(async (_uid: string, _oid: string, cb: (db: TenantTransaction) => Promise<unknown>) => cb(mockTenantDb as unknown as TenantTransaction))
+      vi.mocked(getTenantDb).mockImplementation(async (_uid: string, _oid: string, cb: (tx: TenantTransaction) => Promise<unknown>) => cb(mockTenantDb as unknown as TenantTransaction))
 
-      const result = await deleteProjectAction('proj-1', 'org-1', 'org-slug')
-
+      const result = await deleteProjectAction('550e8400-e29b-41d4-a716-446655440000', '660e8400-e29b-41d4-a716-446655440000', 'org-slug')
+      
       expect(result.success).toBe(true)
       expect(mockTenantDb.delete).toHaveBeenCalled()
-      expect(getTenantDb).toHaveBeenCalledWith('user-1', 'org-1', expect.any(Function))
+      expect(getTenantDb).toHaveBeenCalledWith('00000000-0000-4000-a000-000000000001', '660e8400-e29b-41d4-a716-446655440000', expect.any(Function))
     })
   })
 })

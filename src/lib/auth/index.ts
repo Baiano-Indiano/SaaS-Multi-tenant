@@ -11,6 +11,7 @@ import { recordAuditLog } from "../audit";
 import { v4 as uuidv4 } from "uuid";
 import { redis } from "../redis";
 import type { HookEndpointContext } from "@better-auth/core";
+import { detectSessionAnomaly } from "../security/anomaly-detection";
 
 console.log("[Auth] Initializing betterAuth...");
 export const auth = betterAuth({
@@ -31,6 +32,7 @@ export const auth = betterAuth({
       member: schema.members,
       invitation: schema.invitations,
       ssoProvider: schema.ssoProviders,
+      twoFactor: schema.twoFactors,
     },
   }),
   emailAndPassword: {
@@ -51,6 +53,22 @@ export const auth = betterAuth({
         if (!ctx) return {};
         
         // Handle audit logging for specific security actions
+        if (ctx.path?.includes("sign-in/") || ctx.path?.includes("callback")) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const session = (ctx.context as Record<string, any>)?.session;
+          if (session?.user) {
+            const ip = ctx.headers?.get("x-forwarded-for") || ctx.headers?.get("x-real-ip") || "unknown";
+            const userAgent = ctx.headers?.get("user-agent") || "unknown";
+            
+            await detectSessionAnomaly(session.user.id, { ip, userAgent }, {
+              name: session.user.name,
+              email: session.user.email,
+              organizationId: session.session.activeOrganizationId
+            });
+          }
+        }
+
+        // Handle audit logging for specific security actions
         if (ctx.path?.includes("two-factor/enable") ||
           ctx.path?.includes("two-factor/disable") ||
           ctx.path?.includes("multi-session/revoke") ||
@@ -66,6 +84,11 @@ export const auth = betterAuth({
             action = "USER_2FA_ENABLED";
             details = "O usuário ativou a autenticação de dois fatores.";
             await redis.set(`user:${session.user.id}:mfa`, true);
+          } else if (ctx.path.includes("two-factor/verify")) {
+             // Quando verifica o TOTP, o 2FA está oficialmente ativo
+             await db.update(schema.users)
+               .set({ twoFactorEnabled: true })
+               .where(eq(schema.users.id, session.user.id));
           } else if (ctx.path.includes("two-factor/disable")) {
             action = "USER_2FA_DISABLED";
             details = "O usuário desativou a autenticação de dois fatores.";
@@ -99,13 +122,14 @@ export const auth = betterAuth({
           }
         }
         
-        // JIT Provisioning for SSO
+        // JIT Provisioning / Auto-Accept Invite for SSO
         if (ctx.path?.includes("sso/callback")) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const user = (ctx.context as Record<string, any>)?.session?.user;
           if (user) {
             const domain = user.email.split("@")[1]?.toLowerCase();
             if (domain) {
+              // 1. Check if domain is verified for JIT provisioning
               const domainRecord = await db.query.organizationDomains.findFirst({
                 where: and(
                   eq(schema.organizationDomains.domain, domain),
@@ -130,23 +154,59 @@ export const auth = betterAuth({
                     createdAt: new Date(),
                   });
 
-                  const ip = ctx.headers?.get("x-forwarded-for") || ctx.headers?.get("x-real-ip") || undefined;
-                  const userAgent = ctx.headers?.get("user-agent") || undefined;
-
-                  recordAuditLog({
+                  await recordAuditLog({
                     organizationId: domainRecord.organizationId,
                     action: "MEMBER_JIT_PROVISIONED",
                     entityType: "MEMBER",
                     entityId: user.id,
-                    ip,
-                    userAgent,
-                    details: `Usuário provisionado via SSO (domínio: ${domain})`,
-                    actor: {
-                      id: user.id,
-                      name: user.name,
-                      email: user.email,
-                    }
+                    details: `Usuário provisionado via SSO (domínio verificado: ${domain})`,
+                    actor: { id: user.id, name: user.name, email: user.email }
                   });
+                }
+              } 
+              // 2. Fallback: Check for explicit pending invitations if domain not verified
+              else {
+                const pendingInvite = await db.query.invitations.findFirst({
+                  where: and(
+                    eq(schema.invitations.email, user.email),
+                    eq(schema.invitations.status, "pending")
+                  ),
+                });
+
+                if (pendingInvite) {
+                  const existingMember = await db.query.members.findFirst({
+                    where: and(
+                      eq(schema.members.organizationId, pendingInvite.organizationId),
+                      eq(schema.members.userId, user.id)
+                    ),
+                  });
+
+                  if (!existingMember) {
+                    await db.insert(schema.members).values({
+                      id: uuidv4(),
+                      organizationId: pendingInvite.organizationId,
+                      userId: user.id,
+                      role: pendingInvite.role || "member",
+                      roleId: pendingInvite.roleId,
+                      createdAt: new Date(),
+                    });
+
+                    // Consume invitation
+                    await db.update(schema.invitations)
+                      .set({ status: "accepted" })
+                      .where(eq(schema.invitations.id, pendingInvite.id));
+
+                    await recordAuditLog({
+                      organizationId: pendingInvite.organizationId,
+                      action: "MEMBER_SSO_INVITE_ACCEPTED",
+                      entityType: "MEMBER",
+                      entityId: user.id,
+                      details: `Usuário aceito via SSO por convite prévio (domínio não verificado: ${domain})`,
+                      actor: { id: user.id, name: user.name, email: user.email }
+                    });
+                  }
+                } else {
+                  console.warn(`[SSO Security] Attempted login from domain ${domain} by ${user.email} with no verification or invite.`);
                 }
               }
             }

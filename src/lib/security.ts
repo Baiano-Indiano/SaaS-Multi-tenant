@@ -11,8 +11,9 @@
  */
 export function generateNonce(): string {
   if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
-    // Fallback for environments where crypto is not globally available (rare in modern runtimes)
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    // All modern runtimes (Node 19+, Edge, Workers) support Web Crypto.
+    // Throwing instead of falling back to Math.random() prevents weak nonces.
+    throw new Error('FATAL: Web Crypto API is not available. Cannot generate secure nonce.');
   }
   const array = new Uint8Array(16);
   crypto.getRandomValues(array);
@@ -69,10 +70,10 @@ export const SENTRY_REPORT_URI = 'https://o4511321072795648.ingest.us.sentry.io/
 export function buildCspHeader(nonce: string): string {
   const directives = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https: 'unsafe-inline'`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https: 'unsafe-inline' ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // Keeping unsafe-inline for GSAP/Tailwind per decision
     `img-src 'self' ${CSP_DOMAINS.images.join(' ')}`,
-    `connect-src 'self' ${CSP_DOMAINS.connect.join(' ')}`,
+    `connect-src 'self' ${CSP_DOMAINS.connect.join(' ')} ${process.env.NODE_ENV === 'development' ? "ws: wss:" : ""}`,
     `font-src 'self' https://fonts.gstatic.com data:`,
     `frame-src 'self' ${CSP_DOMAINS.frames.join(' ')}`,
     "frame-ancestors 'self'",

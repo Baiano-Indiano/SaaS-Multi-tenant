@@ -15,3 +15,36 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '',
   useSearchParams: () => new URLSearchParams(),
 }))
+
+// Mock Upstash Redis
+vi.mock('@upstash/redis', () => {
+  return {
+    Redis: class {
+      get = vi.fn();
+      set = vi.fn();
+      del = vi.fn();
+    },
+  };
+})
+
+// Mock Upstash Ratelimit
+vi.mock('@upstash/ratelimit', () => ({
+  Ratelimit: Object.assign(
+    class {
+      limit = vi.fn().mockResolvedValue({ success: true, remaining: 10, limit: 10, reset: 0 });
+    },
+    {
+      slidingWindow: vi.fn().mockReturnValue({}),
+    }
+  ),
+}))
+
+// Mock next/headers
+vi.mock('next/headers', () => ({
+  headers: vi.fn().mockResolvedValue(new Headers()),
+  cookies: vi.fn().mockResolvedValue({
+    get: vi.fn(),
+    set: vi.fn(),
+    delete: vi.fn(),
+  }),
+}))
