@@ -6,16 +6,14 @@ import gsap from "gsap";
 
 gsap.registerPlugin(useGSAP);
 
-const data = [
-  { name: "Jan", total: 120 },
-  { name: "Feb", total: 210 },
-  { name: "Mar", total: 150 },
-  { name: "Apr", total: 340 },
-  { name: "May", total: 280 },
-  { name: "Jun", total: 420 },
-];
+interface OverviewChartProps {
+  data: {
+    name: string;
+    total: number;
+  }[];
+}
 
-export function OverviewChart() {
+export function OverviewChart({ data }: OverviewChartProps) {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const reduceMotionRef = React.useRef(false);
   const onBarEnterRef = React.useRef<(e: React.MouseEvent<HTMLDivElement>) => void>(() => {});
@@ -81,9 +79,9 @@ export function OverviewChart() {
       onBarEnterRef.current = () => {};
       onBarLeaveRef.current = () => {};
     };
-  }, { scope: containerRef });
+  }, { scope: containerRef, dependencies: [data] });
 
-  const max = Math.max(...data.map((d) => d.total));
+  const max = Math.max(...data.map((d) => d.total), 1); // Prevent division by zero
 
   return (
     <div ref={containerRef} className="w-full h-[200px] flex items-end gap-2 px-2">
@@ -96,10 +94,10 @@ export function OverviewChart() {
             onMouseLeave={(e) => onBarLeaveRef.current(e)}
           >
             <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-800 text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-zinc-300">
-              ${item.total}
+              {item.total}
             </div>
           </div>
-          <span className="chart-label text-[10px] text-zinc-500 font-medium uppercase tracking-tighter">
+          <span className="chart-label text-[10px] text-zinc-500 font-medium uppercase tracking-tighter truncate w-full text-center">
             {item.name}
           </span>
         </div>

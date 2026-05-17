@@ -103,9 +103,20 @@ export async function proxy(request: NextRequest) {
           }
 
           // Industrial MFA Enforcement for API (W5)
-          const orgData = await redis.get<{ require2FA: boolean; id: string }>(`org:${keyData.orgId}`);
+          let orgData = null;
+          try {
+            orgData = await redis.get<{ require2FA: boolean; id: string }>(`org:${keyData.orgId}`);
+          } catch (e) {
+            console.warn('[Proxy] Redis org fetch failed, skipping MFA enforcement for API key:', e);
+          }
+
           if (orgData?.require2FA) {
-            const isUserMfaEnabled = await redis.get<boolean>(`user:${keyData.userId}:mfa`);
+            let isUserMfaEnabled = false;
+            try {
+              isUserMfaEnabled = await redis.get<boolean>(`user:${keyData.userId}:mfa`) || false;
+            } catch (e) {
+              console.warn('[Proxy] Redis user MFA fetch failed:', e);
+            }
 
             if (!isUserMfaEnabled) {
               return NextResponse.json(
@@ -215,7 +226,12 @@ export async function proxy(request: NextRequest) {
 
         if (orgSlug) {
           // Check Redis for org policy (much faster than DB in proxy)
-          const orgData = await redis.get<{ require2FA: boolean; id: string }>(`org:${orgSlug}`);
+          let orgData = null;
+          try {
+            orgData = await redis.get<{ require2FA: boolean; id: string }>(`org:${orgSlug}`);
+          } catch (e) {
+            console.warn('[Proxy] Redis org policy fetch failed for slug:', orgSlug, e);
+          }
           
           if (orgData?.require2FA) {
             // Check if user has 2FA enabled in their user record

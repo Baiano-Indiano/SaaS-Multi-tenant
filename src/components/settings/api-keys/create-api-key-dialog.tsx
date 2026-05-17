@@ -18,9 +18,10 @@ interface CreateApiKeyDialogProps {
   orgSlug: string;
   roles: TenantRole[];
   onSuccess: () => void;
+  trigger?: React.ReactNode;
 }
 
-export function CreateApiKeyDialog({ orgId, orgSlug, roles, onSuccess }: CreateApiKeyDialogProps) {
+export function CreateApiKeyDialog({ orgId, orgSlug, roles, onSuccess, trigger }: CreateApiKeyDialogProps) {
   const t = useTranslations("Settings.connectivity.apiKeys");
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -90,14 +91,14 @@ export function CreateApiKeyDialog({ orgId, orgSlug, roles, onSuccess }: CreateA
 
   return (
     <Dialog open={open} onOpenChange={(val) => !isLoading && (val ? setOpen(true) : handleClose())}>
-      <DialogTrigger
-        render={
+      <DialogTrigger asChild>
+        {trigger || (
           <Button className="bg-zinc-100 text-zinc-950 hover:bg-zinc-200 transition-all font-medium h-8 px-3">
             <Plus className="mr-2 h-3.5 w-3.5" />
             {t("create")}
           </Button>
-        }
-      />
+        )}
+      </DialogTrigger>
       <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 sm:max-w-[425px]">
         {!createdKey ? (
           <>

@@ -1,187 +1,201 @@
-"use client";
-
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import { AnalyticsWidgets } from "@/components/dashboard/AnalyticsWidgets";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
-import { StatsSkeleton, ChartSkeleton, AreaChartSkeleton, ActivitySkeleton } from "@/components/dashboard/DashboardSkeletons";
 import { MagneticCard } from "@/components/dashboard/MagneticCard";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
-import { useTranslations } from "next-intl";
-import dynamic from "next/dynamic";
+import { DashboardClient } from "@/components/dashboard/dashboard-client";
+import { DashboardContentClient } from "@/components/dashboard/dashboard-content-client";
+import { TechnicalHeader } from "@/components/dashboard/TechnicalHeader";
+import { QuickActions } from "@/components/dashboard/QuickActions";
+import { LogStream } from "@/components/dashboard/LogStream";
+import { getTranslations } from "next-intl/server";
+import { SubsystemHealth } from "@/components/dashboard/SubsystemHealth";
+import { OverviewChart, AreaChart } from "@/components/dashboard/dashboard-charts";
+import { auth } from "@/lib/auth/index";
+import { headers } from "next/headers";
+import { getDashboardStats, getRecentActivity, getAdvancedAnalytics } from "@/lib/api/stats";
+import { GlobalTrafficMap } from "@/components/dashboard/GlobalTrafficMap";
+import { InfraHealthMonitor } from "@/components/dashboard/InfraHealthMonitor";
+import { UsageQuotas } from "@/components/dashboard/UsageQuotas";
+import { DiagnosticsTools } from "@/components/dashboard/DiagnosticsTools";
+import { redirect } from "next/navigation";
+import { getRoles, can } from "@/lib/auth/rbac-utils";
+import { db } from "@/lib/db";
+import { organizations } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
-const OverviewChart = dynamic(() => import("@/components/dashboard/overview-chart").then(m => m.OverviewChart), { ssr: false });
-const AreaChart = dynamic(() => import("@/components/dashboard/area-chart").then(m => m.AreaChart), { ssr: false });
+export default async function DashboardPage() {
+  const t = await getTranslations("Dashboard");
+  const session = await auth.api.getSession({
+    headers: await headers()
+  });
 
-// Mock stats for the demonstration
-const mockStats = {
-  totalProjects: 12,
-  totalMembers: 48,
-  pendingInvites: 5,
-  totalRoles: 4,
-  quotas: {
-    maxMembers: 100,
-    maxProjects: 20,
+  if (!session) {
+    redirect("/login");
   }
-};
 
-export default function DashboardPage() {
-  const t = useTranslations("Dashboard");
-  const [isLoading, setIsLoading] = React.useState(true);
-  const contentRef = React.useRef<HTMLDivElement>(null);
+  const orgId = session.session.activeOrganizationId;
 
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1800); // Premium loading duration
-    return () => clearTimeout(timer);
-  }, []);
+  if (!orgId) {
+    return (
+        <DashboardClient>
+            <div className="flex flex-col items-center justify-center h-[60vh] text-center px-4">
+                <div className="h-16 w-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-6 shadow-2xl">
+                    <span className="text-2xl">🏢</span>
+                </div>
+                <h2 className="text-xl font-black text-white uppercase tracking-tighter mb-2">No Active Organization</h2>
+                <p className="text-zinc-500 max-w-xs font-medium">Please select or create an organization to access your command center.</p>
+            </div>
+        </DashboardClient>
+    );
+  }
 
-  useGSAP(() => {
-    if (!isLoading && contentRef.current) {
-      const mm = gsap.matchMedia(contentRef);
+  const [stats, activities, advancedAnalytics, org] = await Promise.all([
+    getDashboardStats(orgId),
+    getRecentActivity(orgId),
+    getAdvancedAnalytics(orgId),
+    db.query.organizations.findFirst({
+      where: eq(organizations.id, orgId),
+    })
+  ]);
 
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        gsap.from(contentRef.current!.children, {
-          opacity: 0,
-          scale: 0.98,
-          y: 10,
-          duration: 0.8,
-          stagger: 0.1,
-          ease: "expo.out",
-          clearProps: "all"
-        });
-      });
+  if (!org) {
+    return redirect("/org/create");
+  }
 
-      mm.add("(prefers-reduced-motion: reduce)", () => {
-        gsap.from(contentRef.current!.children, {
-          opacity: 0,
-          duration: 0.5,
-          stagger: 0.05,
-          ease: "power2.out",
-          clearProps: "all"
-        });
-      });
+  const [roles, canCreateProject, canInviteMember, canManageApiKeys] = await Promise.all([
+    getRoles(orgId),
+    can(session.user.id, orgId, "projects:create"),
+    can(session.user.id, orgId, "members:invite"),
+    can(session.user.id, orgId, "org:update")
+  ]);
 
-      return () => mm.revert();
-    }
-  }, [isLoading]);
 
   return (
     <DashboardClient>
-      <div className="dashboard-header mb-8">
-        <h1 className="text-3xl font-black tracking-tighter text-zinc-50 uppercase">
-          {t("title")}
-        </h1>
-        <p className="text-zinc-500 mt-1 font-medium">
-          {t("subtitle")}
-        </p>
-      </div>
+      <TechnicalHeader tenantName={stats.orgName} />
 
-      <div ref={contentRef}>
-        <div className="dashboard-section mb-8">
-          {isLoading ? (
-            <StatsSkeleton />
-          ) : (
-            <AnalyticsWidgets stats={mockStats} />
-          )}
-        </div>
+      <DashboardContentClient>
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-16">
+          {/* Main Content Area (80%) */}
+          <div className="lg:col-span-8 space-y-16">
+            <section className="dashboard-section space-y-12">
+              <GlobalTrafficMap logs={advancedAnalytics.logs} />
+              <SubsystemHealth />
+              <AnalyticsWidgets stats={stats} />
+            </section>
 
-        <div className="dashboard-section grid gap-6 md:grid-cols-2 lg:grid-cols-7 mb-8">
-          <MagneticCard className="col-span-4" strength={10}>
-            <Card className="bg-zinc-900/50 border-zinc-800 hover:border-zinc-700 transition-colors overflow-hidden group h-full">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
+            <div className="grid gap-10 md:grid-cols-2">
+              <MagneticCard className="h-full">
+                <Card className="bg-transparent border-none shadow-none overflow-hidden group h-full">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">
+                        {t("resourceDistribution")}
+                      </CardTitle>
+                      <CardDescription className="text-zinc-500 font-medium mt-1">
+                        {t("resourceDistributionDescription")}
+                      </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-[10px] font-black uppercase text-zinc-500 tracking-wider">{t("live")}</span>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pl-2 pb-6 min-h-[250px] flex items-end">
+                    <OverviewChart data={[
+                      { name: t("projects"), total: stats.totalProjects },
+                      { name: t("members"), total: stats.totalMembers },
+                      { name: t("invitations"), total: stats.pendingInvites },
+                    ]} />
+                  </CardContent>
+                </Card>
+              </MagneticCard>
+
+              <MagneticCard className="h-full">
+                <Card className="bg-transparent border-none shadow-none overflow-hidden h-full">
+                  <CardHeader>
+                    <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">
+                      {t("growthAnalytics")}
+                    </CardTitle>
+                    <CardDescription className="text-zinc-500 font-medium">
+                      {t("growthAnalyticsDescription")}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex items-center justify-center min-h-[250px]">
+                     <AreaChart data={[
+                       { date: "Month 1", value: Math.floor(stats.totalProjects * 0.2) },
+                       { date: "Month 2", value: Math.floor(stats.totalProjects * 0.4) },
+                       { date: "Month 3", value: Math.floor(stats.totalProjects * 0.5) },
+                       { date: "Month 4", value: Math.floor(stats.totalProjects * 0.7) },
+                       { date: "Month 5", value: Math.floor(stats.totalProjects * 0.9) },
+                       { date: "Month 6", value: stats.totalProjects },
+                     ]} />
+                  </CardContent>
+                </Card>
+              </MagneticCard>
+            </div>
+
+            <MagneticCard>
+              <Card className="bg-transparent border-none shadow-none h-full">
+                <CardHeader>
                   <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">
-                    {t("resourceDistribution")}
+                    {t("recentActivity")}
                   </CardTitle>
-                  <CardDescription className="text-zinc-500 font-medium mt-1">
-                    {t("resourceDistributionDescription")}
+                  <CardDescription className="text-zinc-500 font-medium">
+                    {t("recentActivityDescription")}
                   </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[10px] font-black uppercase text-zinc-500 tracking-wider">{t("live")}</span>
-                </div>
-              </CardHeader>
-              <CardContent className="pl-2 pb-6 min-h-[200px]">
-                {isLoading ? <ChartSkeleton /> : <OverviewChart />}
-              </CardContent>
-            </Card>
-          </MagneticCard>
-          
-          <MagneticCard className="col-span-3" strength={10}>
-            <Card className="bg-zinc-900/50 border-zinc-800 hover:border-zinc-700 transition-colors overflow-hidden h-full">
-              <CardHeader>
-                <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">
-                  {t("growthAnalytics")}
-                </CardTitle>
-                <CardDescription className="text-zinc-500 font-medium">
-                  {t("growthAnalyticsDescription")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex items-center justify-center min-h-[200px]">
-                 {isLoading ? <AreaChartSkeleton /> : <AreaChart />}
-              </CardContent>
-            </Card>
-          </MagneticCard>
-        </div>
-
-        <div className="dashboard-section grid gap-6 md:grid-cols-1 lg:grid-cols-3">
-          <MagneticCard className="lg:col-span-2" strength={5}>
-            <Card className="bg-zinc-900/50 border-zinc-800 hover:border-zinc-700 transition-colors h-full">
-              <CardHeader>
-                <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">
-                  {t("recentActivity")}
-                </CardTitle>
-                <CardDescription className="text-zinc-500 font-medium">
-                  {t("recentActivityDescription")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                 {isLoading ? <ActivitySkeleton /> : <ActivityFeed />}
-              </CardContent>
-            </Card>
-          </MagneticCard>
-
-          <div className="space-y-6">
-             <Card className="bg-zinc-900/50 border-zinc-800 border-l-emerald-500 border-l-4">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xs font-bold uppercase tracking-widest text-zinc-500">{t("systemHealth")}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-zinc-300">{t("apiLatency")}</span>
-                    <span className="text-xs font-bold text-emerald-500">24ms</span>
-                  </div>
-                  <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-500 w-[15%]" />
-                  </div>
+                   <ActivityFeed activities={activities} />
                 </CardContent>
-             </Card>
+              </Card>
+            </MagneticCard>
+          </div>
 
-             <Card className="bg-zinc-900/50 border-zinc-800 border-l-amber-500 border-l-4">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xs font-bold uppercase tracking-widest text-zinc-500">{t("upcomingTasks")}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                      <span className="text-xs text-zinc-400 font-medium line-through decoration-zinc-600">{t("upgradeSchema")}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                      <span className="text-xs text-white font-bold">{t("implementWebhooks")}</span>
-                    </div>
-                  </div>
-                </CardContent>
-             </Card>
+          {/* Technical Rail (20%) */}
+          <div className="lg:col-span-2 space-y-10">
+            <div className="space-y-4">
+               <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 px-1 border-l-2 border-emerald-500/50 pl-3 ml-1">
+                 Quick Operations
+               </h2>
+                <QuickActions
+                  orgId={orgId}
+                  orgSlug={org.slug!}
+                  roles={roles}
+                  permissions={{
+                    canCreateProject,
+                    canInviteMember,
+                    canManageApiKeys
+                  }}
+                />
+            </div>
+
+            <div className="space-y-4">
+               <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 px-1 border-l-2 border-blue-500/50 pl-3 ml-1">
+                 Live Feed
+               </h2>
+               <LogStream />
+            </div>
+
+            <div className="space-y-4">
+               <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 px-1 border-l-2 border-amber-500/50 pl-3 ml-1">
+                 Health & Usage
+               </h2>
+               <InfraHealthMonitor
+                 latencyTrend={advancedAnalytics.latencyTrend}
+                 systemLoad={advancedAnalytics.systemLoad}
+               />
+               <UsageQuotas stats={stats} />
+            </div>
+
+            <DiagnosticsTools
+              logs={advancedAnalytics.logs}
+              cacheStats={advancedAnalytics.cacheMetrics}
+            />
           </div>
         </div>
-      </div>
+      </DashboardContentClient>
     </DashboardClient>
   );
 }

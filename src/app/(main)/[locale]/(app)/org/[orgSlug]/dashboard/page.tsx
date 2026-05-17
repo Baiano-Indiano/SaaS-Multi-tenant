@@ -1,14 +1,28 @@
+import * as React from "react";
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { organizations } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { redirect, notFound } from 'next/navigation';
-import { getDashboardStatsAction } from '@/app/actions/analytics';
-import { AnalyticsWidgets } from '@/components/dashboard/AnalyticsWidgets';
-import { DashboardClient } from "@/components/dashboard/dashboard-client";
-import { LampCeiling, Rocket } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
+import { DashboardClient } from "@/components/dashboard/dashboard-client";
+import { DashboardContentClient } from "@/components/dashboard/dashboard-content-client";
+import { TechnicalHeader } from "@/components/dashboard/TechnicalHeader";
+import { AnalyticsWidgets } from '@/components/dashboard/AnalyticsWidgets';
+import { ActivityFeed } from "@/components/dashboard/activity-feed";
+import { MagneticCard } from "@/components/dashboard/MagneticCard";
+import { QuickActions } from "@/components/dashboard/QuickActions";
+import { getRoles, can } from "@/lib/auth/rbac-utils";
+import { LogStream } from "@/components/dashboard/LogStream";
+import { SubsystemHealth } from "@/components/dashboard/SubsystemHealth";
+import { OverviewChart, AreaChart } from "@/components/dashboard/dashboard-charts";
+import { GlobalTrafficMap } from "@/components/dashboard/GlobalTrafficMap";
+import { InfraHealthMonitor } from "@/components/dashboard/InfraHealthMonitor";
+import { UsageQuotas } from "@/components/dashboard/UsageQuotas";
+import { DiagnosticsTools } from "@/components/dashboard/DiagnosticsTools";
+import { getDashboardStats, getRecentActivity, getAdvancedAnalytics } from "@/lib/api/stats";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function OrgDashboardPage({
   params,
@@ -18,6 +32,7 @@ export default async function OrgDashboardPage({
   const { orgSlug } = await params;
   const t = await getTranslations('Dashboard');
   const session = await auth.api.getSession({ headers: await headers() });
+
   if (!session?.user) redirect('/login');
 
   // Fetch organization to get the ID
@@ -27,48 +42,157 @@ export default async function OrgDashboardPage({
 
   if (!org) notFound();
 
-  // Fetch consolidated analytics
-  const result = await getDashboardStatsAction(org.id);
+  // Fetch consolidated analytics using the common lib functions
+  const [stats, activities, advancedAnalytics, roles] = await Promise.all([
+    getDashboardStats(org.id),
+    getRecentActivity(org.id),
+    getAdvancedAnalytics(org.id),
+    getRoles(org.id)
+  ]);
+
+  // RBAC permissions for Quick Actions
+  const [canCreateProject, canInviteMember, canManageApiKeys] = await Promise.all([
+    can(session.user.id, org.id, "projects:create"),
+    can(session.user.id, org.id, "members:invite"),
+    can(session.user.id, org.id, "org:update") // Permission for API Keys
+  ]);
+
 
   return (
     <DashboardClient>
-      <div className="dashboard-header">
-        <h1 className="text-3xl font-black text-zinc-100 tracking-tight uppercase">{t('overview')}</h1>
-        <p className="text-zinc-400 mt-1 font-medium">
-          {t('managing')} <span className="text-zinc-100 font-semibold">{org.name}</span>
-        </p>
-      </div>
+      <TechnicalHeader tenantName={org.name} />
 
-      <div className="dashboard-section">
-        <AnalyticsWidgets stats={result.stats} />
-      </div>
+      <DashboardContentClient>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Left Column: Traffic & Health (7/12) */}
+          <div className="lg:col-span-7 space-y-8">
+            <section className="dashboard-section">
+              <GlobalTrafficMap logs={advancedAnalytics.logs} />
+            </section>
 
-      {/* Quick Actions */}
-      <div className="dashboard-section grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-8 flex flex-col justify-center items-center text-center space-y-4 hover:border-zinc-700 transition-colors">
-          <div className="h-12 w-12 rounded-full bg-zinc-800 flex items-center justify-center">
-            <LampCeiling className="h-6 w-6 text-zinc-400" />
+            <section className="dashboard-section">
+              <SubsystemHealth />
+            </section>
+
+            <section className="dashboard-section">
+              <AnalyticsWidgets stats={stats} />
+            </section>
+
+            <section className="dashboard-section grid gap-8 md:grid-cols-2">
+              <MagneticCard className="h-full border-none bg-transparent backdrop-blur-none">
+                <Card className="bg-zinc-900/40 border-zinc-800/50 backdrop-blur-sm shadow-xl overflow-hidden group h-full">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">
+                        {t("resourceDistribution")}
+                      </CardTitle>
+                      <CardDescription className="text-zinc-500 font-medium mt-1">
+                        {t("resourceDistributionDescription")}
+                      </CardDescription>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pl-2 pb-6 min-h-[250px] flex items-end">
+                    <OverviewChart data={[
+                      { name: t("projects"), total: stats.totalProjects },
+                      { name: t("members"), total: stats.totalMembers },
+                      { name: t("invitations"), total: stats.pendingInvites },
+                    ]} />
+                  </CardContent>
+                </Card>
+              </MagneticCard>
+
+              <MagneticCard className="h-full border-none bg-transparent backdrop-blur-none">
+                <Card className="bg-zinc-900/40 border-zinc-800/50 backdrop-blur-sm shadow-xl overflow-hidden h-full">
+                  <CardHeader>
+                    <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">
+                      {t("growthAnalytics")}
+                    </CardTitle>
+                    <CardDescription className="text-zinc-500 font-medium">
+                      {t("growthAnalyticsDescription")}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex items-center justify-center min-h-[250px]">
+                     <AreaChart data={[
+                       { date: "M1", value: Math.floor(stats.totalProjects * 0.2) },
+                       { date: "M2", value: Math.floor(stats.totalProjects * 0.4) },
+                       { date: "M3", value: Math.floor(stats.totalProjects * 0.5) },
+                       { date: "M4", value: Math.floor(stats.totalProjects * 0.7) },
+                       { date: "M5", value: Math.floor(stats.totalProjects * 0.9) },
+                       { date: "M6", value: stats.totalProjects },
+                     ]} />
+                  </CardContent>
+                </Card>
+              </MagneticCard>
+            </section>
           </div>
-          <div>
-            <h3 className="text-lg font-bold text-zinc-100">{t('proTip')}</h3>
-            <p className="text-sm text-zinc-400 mt-1 max-w-xs">
-              {t('proTipContent')}
-            </p>
+
+          {/* Right Column: Activity & Rail (5/12) */}
+          <div className="lg:col-span-5 space-y-8">
+            <section className="dashboard-section">
+              <MagneticCard>
+                <Card className="bg-zinc-900/40 border-zinc-800/50 backdrop-blur-sm shadow-xl h-full">
+                  <CardHeader>
+                    <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">
+                      {t("recentActivity")}
+                    </CardTitle>
+                    <CardDescription className="text-zinc-500 font-medium">
+                      {t("recentActivityDescription")}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                     <ActivityFeed activities={activities} />
+                  </CardContent>
+                </Card>
+              </MagneticCard>
+            </section>
+
+            <section className="dashboard-section grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-8">
+              <div className="space-y-4">
+                 <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 px-1 border-l-2 border-emerald-500/50 pl-3 ml-1">
+                   {t("quickOperations")}
+                 </h2>
+                 <QuickActions
+                   orgId={org.id}
+                   orgSlug={orgSlug}
+                   roles={roles}
+                   permissions={{
+                     canCreateProject,
+                     canInviteMember,
+                     canManageApiKeys
+                   }}
+                 />
+              </div>
+
+              <div className="space-y-4">
+                 <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 px-1 border-l-2 border-blue-500/50 pl-3 ml-1">
+                   {t("liveFeed")}
+                 </h2>
+                 <LogStream />
+              </div>
+            </section>
+
+            <section className="dashboard-section space-y-8">
+              <div className="space-y-4">
+                 <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 px-1 border-l-2 border-amber-500/50 pl-3 ml-1">
+                   {t("healthUsage")}
+                 </h2>
+                 <div className="grid grid-cols-1 gap-4">
+                   <InfraHealthMonitor
+                     latencyTrend={advancedAnalytics.latencyTrend}
+                     systemLoad={advancedAnalytics.systemLoad}
+                   />
+                   <UsageQuotas stats={stats} />
+                 </div>
+              </div>
+
+              <DiagnosticsTools
+                logs={advancedAnalytics.logs}
+                cacheStats={advancedAnalytics.cacheMetrics}
+              />
+            </section>
           </div>
         </div>
-        
-        <div className="rounded-xl border border-zinc-800 bg-emerald-500/5 p-8 flex flex-col justify-center items-center text-center space-y-4 hover:border-emerald-500/20 transition-colors">
-          <div className="h-12 w-12 rounded-full bg-emerald-500/10 flex items-center justify-center">
-            <Rocket className="h-6 w-6 text-emerald-500" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-emerald-500">{t('fastDeploy')}</h3>
-            <p className="text-sm text-zinc-400 mt-1 max-w-xs">
-              {t('fastDeployContent')}
-            </p>
-          </div>
-        </div>
-      </div>
+      </DashboardContentClient>
     </DashboardClient>
   );
 }

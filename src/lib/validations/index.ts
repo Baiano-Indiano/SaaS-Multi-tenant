@@ -2,7 +2,7 @@ import { z } from "zod";
 
 // ─── Primitive Validators ────────────────────────────────────────────────────
 
-export const uuidSchema = z.string().uuid("Invalid UUID format");
+export const uuidSchema = z.string().min(1).max(64, "Invalid ID format");
 
 export const slugSchema = z
   .string()

@@ -34,7 +34,7 @@ const serverSchema = z.object({
 
   // Events / Webhooks
   QSTASH_TOKEN: z.string().optional(),
-  INTERNAL_WEBHOOK_SECRET: z.string().min(16).optional(),
+  INTERNAL_WEBHOOK_SECRET: z.string().min(32, "INTERNAL_WEBHOOK_SECRET must be at least 32 characters").optional(),
 
   // Vercel (optional)
   VERCEL_TOKEN: z.string().optional(),
@@ -86,6 +86,12 @@ function validateEnv() {
       console.warn(message);
       return process.env as unknown as z.infer<typeof serverSchema>;
     }
+  }
+
+  if (isProd && result.data.QSTASH_TOKEN && !result.data.INTERNAL_WEBHOOK_SECRET) {
+    throw new Error(
+      "\n🚨 Environment Validation Failed:\n  ❌ INTERNAL_WEBHOOK_SECRET: required in production when QSTASH_TOKEN is configured\n"
+    );
   }
 
   return result.data;
