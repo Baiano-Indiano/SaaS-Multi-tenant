@@ -46,9 +46,10 @@ interface WebhookListProps {
   webhooks: Webhook[];
   orgId: string;
   orgSlug: string;
+  hasUpdatePermission?: boolean;
 }
 
-export function WebhookList({ webhooks, orgId, orgSlug }: WebhookListProps) {
+export function WebhookList({ webhooks, orgId, orgSlug, hasUpdatePermission = false }: WebhookListProps) {
   const t = useTranslations("Settings.connectivity.webhooks");
   const [selectedWebhook, setSelectedWebhook] = useState<{ id: string, url: string } | null>(null);
   const [isLogsOpen, setIsLogsOpen] = useState(false);
@@ -165,16 +166,18 @@ export function WebhookList({ webhooks, orgId, orgSlug }: WebhookListProps) {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-popover border-border text-popover-foreground">
-                          <DropdownMenuItem 
-                            className="hover:bg-secondary/20 focus:bg-secondary/20 cursor-pointer"
-                            onSelect={() => {
-                              navigator.clipboard.writeText(webhook.secret);
-                              toast.success(t("toast.copySuccess"));
-                            }}
-                          >
-                            <ShieldCheck className="mr-2 h-4 w-4" />
-                            {t("menu.copySecret")}
-                          </DropdownMenuItem>
+                          {hasUpdatePermission && (
+                            <DropdownMenuItem 
+                              className="hover:bg-secondary/20 focus:bg-secondary/20 cursor-pointer"
+                              onSelect={() => {
+                                navigator.clipboard.writeText(webhook.secret);
+                                toast.success(t("toast.copySuccess"));
+                              }}
+                            >
+                              <ShieldCheck className="mr-2 h-4 w-4" />
+                              {t("menu.copySecret")}
+                            </DropdownMenuItem>
+                          )}
 
                           <DropdownMenuItem 
                             className="hover:bg-secondary/20 focus:bg-secondary/20 cursor-pointer"
@@ -187,15 +190,19 @@ export function WebhookList({ webhooks, orgId, orgSlug }: WebhookListProps) {
                             {t("menu.viewLogs")}
                           </DropdownMenuItem>
 
-                          <DropdownMenuSeparator className="bg-border" />
-                          
-                          <DropdownMenuItem 
-                            className="text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 cursor-pointer"
-                            onSelect={() => handleDelete(webhook.id)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            <span>{t("menu.delete")}</span>
-                          </DropdownMenuItem>
+                          {hasUpdatePermission && (
+                            <>
+                              <DropdownMenuSeparator className="bg-border" />
+                              
+                              <DropdownMenuItem 
+                                className="text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 cursor-pointer"
+                                onSelect={() => handleDelete(webhook.id)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                <span>{t("menu.delete")}</span>
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                   </TableCell>
