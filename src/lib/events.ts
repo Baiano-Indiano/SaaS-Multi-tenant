@@ -5,12 +5,8 @@ import { workflows, webhooks, webhookDeliveries } from "./db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
-// Generate a random per-boot secret if INTERNAL_WEBHOOK_SECRET is not set.
-// This prevents using a hardcoded guessable value in source code.
-const internalWebhookFallback = randomBytes(32).toString('hex');
-if (!process.env.INTERNAL_WEBHOOK_SECRET) {
-  console.warn('[Event Hub] ⚠️ INTERNAL_WEBHOOK_SECRET is not set. Using ephemeral random secret.');
-}
+const devInternalWebhookFallback = randomBytes(32).toString("hex");
+let warnedAboutDevFallback = false;
 
 export const SUPPORTED_EVENTS = [
   { 
@@ -68,6 +64,24 @@ function getQStashClient(): Client | null {
   return qstashClient;
 }
 
+function getInternalWebhookSecret(): string {
+  const secret = process.env.INTERNAL_WEBHOOK_SECRET;
+  if (secret) return secret;
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "INTERNAL_WEBHOOK_SECRET is required in production when QSTASH_TOKEN is configured."
+    );
+  }
+
+  if (!warnedAboutDevFallback) {
+    console.warn("[Event Hub] INTERNAL_WEBHOOK_SECRET is not set. Using a development-only ephemeral secret.");
+    warnedAboutDevFallback = true;
+  }
+
+  return devInternalWebhookFallback;
+}
+
 /**
  * emitEvent
  * 
@@ -101,6 +115,7 @@ export async function emitEvent(orgId: string, event: string, payload: Record<st
     console.log(`[Event Hub] Found ${totalTargets} matching targets. Publishing to QStash...`);
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const internalWebhookSecret = activeWorkflows.length > 0 ? getInternalWebhookSecret() : null;
 
     // 1. Process Internal Workflows (Connectors like Slack/Discord)
     for (const workflow of activeWorkflows) {
@@ -129,7 +144,7 @@ export async function emitEvent(orgId: string, event: string, payload: Record<st
             targetUrl: config.url,
             event,
             payload,
-            secret: process.env.INTERNAL_WEBHOOK_SECRET || internalWebhookFallback,
+            secret: internalWebhookSecret,
           },
           headers: {
             "x-gravity-org-id": orgId,

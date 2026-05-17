@@ -37,6 +37,7 @@ interface InviteMemberDialogProps {
   roles: { id: string; name: string }[];
   orgId: string;
   orgSlug: string;
+  trigger?: React.ReactNode;
 }
 
 /**
@@ -45,7 +46,7 @@ interface InviteMemberDialogProps {
  * Provides a modal interface to invite new members to the organization.
  * Fetches dynamic roles from the organization's tenant context.
  */
-export function InviteMemberDialog({ roles, orgId, orgSlug }: InviteMemberDialogProps) {
+export function InviteMemberDialog({ roles, orgId, orgSlug, trigger }: InviteMemberDialogProps) {
   const t = useTranslations("Members");
   const tCommon = useTranslations("Common");
   const [open, setOpen] = useState(false);
@@ -128,12 +129,14 @@ export function InviteMemberDialog({ roles, orgId, orgSlug }: InviteMemberDialog
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={
-        <Button className="font-semibold shadow-sm transition-all hover:shadow-md">
-          <UserPlus className="mr-2 h-4 w-4" />
-          {t("inviteMember")}
-        </Button>
-      } />
+      <DialogTrigger asChild>
+        {trigger || (
+          <Button className="font-semibold shadow-sm transition-all hover:shadow-md">
+            <UserPlus className="mr-2 h-4 w-4" />
+            {t("inviteMember")}
+          </Button>
+        )}
+      </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold tracking-tight">{t("inviteMember")}</DialogTitle>

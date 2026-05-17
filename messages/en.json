@@ -139,7 +139,13 @@
     "customRoles": "Custom Roles",
     "accessProfiles": "Access profiles defined",
     "apiUsage": "API Usage",
-    "planLimit": "Plan Limit"
+    "planLimit": "Plan Limit",
+    "projects": "Projects",
+    "members": "Members",
+    "invitations": "Invitations",
+    "quickOperations": "Quick Operations",
+    "liveFeed": "Live Feed",
+    "healthUsage": "Health & Usage"
   },
   "SelectOrg": {
     "title": "Your Organizations",

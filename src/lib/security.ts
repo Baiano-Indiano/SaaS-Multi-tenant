@@ -1,7 +1,7 @@
 /**
  * Security Utilities & CSP Constants
- * 
- * Centralized configuration for Content Security Policy and 
+ *
+ * Centralized configuration for Content Security Policy and
  * infrastructure-level security headers.
  */
 
@@ -71,10 +71,10 @@ export function buildCspHeader(nonce: string): string {
   const directives = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https: 'unsafe-inline' ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ""}`,
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // Keeping unsafe-inline for GSAP/Tailwind per decision
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com http://fonts.googleapis.com",
     `img-src 'self' ${CSP_DOMAINS.images.join(' ')}`,
-    `connect-src 'self' ${CSP_DOMAINS.connect.join(' ')} ${process.env.NODE_ENV === 'development' ? "ws: wss:" : ""}`,
-    `font-src 'self' https://fonts.gstatic.com data:`,
+    `connect-src 'self' ${CSP_DOMAINS.connect.join(' ')} https://*.stripe-network.com ${process.env.NODE_ENV === 'development' ? "ws: wss:" : ""}`,
+    `font-src 'self' https://fonts.gstatic.com http://fonts.gstatic.com data:`,
     `frame-src 'self' ${CSP_DOMAINS.frames.join(' ')}`,
     "frame-ancestors 'self'",
     "object-src 'none'",

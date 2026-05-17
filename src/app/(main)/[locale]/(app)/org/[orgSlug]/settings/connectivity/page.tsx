@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 import { Key, Webhook as WebhookIcon } from "lucide-react";
 import { getApiKeysAction } from "@/app/actions/api-keys";
 import { getWebhooksAction } from "@/app/actions/webhooks";
-import { getRoles } from "@/lib/auth/rbac-utils";
+import { getRoles, can } from "@/lib/auth/rbac-utils";
 import { ApiKeyList, type ApiKey } from "@/components/settings/api-keys/api-key-list";
 import { WebhookList, type Webhook } from "@/components/settings/webhooks/webhook-list";
 import { CreateWebhookDialog } from "@/components/settings/webhooks/create-webhook-dialog";
@@ -36,11 +36,12 @@ export default async function ConnectivitySettingsPage({
 
   if (!org) redirect("/selecionar-org");
 
-  const [apiKeys, webhooksData, workflowsData, roles] = await Promise.all([
+  const [apiKeys, webhooksData, workflowsData, roles, hasUpdatePermission] = await Promise.all([
     getApiKeysAction(org.id) as Promise<ApiKey[]>,
     getWebhooksAction(org.id) as Promise<Webhook[]>,
     getWorkflowsAction(org.id) as Promise<Workflow[]>,
-    getRoles(org.id)
+    getRoles(org.id),
+    can(session.user.id, org.id, "org:update")
   ]);
 
   return (
@@ -86,12 +87,15 @@ export default async function ConnectivitySettingsPage({
                 {t("webhooks.description")}
               </p>
             </div>
-            <CreateWebhookDialog orgId={org.id} orgSlug={org.slug || ""} />
+            {hasUpdatePermission && (
+              <CreateWebhookDialog orgId={org.id} orgSlug={org.slug || ""} />
+            )}
           </div>
           <WebhookList 
             webhooks={webhooksData} 
             orgId={org.id} 
             orgSlug={org.slug || ""} 
+            hasUpdatePermission={hasUpdatePermission}
           />
         </section>
 

@@ -7,7 +7,7 @@ import { webhooks, webhookDeliveries } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { recordAuditLog } from "@/lib/audit";
-import { requirePermission } from "@/lib/auth/rbac-utils";
+import { requirePermission, can } from "@/lib/auth/rbac-utils";
 import { validateExternalUrl } from "@/lib/security/url-validator";
 import { createWebhookSchema, deleteWebhookSchema } from "@/lib/validations";
 import { enforceRateLimit, webhookActionRateLimit } from "@/lib/rate-limit";
@@ -124,9 +124,20 @@ export async function getWebhooksAction(orgId: string) {
   if (!session?.user) throw new Error("Unauthorized");
 
   try {
-    return await getTenantDb(session.user.id, orgId, async (tx) => {
+    const hasUpdatePermission = await can(session.user.id, orgId, "org:update");
+
+    const webhookList = await getTenantDb(session.user.id, orgId, async (tx) => {
       return await tx.select().from(webhooks).orderBy(desc(webhooks.createdAt));
     });
+
+    if (!hasUpdatePermission) {
+      return webhookList.map(webhook => ({
+        ...webhook,
+        secret: "whsec_********"
+      }));
+    }
+
+    return webhookList;
   } catch (error: unknown) {
     console.error("Failed to fetch webhooks:", error);
     return [];

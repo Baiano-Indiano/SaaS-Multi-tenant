@@ -10,6 +10,74 @@ import { generateNonce, buildCspHeader } from './lib/security';
 
 const intlMiddleware = createMiddleware(routing);
 
+const html503 = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Temporarily Unavailable</title>
+    <style>
+        body {
+            background-color: #09090b;
+            color: #f4f4f5;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            max-width: 480px;
+        }
+        .icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            color: #a1a1aa;
+        }
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #f4f4f5;
+        }
+        p {
+            font-size: 0.95rem;
+            color: #a1a1aa;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+        .retry-btn {
+            display: inline-block;
+            background-color: #27272a;
+            color: #f4f4f5;
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            text-decoration: none;
+            font-weight: 500;
+            border: 1px solid #3f3f46;
+            transition: background-color 0.2s;
+        }
+        .retry-btn:hover {
+            background-color: #3f3f46;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🔒</div>
+        <h1>Security Check Unavailable</h1>
+        <p>We are temporarily unable to verify security policies for this request. Please refresh the page or try again in a few moments.</p>
+        <a href="" class="retry-btn" onclick="window.location.reload(); return false;">Try Again</a>
+    </div>
+</body>
+</html>
+`;
+
 /**
  * Proxy / Middleware (Next.js 16 Proxy Convention)
  * 
@@ -103,9 +171,30 @@ export async function proxy(request: NextRequest) {
           }
 
           // Industrial MFA Enforcement for API (W5)
-          const orgData = await redis.get<{ require2FA: boolean; id: string }>(`org:${keyData.orgId}`);
+          let orgData = null;
+          try {
+            orgData = await redis.get<{ require2FA: boolean; id: string }>(`org:${keyData.orgId}`);
+          } catch (e) {
+            Sentry.captureException(e as Error, { tags: { 'proxy.flow': 'api-mfa-org-redis-failure' } });
+            console.error('[Proxy] Redis org fetch failed during MFA check:', e);
+            return NextResponse.json(
+              { error: 'Service Unavailable', message: 'Security check unavailable (Redis down)' },
+              { status: 503 }
+            );
+          }
+
           if (orgData?.require2FA) {
-            const isUserMfaEnabled = await redis.get<boolean>(`user:${keyData.userId}:mfa`);
+            let isUserMfaEnabled = false;
+            try {
+              isUserMfaEnabled = await redis.get<boolean>(`user:${keyData.userId}:mfa`) || false;
+            } catch (e) {
+              Sentry.captureException(e as Error, { tags: { 'proxy.flow': 'api-mfa-user-redis-failure' } });
+              console.error('[Proxy] Redis user MFA fetch failed during MFA check:', e);
+              return NextResponse.json(
+                { error: 'Service Unavailable', message: 'Security check unavailable (Redis down)' },
+                { status: 503 }
+              );
+            }
 
             if (!isUserMfaEnabled) {
               return NextResponse.json(
@@ -215,7 +304,17 @@ export async function proxy(request: NextRequest) {
 
         if (orgSlug) {
           // Check Redis for org policy (much faster than DB in proxy)
-          const orgData = await redis.get<{ require2FA: boolean; id: string }>(`org:${orgSlug}`);
+          let orgData = null;
+          try {
+            orgData = await redis.get<{ require2FA: boolean; id: string }>(`org:${orgSlug}`);
+          } catch (e) {
+            Sentry.captureException(e as Error, { tags: { 'proxy.flow': 'web-mfa-org-redis-failure' } });
+            console.error('[Proxy] Redis org policy fetch failed for slug:', orgSlug, e);
+            return new NextResponse(html503, {
+              status: 503,
+              headers: { 'Content-Type': 'text/html; charset=utf-8' }
+            });
+          }
           
           if (orgData?.require2FA) {
             // Check if user has 2FA enabled in their user record

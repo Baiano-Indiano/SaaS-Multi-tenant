@@ -11,16 +11,11 @@ interface DataPoint {
   value: number;
 }
 
-const mockData: DataPoint[] = [
-  { date: "2024-01", value: 30 },
-  { date: "2024-02", value: 45 },
-  { date: "2024-03", value: 35 },
-  { date: "2024-04", value: 60 },
-  { date: "2024-05", value: 55 },
-  { date: "2024-06", value: 80 },
-];
+interface AreaChartProps {
+  data: DataPoint[];
+}
 
-export function AreaChart() {
+export function AreaChart({ data }: AreaChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
   const areaRef = useRef<SVGPathElement>(null);
@@ -29,17 +24,24 @@ export function AreaChart() {
   const height = 150;
   const padding = 20;
 
-  const maxVal = Math.max(...mockData.map(d => d.value));
-  const points = mockData.map((d, i) => ({
-    x: (i / (mockData.length - 1)) * (width - padding * 2) + padding,
+  const maxVal = Math.max(...data.map(d => d.value), 1);
+  const points = data.map((d, i) => ({
+    x: data.length > 1
+      ? (i / (data.length - 1)) * (width - padding * 2) + padding
+      : width / 2,
     y: height - ((d.value / maxVal) * (height - padding * 2) + padding),
   }));
 
-  const linePath = `M ${points.map(p => `${p.x},${p.y}`).join(" L ")}`;
-  const areaPath = `${linePath} L ${points[points.length - 1].x},${height} L ${points[0].x},${height} Z`;
+  const linePath = data.length > 1
+    ? `M ${points.map(p => `${p.x},${p.y}`).join(" L ")}`
+    : `M ${padding},${points[0]?.y ?? 0} L ${width - padding},${points[0]?.y ?? 0}`;
+
+  const areaPath = data.length > 1
+    ? `${linePath} L ${points[points.length - 1].x},${height} L ${points[0].x},${height} Z`
+    : `M ${padding},${points[0]?.y ?? 0} L ${width - padding},${points[0]?.y ?? 0} L ${width - padding},${height} L ${padding},${height} Z`;
 
   useGSAP(() => {
-    if (!pathRef.current || !areaRef.current) return;
+    if (!pathRef.current || !areaRef.current || data.length === 0) return;
 
     const mm = gsap.matchMedia(containerRef);
 
@@ -56,7 +58,7 @@ export function AreaChart() {
       });
 
       // Area fade in
-      gsap.fromTo(areaRef.current, 
+      gsap.fromTo(areaRef.current,
         { opacity: 0 },
         { opacity: 0.1, duration: 1, delay: 1, ease: "power2.out" }
       );
@@ -64,12 +66,20 @@ export function AreaChart() {
 
     mm.add("(prefers-reduced-motion: reduce)", () => {
       // Just fade everything in
-      gsap.fromTo([pathRef.current, areaRef.current], 
+      gsap.fromTo([pathRef.current, areaRef.current],
         { opacity: 0 },
         { opacity: 1, duration: 1, delay: 0.5, ease: "power2.out" }
       );
     });
-  }, { scope: containerRef });
+  }, { scope: containerRef, dependencies: [data] });
+
+  if (data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-zinc-500 text-xs font-medium uppercase tracking-widest">
+        No data available
+      </div>
+    );
+  }
 
   return (
     <div ref={containerRef} className="w-full h-full flex flex-col justify-center items-center">
@@ -84,7 +94,7 @@ export function AreaChart() {
             <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
           </linearGradient>
         </defs>
-        
+
         {/* Grid lines */}
         <line x1={padding} y1={padding} x2={width-padding} y2={padding} stroke="#27272a" strokeWidth="1" strokeDasharray="4" />
         <line x1={padding} y1={height/2} x2={width-padding} y2={height/2} stroke="#27272a" strokeWidth="1" strokeDasharray="4" />
@@ -119,7 +129,7 @@ export function AreaChart() {
             r="4"
             className="fill-zinc-950 stroke-emerald-500 stroke-2 hover:r-6 transition-all duration-200 cursor-pointer"
           >
-            <title>{mockData[i].date}: {mockData[i].value}</title>
+            <title>{data[i]?.date}: {data[i]?.value}</title>
           </circle>
         ))}
       </svg>

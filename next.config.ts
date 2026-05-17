@@ -34,6 +34,10 @@ const securityHeaders = [
     key: "Referrer-Policy",
     value: "origin-when-cross-origin",
   },
+  {
+    key: "Content-Security-Policy",
+    value: "img-src 'self' data: https://grainy-gradients.vercel.app https://*.githubusercontent.com https://*.googleusercontent.com https://*.gravatar.com https://*.stripe.com;",
+  },
 ];
 
 const nextConfig: NextConfig = {

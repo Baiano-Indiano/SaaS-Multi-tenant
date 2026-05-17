@@ -62,7 +62,7 @@ export function AnalyticsWidgets({ stats }: AnalyticsWidgetsProps) {
       <GsapEntrance 
         stagger={0.1}
         duration={0.8}
-        className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
+        className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
       >
         <MagneticCard className="h-full">
             <div className="bg-icon absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
