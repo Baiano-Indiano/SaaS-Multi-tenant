@@ -305,6 +305,7 @@ export const workflows = pgTable("workflow", {
 	actionType: text("actionType").notNull().default("webhook"),
 	actionConfig: text("actionConfig").notNull(), // JSON string for target URL, etc.
 	connectorId: text("connectorId"), // Logical reference to tenant.connector id
+	filters: text("filters"), // JSON string representing nested FilterGroup AST
 	isActive: boolean("isActive").notNull().default(true),
 	createdAt: timestamp("createdAt").notNull().defaultNow(),
 });

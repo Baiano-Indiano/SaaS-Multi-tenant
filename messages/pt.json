@@ -592,7 +592,8 @@
           "project_deleted": "Projeto Excluído",
           "member_invited": "Membro Convidado",
           "member_removed": "Membro Removido",
-          "billing_subscription_updated": "Assinatura Atualizada"
+          "billing_subscription_updated": "Assinatura Atualizada",
+          "billing_plan_updated": "Plano Atualizado"
         }
       },
       "automations": {
@@ -634,10 +635,11 @@
         },
         "builder": {
           "title": "Construtor de Automação",
-          "step": "Passo {step} de 3: {description}",
+          "step": "Passo {step} de 4: {description}",
           "steps": {
             "trigger": "Selecionar Gatilho",
             "action": "Selecionar Ação",
+            "conditions": "Configurar Condições",
             "config": "Configurar Conexão"
           },
           "form": {
@@ -645,6 +647,16 @@
             "namePlaceholder": "Ex: Notificar Slack ao Criar Projeto",
             "triggerLabel": "Quando isso acontecer...",
             "actionLabel": "Então faça isso...",
+            "conditionsTitle": "Regras de Roteamento Condicional",
+            "conditionsDesc": "Roteie eventos apenas se corresponderem às regras lógicas aninhadas. Deixe em branco para rotear todos os eventos.",
+            "addRule": "Adicionar Regra",
+            "addGroup": "Adicionar Grupo",
+            "fieldLabel": "Campo",
+            "operatorLabel": "Operador",
+            "valueLabel": "Valor",
+            "combinatorLabel": "Lógica de Combinação",
+            "deleteRule": "Remover regra",
+            "deleteGroup": "Remover grupo",
             "configLabel": "Configurando {type} para {trigger}",
             "destinationLabel": "Destino",
             "destinationPlaceholder": "Selecione o tipo de destino",
@@ -658,7 +670,8 @@
             "cancel": "Cancelar",
             "back": "Voltar",
             "continue": "Continuar",
-            "finish": "Finalizar e Ativar"
+            "finish": "Finalizar e Ativar",
+            "create": "Criar Automação"
           },
           "triggers": {
             "project_created": { "label": "Projeto Criado", "description": "Acionado quando um novo projeto é criado." },
@@ -785,6 +798,19 @@
       "saving": "Salvando...",
       "savedSuccess": "Projeto atualizado com sucesso",
       "error": "Falha ao atualizar projeto"
+    },
+    "details": {
+      "back": "Voltar para Projetos",
+      "noDescription": "Sem descrição disponível",
+      "settings": "Configurações",
+      "sidebarTitle": "Informações do Projeto",
+      "created": "Criado",
+      "updated": "Atualizado",
+      "ownerId": "ID do Criador",
+      "liveStatus": "Status Operacional",
+      "synchronized": "Sincronizado",
+      "boardPlaceholderTitle": "Quadro do Projeto",
+      "boardPlaceholderDesc": "O espaço de trabalho ativo para {name} carregará métricas, tarefas e telemetria aqui."
     }
   },
   "Playground": {

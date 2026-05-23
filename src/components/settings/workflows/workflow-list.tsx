@@ -38,8 +38,36 @@ export interface Workflow {
   trigger: string;
   actionType: string;
   actionConfig: string; // JSON string
+  filters?: string | null;
   isActive: boolean;
   createdAt: Date;
+}
+
+function getFiltersSummary(filtersJson: string | null | undefined): { rulesCount: number; groupsCount: number } | null {
+  if (!filtersJson) return null;
+  try {
+    const group = JSON.parse(filtersJson);
+    if (!group || !group.rules || !Array.isArray(group.rules)) return null;
+
+    let rulesCount = 0;
+    let groupsCount = 0;
+
+    function traverse(g: any) {
+      groupsCount++;
+      for (const rule of g.rules) {
+        if ("combinator" in rule) {
+          traverse(rule);
+        } else {
+          rulesCount++;
+        }
+      }
+    }
+
+    traverse(group);
+    return { rulesCount, groupsCount };
+  } catch {
+    return null;
+  }
 }
 
 interface WorkflowListProps {
@@ -129,7 +157,19 @@ export function WorkflowList({ workflows, orgId, orgSlug }: WorkflowListProps) {
                       <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
                         <Zap className="w-4 h-4 text-orange-500" />
                       </div>
-                      <span className="truncate max-w-[200px]">{workflow.name}</span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="truncate max-w-[200px]">{workflow.name}</span>
+                        {(() => {
+                          const summary = getFiltersSummary(workflow.filters);
+                          if (!summary || summary.rulesCount === 0) return null;
+                          return (
+                            <span className="text-[10px] text-muted-foreground font-normal mt-0.5 flex items-center gap-1">
+                              <span className="inline-block w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                              {summary.rulesCount} {summary.rulesCount === 1 ? "condition" : "conditions"}
+                            </span>
+                          );
+                        })()}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>

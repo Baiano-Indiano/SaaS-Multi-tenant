@@ -21,7 +21,10 @@ import {
   CheckCircle2,
   Loader2,
   Settings2,
-  Link
+  Link,
+  Trash2,
+  FolderPlus,
+  PlusCircle
 } from "lucide-react";
 import { SlackIcon, DiscordIcon } from "@/components/icons";
 import { motion, AnimatePresence } from "framer-motion";
@@ -53,6 +56,305 @@ interface WorkflowBuilderProps {
   orgId: string;
   orgSlug: string;
   initialConnectors?: Connector[];
+}
+
+export type FilterOperator = 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'exists' | 'not_exists';
+
+export interface FilterRule {
+  field: string;
+  operator: FilterOperator;
+  value: string;
+}
+
+export interface FilterGroup {
+  combinator: 'and' | 'or';
+  rules: (FilterRule | FilterGroup)[];
+}
+
+const COMMON_FIELDS: Record<string, { value: string; label: string }[]> = {
+  "project.created": [
+    { value: "payload.name", label: "Project Name" },
+    { value: "payload.description", label: "Project Description" },
+    { value: "payload.status", label: "Project Status" },
+    { value: "payload.userId", label: "Creator ID" },
+  ],
+  "project.deleted": [
+    { value: "payload.name", label: "Project Name" },
+    { value: "payload.status", label: "Project Status" },
+  ],
+  "member.invited": [
+    { value: "payload.email", label: "Member Email" },
+    { value: "payload.roleId", label: "Role ID" },
+  ],
+  "member.removed": [
+    { value: "payload.userId", label: "Member User ID" },
+  ],
+  "organization.invitation_accepted": [
+    { value: "payload.email", label: "Member Email" },
+    { value: "payload.userId", label: "Member User ID" },
+  ],
+  "role.updated": [
+    { value: "payload.userId", label: "User ID" },
+    { value: "payload.roleId", label: "New Role ID" },
+  ],
+};
+
+interface FilterGroupBuilderProps {
+  group: FilterGroup;
+  onChange: (updatedGroup: FilterGroup) => void;
+  depth: number;
+  trigger: string;
+  t: (key: string, values?: any) => string;
+  onDelete?: () => void;
+}
+
+function FilterGroupBuilder({ group, onChange, depth, trigger, t, onDelete }: FilterGroupBuilderProps) {
+  const triggerFields = COMMON_FIELDS[trigger] || [];
+
+  const handleRuleChange = (index: number, updatedRule: FilterRule) => {
+    const newRules = [...group.rules];
+    newRules[index] = updatedRule;
+    onChange({ ...group, rules: newRules });
+  };
+
+  const handleSubGroupChange = (index: number, updatedSubGroup: FilterGroup) => {
+    const newRules = [...group.rules];
+    newRules[index] = updatedSubGroup;
+    onChange({ ...group, rules: newRules });
+  };
+
+  const addRule = () => {
+    const defaultField = triggerFields[0]?.value || "payload.name";
+    onChange({
+      ...group,
+      rules: [...group.rules, { field: defaultField, operator: "equals", value: "" }],
+    });
+  };
+
+  const addSubGroup = () => {
+    if (depth >= 3) return; // Strict depth limit of 3
+    onChange({
+      ...group,
+      rules: [...group.rules, { combinator: "and", rules: [] }],
+    });
+  };
+
+  const removeChild = (index: number) => {
+    const newRules = group.rules.filter((_, i) => i !== index);
+    onChange({ ...group, rules: newRules });
+  };
+
+  return (
+    <div className={`space-y-4 rounded-xl border p-4 backdrop-blur-sm transition-all ${
+      depth === 1 
+        ? "bg-secondary/10 border-primary/10" 
+        : depth === 2 
+        ? "bg-secondary/5 border-orange-500/10 pl-6 border-l-2 border-l-orange-500/30" 
+        : "bg-background/40 border-amber-500/10 pl-6 border-l-2 border-l-amber-500/30"
+    }`}>
+      <div className="flex items-center justify-between gap-4">
+        {/* Match combinator */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground">{t("form.combinatorLabel")}:</span>
+          <div className="flex items-center gap-1 bg-secondary/30 p-0.5 rounded-md border border-primary/5">
+            <button
+              type="button"
+              onClick={() => onChange({ ...group, combinator: "and" })}
+              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                group.combinator === "and"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              AND
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange({ ...group, combinator: "or" })}
+              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                group.combinator === "or"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              OR
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={addRule}
+            className="h-7 px-2 text-xs hover:bg-primary/5 text-primary gap-1"
+          >
+            <PlusCircle className="w-3.5 h-3.5" />
+            {t("form.addRule")}
+          </Button>
+
+          {depth < 3 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={addSubGroup}
+              className="h-7 px-2 text-xs hover:bg-orange-500/5 text-orange-500 gap-1"
+            >
+              <FolderPlus className="w-3.5 h-3.5" />
+              {t("form.addGroup")}
+            </Button>
+          )}
+
+          {onDelete && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onDelete}
+              className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              title={t("form.deleteGroup")}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {group.rules.length === 0 ? (
+        <div className="text-[11px] text-muted-foreground italic text-center py-2 bg-secondary/5 rounded-lg border border-dashed border-primary/5">
+          No filters configured in this group
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {group.rules.map((rule, idx) => {
+            const isSubGroup = "combinator" in rule;
+
+            if (isSubGroup) {
+              return (
+                <FilterGroupBuilder
+                  key={idx}
+                  group={rule as FilterGroup}
+                  onChange={(subGroup) => handleSubGroupChange(idx, subGroup)}
+                  depth={depth + 1}
+                  trigger={trigger}
+                  t={t}
+                  onDelete={() => removeChild(idx)}
+                />
+              );
+            }
+
+            const ruleItem = rule as FilterRule;
+            const isCustom = !triggerFields.some((f) => f.value === ruleItem.field) && ruleItem.field !== "";
+
+            return (
+              <div key={idx} className="flex gap-2 items-center bg-background/25 border border-primary/5 rounded-lg p-2 animate-item">
+                {/* Field Selection */}
+                <div className="flex-1 min-w-[120px] space-y-1">
+                  {!isCustom ? (
+                    <Select
+                      value={ruleItem.field}
+                      onValueChange={(val) => {
+                        const fieldValue = val ?? "";
+                        if (fieldValue === "custom") {
+                          handleRuleChange(idx, { ...ruleItem, field: "" });
+                        } else {
+                          handleRuleChange(idx, { ...ruleItem, field: fieldValue });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-xs bg-secondary/20 border-primary/5">
+                        <SelectValue placeholder="Select field" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {triggerFields.map((f) => (
+                          <SelectItem key={f.value} value={f.value} className="text-xs">
+                            {f.label}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="custom" className="text-xs italic text-orange-500 font-medium">
+                          Custom path...
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="flex gap-1 items-center">
+                      <Input
+                        value={ruleItem.field}
+                        onChange={(e) => handleRuleChange(idx, { ...ruleItem, field: e.target.value })}
+                        placeholder="payload.some.path"
+                        className="h-8 text-xs bg-secondary/20 border-primary/5"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const defaultField = triggerFields[0]?.value || "payload.name";
+                          handleRuleChange(idx, { ...ruleItem, field: defaultField });
+                        }}
+                        className="h-8 px-1.5 text-[10px] text-muted-foreground hover:text-foreground"
+                      >
+                        Reset
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Operator Selector */}
+                <div className="w-[120px]">
+                  <Select
+                    value={ruleItem.operator}
+                    onValueChange={(val: any) => handleRuleChange(idx, { ...ruleItem, operator: val })}
+                  >
+                    <SelectTrigger className="h-8 text-xs bg-secondary/20 border-primary/5">
+                      <SelectValue placeholder="Operator" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="equals" className="text-xs">Equals</SelectItem>
+                      <SelectItem value="not_equals" className="text-xs">Does not equal</SelectItem>
+                      <SelectItem value="contains" className="text-xs">Contains</SelectItem>
+                      <SelectItem value="not_contains" className="text-xs">Does not contain</SelectItem>
+                      <SelectItem value="exists" className="text-xs">Exists</SelectItem>
+                      <SelectItem value="not_exists" className="text-xs">Does not exist</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Value Input */}
+                {ruleItem.operator !== "exists" && ruleItem.operator !== "not_exists" ? (
+                  <div className="flex-1 min-w-[100px]">
+                    <Input
+                      value={ruleItem.value}
+                      onChange={(e) => handleRuleChange(idx, { ...ruleItem, value: e.target.value })}
+                      placeholder="value"
+                      className="h-8 text-xs bg-secondary/20 border-primary/5"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex-1 text-[10px] text-muted-foreground italic px-2">
+                    (No value required)
+                  </div>
+                )}
+
+                {/* Delete button */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeChild(idx)}
+                  className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function WorkflowBuilder({ orgId, orgSlug, initialConnectors = [] }: WorkflowBuilderProps) {
@@ -95,6 +397,10 @@ export function WorkflowBuilder({ orgId, orgSlug, initialConnectors = [] }: Work
   const [trigger, setTrigger] = useState("");
   const [targetUrl, setTargetUrl] = useState("");
   const [connectorId, setConnectorId] = useState<string>("custom");
+  const [filters, setFilters] = useState<FilterGroup>({
+    combinator: "and",
+    rules: [],
+  });
 
   const reset = () => {
     setStep(1);
@@ -102,6 +408,10 @@ export function WorkflowBuilder({ orgId, orgSlug, initialConnectors = [] }: Work
     setTrigger("");
     setTargetUrl("");
     setConnectorId("custom");
+    setFilters({
+      combinator: "and",
+      rules: [],
+    });
   };
 
   const handleSave = async () => {
@@ -122,6 +432,7 @@ export function WorkflowBuilder({ orgId, orgSlug, initialConnectors = [] }: Work
         trigger,
         targetUrl: connectorId === "custom" ? targetUrl : undefined,
         connectorId: connectorId === "custom" ? undefined : connectorId,
+        filters: filters.rules.length > 0 ? filters : undefined,
         orgId,
         orgSlug,
       });
@@ -163,7 +474,11 @@ export function WorkflowBuilder({ orgId, orgSlug, initialConnectors = [] }: Work
           <DialogDescription>
             {t("step", { 
               step, 
-              description: step === 1 ? t("steps.trigger") : step === 2 ? t("steps.action") : t("steps.config") 
+              description: 
+                step === 1 ? t("steps.trigger") : 
+                step === 2 ? t("steps.action") : 
+                step === 3 ? t("steps.conditions") : 
+                t("steps.config") 
             })}
           </DialogDescription>
         </DialogHeader>
@@ -248,6 +563,31 @@ export function WorkflowBuilder({ orgId, orgSlug, initialConnectors = [] }: Work
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
+                className="space-y-4 step-content"
+              >
+                <div className="space-y-1">
+                  <h4 className="text-sm font-medium text-foreground">{t("form.conditionsTitle")}</h4>
+                  <p className="text-xs text-muted-foreground">{t("form.conditionsDesc")}</p>
+                </div>
+
+                <div className="overflow-y-auto max-h-[280px] pr-1">
+                  <FilterGroupBuilder
+                    group={filters}
+                    onChange={setFilters}
+                    depth={1}
+                    trigger={trigger}
+                    t={t}
+                  />
+                </div>
+              </motion.div>
+            )}
+
+            {step === 4 && (
+              <motion.div
+                key="step4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 className="space-y-6 step-content"
               >
                 <div className="p-4 rounded-xl bg-orange-500/5 border border-orange-500/10 flex items-center gap-3">
@@ -255,7 +595,7 @@ export function WorkflowBuilder({ orgId, orgSlug, initialConnectors = [] }: Work
                   <div className="text-xs text-muted-foreground italic">
                     {t("form.configLabel", { 
                       type: "Webhook", 
-                      trigger: TRIGGERS.find(t => t.id === trigger)?.label ?? ""
+                      trigger: (TRIGGERS.find(t => t.id === trigger)?.label ?? "") as string
                     })}
                   </div>
                 </div>
@@ -326,7 +666,7 @@ export function WorkflowBuilder({ orgId, orgSlug, initialConnectors = [] }: Work
             {step === 1 ? t("buttons.cancel") : <><ChevronLeft className="w-4 h-4" /> {t("buttons.back")}</>}
           </Button>
           
-          {step < 3 ? (
+          {step < 4 ? (
             <Button 
               onClick={nextStep} 
               disabled={step === 1 && !trigger}

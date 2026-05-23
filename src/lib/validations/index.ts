@@ -149,11 +149,43 @@ export const toggleConnectorEventSchema = z.object({
 
 // ─── Workflow Actions ────────────────────────────────────────────────────────
 
+export const filterRuleOperatorSchema = z.enum([
+  "equals",
+  "not_equals",
+  "contains",
+  "not_contains",
+  "exists",
+  "not_exists",
+]);
+
+export const filterRuleSchema = z.object({
+  field: z.string().min(1, "Field is required"),
+  operator: filterRuleOperatorSchema,
+  value: z.string().default(""),
+});
+
+// Enforce max 3 levels of nesting at schema validation layer
+const filterGroupLevel3Schema = z.object({
+  combinator: z.enum(["and", "or"]),
+  rules: z.array(filterRuleSchema),
+});
+
+const filterGroupLevel2Schema = z.object({
+  combinator: z.enum(["and", "or"]),
+  rules: z.array(z.union([filterRuleSchema, filterGroupLevel3Schema])),
+});
+
+export const filterGroupSchema = z.object({
+  combinator: z.enum(["and", "or"]),
+  rules: z.array(z.union([filterRuleSchema, filterGroupLevel2Schema])),
+});
+
 export const createWorkflowSchema = z.object({
   name: nameSchema,
   trigger: z.string().min(1),
   targetUrl: urlSchema.optional(),
   connectorId: uuidSchema.optional(),
+  filters: filterGroupSchema.optional().nullable(),
   orgId: uuidSchema,
   orgSlug: slugSchema,
 });

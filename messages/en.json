@@ -592,7 +592,8 @@
           "project_deleted": "Project Deleted",
           "member_invited": "Member Invited",
           "member_removed": "Member Removed",
-          "billing_subscription_updated": "Subscription Updated"
+          "billing_subscription_updated": "Subscription Updated",
+          "billing_plan_updated": "Plan Updated"
         }
       },
       "automations": {
@@ -634,10 +635,11 @@
         },
         "builder": {
           "title": "Automation Builder",
-          "step": "Step {step} of 3: {description}",
+          "step": "Step {step} of 4: {description}",
           "steps": {
             "trigger": "Select Trigger",
             "action": "Select Action",
+            "conditions": "Configure Conditions",
             "config": "Configure Connection"
           },
           "form": {
@@ -645,6 +647,16 @@
             "namePlaceholder": "E.g., Notify Slack on Project Create",
             "triggerLabel": "When this happens...",
             "actionLabel": "Then do this...",
+            "conditionsTitle": "Conditional Routing Rules",
+            "conditionsDesc": "Route events only if they match nested logic rules. Leave empty to route all events.",
+            "addRule": "Add Rule",
+            "addGroup": "Add Group",
+            "fieldLabel": "Field",
+            "operatorLabel": "Operator",
+            "valueLabel": "Value",
+            "combinatorLabel": "Match Logic",
+            "deleteRule": "Remove rule",
+            "deleteGroup": "Remove group",
             "configLabel": "Configuring {type} for {trigger}",
             "destinationLabel": "Destination",
             "destinationPlaceholder": "Select destination type",
@@ -658,7 +670,8 @@
             "cancel": "Cancel",
             "back": "Back",
             "continue": "Continue",
-            "finish": "Finish & Activate"
+            "finish": "Finish & Activate",
+            "create": "Create Automation"
           },
           "triggers": {
             "project_created": { "label": "Project Created", "description": "Triggered when a new project is created." },
@@ -785,6 +798,19 @@
       "saving": "Saving...",
       "savedSuccess": "Project updated successfully",
       "error": "Failed to update project"
+    },
+    "details": {
+      "back": "Back to Projects",
+      "noDescription": "No description available",
+      "settings": "Settings",
+      "sidebarTitle": "Project Information",
+      "created": "Created",
+      "updated": "Updated",
+      "ownerId": "Owner ID",
+      "liveStatus": "Live Status",
+      "synchronized": "Synchronized",
+      "boardPlaceholderTitle": "Project Board",
+      "boardPlaceholderDesc": "The active workspace for {name} will load metrics, tasks and telemetry here."
     }
   },
   "Playground": {

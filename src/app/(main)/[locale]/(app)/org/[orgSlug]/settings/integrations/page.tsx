@@ -14,6 +14,8 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
+import { cn } from "@/lib/utils";
 
 export default async function IntegrationsSettingsPage({
   params,
@@ -95,16 +97,15 @@ export default async function IntegrationsSettingsPage({
                     <p className="text-xs text-zinc-500">Real-time team notifications via Block Kit.</p>
                   </div>
                 </div>
-                <Button 
-                  asChild 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full border-zinc-800 hover:bg-zinc-800 hover:text-zinc-100 bg-transparent text-zinc-300 font-bold"
+                <a 
+                  href={`/api/connectors/slack/authorize?orgSlug=${org.slug}`}
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "sm" }),
+                    "w-full border-zinc-800 hover:bg-zinc-800 hover:text-zinc-100 bg-transparent text-zinc-300 font-bold"
+                  )}
                 >
-                  <a href={`/api/connectors/slack/authorize?orgSlug=${org.slug}`}>
-                    Connect Slack
-                  </a>
-                </Button>
+                  Connect Slack
+                </a>
               </div>
 
               <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/30 flex flex-col gap-3 opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-default">

@@ -4,6 +4,7 @@ import { withAdminTenantDb } from "./db/tenant-db";
 import { workflows, webhooks, webhookDeliveries } from "./db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
+import { evaluateWorkflowFilters } from "./workflows/evaluator";
 
 const devInternalWebhookFallback = randomBytes(32).toString("hex");
 let warnedAboutDevFallback = false;
@@ -119,6 +120,14 @@ export async function emitEvent(orgId: string, event: string, payload: Record<st
 
     // 1. Process Internal Workflows (Connectors like Slack/Discord)
     for (const workflow of activeWorkflows) {
+      // Evaluate filters if configured
+      if (workflow.filters) {
+        const matches = evaluateWorkflowFilters(workflow.filters, payload);
+        if (!matches) {
+          console.log(`[Event Hub] Workflow "${workflow.name}" (${workflow.id}) conditions did not match payload. Skipping delivery.`);
+          continue;
+        }
+      }
       if (workflow.actionType === "webhook") {
         const config = JSON.parse(workflow.actionConfig);
         const deliveryId = `wd_wf_${uuidv4()}`;

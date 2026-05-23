@@ -19,6 +19,7 @@ export async function createWorkflowAction(data: {
   trigger: string;
   targetUrl?: string;
   connectorId?: string;
+  filters?: any;
   orgId: string;
   orgSlug: string;
 }) {
@@ -47,6 +48,7 @@ export async function createWorkflowAction(data: {
         actionType: "webhook",
         actionConfig,
         connectorId: data.connectorId,
+        filters: data.filters ? JSON.stringify(data.filters) : null,
         isActive: true,
       }).returning();
 
