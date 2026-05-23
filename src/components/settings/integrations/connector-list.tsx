@@ -19,6 +19,7 @@ import {
 } from "@/app/actions/connectors";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useSearchParams, useRouter } from "next/navigation";
 
 interface Connector {
   id: string;
@@ -39,6 +40,20 @@ export function ConnectorList({ connectors, orgId, orgSlug }: ConnectorListProps
   const [testingId, setTestingId] = React.useState<string | null>(null);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
   const [mappingConnector, setMappingConnector] = React.useState<{ id: string, name: string } | null>(null);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  React.useEffect(() => {
+    const success = searchParams.get("success");
+    if (success === "slack") {
+      toast.success("Slack workspace connected successfully!");
+      // Clean up query param from URL
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("success");
+      const cleanPath = window.location.pathname + (params.toString() ? `?${params.toString()}` : "");
+      router.replace(cleanPath);
+    }
+  }, [searchParams, router]);
 
   const handleDelete = async (connectorId: string) => {
     if (!confirm("Are you sure you want to delete this integration?")) return;
@@ -102,10 +117,27 @@ export function ConnectorList({ connectors, orgId, orgSlug }: ConnectorListProps
                 {connector.name}
               </CardTitle>
               <CardDescription className="text-xs text-zinc-500 flex items-center gap-1.5">
-                {connector.type.charAt(0).toUpperCase() + connector.type.slice(1)} Webhook
+                {connector.type.charAt(0).toUpperCase() + connector.type.slice(1)} {(() => {
+                  try {
+                    const config = JSON.parse(connector.config);
+                    return config.accessToken ? "OAuth" : "Webhook";
+                  } catch {
+                    return "Webhook";
+                  }
+                })()}
                 <span className="h-1 w-1 rounded-full bg-zinc-700" />
-                <span className="truncate max-w-[120px]">
-                  {JSON.parse(connector.config).url}
+                <span className="truncate max-w-[180px]">
+                  {(() => {
+                    try {
+                      const config = JSON.parse(connector.config);
+                      if (connector.type === "slack" && config.teamName && config.channel) {
+                        return `${config.teamName} (${config.channel})`;
+                      }
+                      return config.url;
+                    } catch {
+                      return "";
+                    }
+                  })()}
                 </span>
               </CardDescription>
             </div>

@@ -13,6 +13,7 @@ import { DeliveryLogs } from "@/components/settings/integrations/delivery-logs";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 
 export default async function IntegrationsSettingsPage({
   params,
@@ -84,14 +85,26 @@ export default async function IntegrationsSettingsPage({
           <section className="space-y-4">
             <h4 className="text-sm font-semibold text-zinc-300">Available Integrations</h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/30 flex flex-col gap-3 opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-default">
-                <div className="h-10 w-10 rounded-lg bg-[#4A154B]/10 flex items-center justify-center">
-                  <SlackIcon className="h-5 w-5 text-[#4A154B]" />
+              <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/30 flex flex-col justify-between gap-4 transition-all group">
+                <div className="flex flex-col gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-[#4A154B]/10 flex items-center justify-center">
+                    <SlackIcon className="h-5 w-5 text-[#4A154B]" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-zinc-200">Slack</p>
+                    <p className="text-xs text-zinc-500">Real-time team notifications via Block Kit.</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-zinc-200">Slack</p>
-                  <p className="text-xs text-zinc-500">Real-time team notifications via Block Kit.</p>
-                </div>
+                <Button 
+                  asChild 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full border-zinc-800 hover:bg-zinc-800 hover:text-zinc-100 bg-transparent text-zinc-300 font-bold"
+                >
+                  <a href={`/api/connectors/slack/authorize?orgSlug=${org.slug}`}>
+                    Connect Slack
+                  </a>
+                </Button>
               </div>
 
               <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/30 flex flex-col gap-3 opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-default">
