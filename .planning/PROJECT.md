@@ -4,25 +4,24 @@
 
 A B2B SaaS starter boilerplate focusing on deep organization isolation and premium user experience.
 
-## Current State: v8.0 (Enterprise Reliability & Security Hardening) - [Shipped]
+## Current State: v9.0 (Developer Experience & Scalability) - [Shipped]
 
-**Goal Accomplished:** Transformed the application into a production-resilient platform with deep observability (Sentry), tenant-aware rate limiting, PII sanitization, and strict security headers (CSP).
+**Goal Accomplished:** Optimized the local development workflow, unified database migration and tenant management tools, and finalized the public API gateway with a built-in interactive playground sandbox.
 
 ### Shipped Features
-- **Sentry APM**: Full observability in `proxy.ts` with PII scrubbing.
-- **Rate Limiting**: Multi-tier protection (Auth/API) via Upstash/Redis.
-- **PII Sanitization**: Recursive scrubbing of sensitive data in logs and traces.
-- **Security Audit**: Automated OWASP scans and nonce-based CSP implementation.
+- **Interactive CLI Tools**: Unified `@clack/prompts` + `commander` terminal tool for tenant/member management.
+- **Robust Test Coverage**: Vitest unit testing for security proxy, and E2E onboarding tests with Playwright.
+- **SSO & DNS Verification**: Automated DNS TXT domain verification and OIDC configuration integration.
+- **Public API & Playground**: OpenAPI 3.1 schema auto-generation and dynamic in-app Sandbox UI console.
 
-## Current Milestone: v9.0 (Developer Experience & Scalability)
+## Current Milestone: v10.0 (Enterprise Integrations & Workflow Automation)
 
-**Goal:** Otimizar o workflow de desenvolvimento local e preparar a infraestrutura para escala multi-região e expansão de API programática.
+**Goal:** Expand the connectivity ecosystem with pre-built Slack/Teams OAuth marketplace integrations and customized scheduled reports.
 
 **Target features:**
-- **Testing Expansion**: Suíte E2E (Playwright) e Unitários (Vitest) para core infra.
-- **Tenant CLI**: Ferramentas para gestão de schemas e migrações.
-- **Public API & Webhooks**: Autenticação via API Key no Proxy e fundação de eventos.
-- **Scalability**: Estratégia de banco de dados multi-região.
+- **Marketplace OAuth**: Integration flows for native Slack/Microsoft Teams connectors.
+- **Conditional Workflows**: Filter and rule engines for event triggers.
+- **Scheduled Telemetry**: Weekly email digests and custom telemetry exports.
 
 ## Requirements
 
@@ -41,14 +40,21 @@ A B2B SaaS starter boilerplate focusing on deep organization isolation and premi
 - [x] Compliance Hardening (PII masking in Audit Logs) [Phase 29]
 - [x] GSAP Performance & Reduced Motion Logic [Phase 30]
 - [x] Security Audit (OWASP) & CSP Hardening [Phase 31]
+- [x] Quality Assurance & Core Testing [Phase 32]
+- [x] Infrastructure Tooling & CLI [Phase 33]
+- [x] Public API & Webhooks [Phase 34]
+- [x] Enterprise SSO & Domain Verification [Phase 35]
+- [x] Dashboard API Playground [Phase 36]
+- [x] Enterprise Security & Scalability [Phase 37]
+- [x] Infrastructure Robustness Hardening [Phase 38]
 
 ### Active
 
-- [ ] **TEST-01**: Unit tests for proxy security logic (CSP/Nonce)
-- [ ] **TEST-02**: E2E tests for tenant onboarding flows
-- [ ] **TOOL-01**: CLI utility for schema management & migrations
-- [ ] **API-03**: Proxy-based API Key Authentication with Rate Limiting
-- [ ] **API-02**: Webhooks infrastructure (Event dispatcher)
+- [ ] **INT-01**: Slack OAuth App integration ("Add to Slack")
+- [ ] **INT-02**: Microsoft Teams OAuth integration
+- [ ] **WF-01**: Conditional filters for trigger workflow actions
+- [ ] **REP-01**: Weekly email digest with Resend
+- [ ] **REP-02**: PDF/JSON report generation service
 
 ## Constraints
 
