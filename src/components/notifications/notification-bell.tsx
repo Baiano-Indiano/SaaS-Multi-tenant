@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useNotifications } from "./notification-provider";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface Notification {
 	id: string;
@@ -26,6 +27,7 @@ export function NotificationBell() {
 	const { unreadCount, setUnreadCount } = useNotifications();
 	const [notifications] = useState<Notification[]>([]);
 	const [isOpen, setIsOpen] = useState(false);
+	const t = useTranslations("Notifications");
 
 	// In a real app, we would fetch notifications from an API or Server Action
 	// For this phase, we'll simulate the history and mark as read logic
@@ -59,16 +61,16 @@ export function NotificationBell() {
 			/>
 			<PopoverContent className="w-80 p-0 bg-zinc-900 border-zinc-800 shadow-2xl" align="end">
 				<div className="flex items-center justify-between p-4 border-b border-zinc-800">
-					<h3 className="font-semibold text-sm text-zinc-100">Notifications</h3>
+					<h3 className="font-semibold text-sm text-zinc-100">{t("title")}</h3>
 					<button className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
-						Mark all as read
+						{t("markAllAsRead")}
 					</button>
 				</div>
 				<ScrollArea className="h-80">
 					{notifications.length === 0 ? (
 						<div className="flex flex-col items-center justify-center h-full p-8 text-center">
 							<Bell className="h-8 w-8 text-zinc-700 mb-2" />
-							<p className="text-xs text-zinc-500">No notifications yet.</p>
+							<p className="text-xs text-zinc-500">{t("none")}</p>
 						</div>
 					) : (
 						<div className="flex flex-col">
@@ -97,7 +99,7 @@ export function NotificationBell() {
 						variant="ghost"
 						className="w-full text-xs text-zinc-500 hover:text-zinc-300"
 					>
-						View all notifications
+						{t("viewAll")}
 					</Button>
 				</div>
 			</PopoverContent>

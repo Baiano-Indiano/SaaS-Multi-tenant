@@ -109,17 +109,17 @@ interface FilterGroupBuilderProps {
 }
 
 function FilterGroupBuilder({ group, onChange, depth, trigger, t, onDelete }: FilterGroupBuilderProps) {
-  const triggerFields = COMMON_FIELDS[trigger] || [];
+  const triggerFields = Reflect.get(COMMON_FIELDS, trigger) || [];
 
   const handleRuleChange = (index: number, updatedRule: FilterRule) => {
     const newRules = [...group.rules];
-    newRules[index] = updatedRule;
+    Reflect.set(newRules, index, updatedRule);
     onChange({ ...group, rules: newRules });
   };
 
   const handleSubGroupChange = (index: number, updatedSubGroup: FilterGroup) => {
     const newRules = [...group.rules];
-    newRules[index] = updatedSubGroup;
+    Reflect.set(newRules, index, updatedSubGroup);
     onChange({ ...group, rules: newRules });
   };
 
@@ -224,7 +224,7 @@ function FilterGroupBuilder({ group, onChange, depth, trigger, t, onDelete }: Fi
 
       {group.rules.length === 0 ? (
         <div className="text-[11px] text-muted-foreground italic text-center py-2 bg-secondary/5 rounded-lg border border-dashed border-primary/5">
-          No filters configured in this group
+          {t("form.noFilters")}
         </div>
       ) : (
         <div className="space-y-3">
@@ -265,7 +265,7 @@ function FilterGroupBuilder({ group, onChange, depth, trigger, t, onDelete }: Fi
                       }}
                     >
                       <SelectTrigger className="h-8 text-xs bg-secondary/20 border-primary/5">
-                        <SelectValue placeholder="Select field" />
+                        <SelectValue placeholder={t("form.selectField")} />
                       </SelectTrigger>
                       <SelectContent>
                         {triggerFields.map((f) => (
@@ -274,7 +274,7 @@ function FilterGroupBuilder({ group, onChange, depth, trigger, t, onDelete }: Fi
                           </SelectItem>
                         ))}
                         <SelectItem value="custom" className="text-xs italic text-orange-500 font-medium">
-                          Custom path...
+                          {t("form.customPath")}
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -296,7 +296,7 @@ function FilterGroupBuilder({ group, onChange, depth, trigger, t, onDelete }: Fi
                         }}
                         className="h-8 px-1.5 text-[10px] text-muted-foreground hover:text-foreground"
                       >
-                        Reset
+                        {t("form.reset")}
                       </Button>
                     </div>
                   )}
@@ -309,15 +309,15 @@ function FilterGroupBuilder({ group, onChange, depth, trigger, t, onDelete }: Fi
                     onValueChange={(val: any) => handleRuleChange(idx, { ...ruleItem, operator: val })}
                   >
                     <SelectTrigger className="h-8 text-xs bg-secondary/20 border-primary/5">
-                      <SelectValue placeholder="Operator" />
+                      <SelectValue placeholder={t("form.operatorLabel")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="equals" className="text-xs">Equals</SelectItem>
-                      <SelectItem value="not_equals" className="text-xs">Does not equal</SelectItem>
-                      <SelectItem value="contains" className="text-xs">Contains</SelectItem>
-                      <SelectItem value="not_contains" className="text-xs">Does not contain</SelectItem>
-                      <SelectItem value="exists" className="text-xs">Exists</SelectItem>
-                      <SelectItem value="not_exists" className="text-xs">Does not exist</SelectItem>
+                      <SelectItem value="equals" className="text-xs">{t("operators.eq")}</SelectItem>
+                      <SelectItem value="not_equals" className="text-xs">{t("operators.ne")}</SelectItem>
+                      <SelectItem value="contains" className="text-xs">{t("operators.contains")}</SelectItem>
+                      <SelectItem value="not_contains" className="text-xs">{t("operators.not_contains")}</SelectItem>
+                      <SelectItem value="exists" className="text-xs">{t("operators.exists")}</SelectItem>
+                      <SelectItem value="not_exists" className="text-xs">{t("operators.not_exists")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -328,13 +328,13 @@ function FilterGroupBuilder({ group, onChange, depth, trigger, t, onDelete }: Fi
                     <Input
                       value={ruleItem.value}
                       onChange={(e) => handleRuleChange(idx, { ...ruleItem, value: e.target.value })}
-                      placeholder="value"
+                      placeholder={t("form.valueLabel")}
                       className="h-8 text-xs bg-secondary/20 border-primary/5"
                     />
                   </div>
                 ) : (
                   <div className="flex-1 text-[10px] text-muted-foreground italic px-2">
-                    (No value required)
+                    {t("form.noValueRequired")}
                   </div>
                 )}
 
@@ -611,7 +611,7 @@ export function WorkflowBuilder({ orgId, orgSlug, initialConnectors = [] }: Work
                         <SelectItem value="custom">
                           <div className="flex items-center gap-2">
                             <Link className="w-4 h-4" />
-                            <span>Custom Webhook (JSON)</span>
+                            <span>{t("customWebhookLabel")}</span>
                           </div>
                         </SelectItem>
                         {initialConnectors.map((c) => (

@@ -1,18 +1,21 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { redis } from "@/lib/upstash";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
+	const _start = Date.now();
+	logger.info('api', '➜ GET /api/notifications/stream');
 	let session: Awaited<ReturnType<typeof auth.api.getSession>> | null = null;
 	try {
 		session = await auth.api.getSession({
 			headers: req.headers,
 		});
 	} catch (error) {
-		console.error("Failed to resolve auth session for notifications stream:", error);
+		logger.error('api', '✗ GET /api/notifications/stream | Failed to resolve auth session', error);
 		return new Response("Session unavailable", { status: 503 });
 	}
 
@@ -102,10 +105,10 @@ export async function GET(req: NextRequest) {
 					if (isTimeout) {
 						// This is expected for long-polling if no data is found within the window
 						// We log a shorter message and retry quickly
-						console.log("Stream polling timeout (expected), retrying...");
+						logger.info('api', '✓ GET /api/notifications/stream | Polling timeout (expected), retrying');
 						await new Promise(resolve => setTimeout(resolve, 1000));
 					} else {
-						console.error("Stream read error:", err);
+						logger.error('api', '✗ GET /api/notifications/stream | Stream read error', err);
 						// Wait longer on genuine errors before retry
 						await new Promise(resolve => setTimeout(resolve, 5000));
 					}

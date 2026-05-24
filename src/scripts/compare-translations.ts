@@ -5,7 +5,7 @@ const pt = JSON.parse(fs.readFileSync('messages/pt.json', 'utf8')) as Record<str
 
 function getKeys(obj: Record<string, unknown>, prefix = ''): string[] {
   return Object.keys(obj).reduce((res: string[], el) => {
-    const value = obj[el];
+    const value = Reflect.get(obj, el);
     if (Array.isArray(value)) {
       res.push(prefix + el);
     } else if (typeof value === 'object' && value !== null) {
@@ -33,8 +33,8 @@ const ptValuesInEnglish: { path: string; value: string }[] = [];
 function checkValues(enObj: Record<string, unknown>, ptObj: Record<string, unknown>, path = '') {
   for (const key in enObj) {
     const currentPath = path ? `${path}.${key}` : key;
-    const enValRaw = enObj[key];
-    const ptValRaw = ptObj[key];
+    const enValRaw = Reflect.get(enObj, key);
+    const ptValRaw = Reflect.get(ptObj, key);
 
     if (typeof enValRaw === 'object' && enValRaw !== null && !Array.isArray(enValRaw)) {
       if (ptValRaw && typeof ptValRaw === 'object' && !Array.isArray(ptValRaw)) {

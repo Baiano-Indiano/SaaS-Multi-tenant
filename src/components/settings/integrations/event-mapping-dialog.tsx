@@ -28,15 +28,16 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslations } from "next-intl";
 
-const ICON_MAP: Record<string, React.ElementType> = {
-  "rocket": Rocket,
-  "trash": Trash2,
-  "user-plus": UserPlus,
-  "shield-check": ShieldCheck,
-  "user-minus": UserMinus,
-  "settings": Settings,
-};
+interface EventType {
+  id: string;
+  name: string;
+  label: string;
+  description: string;
+  iconName: string;
+  isActive: boolean;
+}
 
 interface EventMappingDialogProps {
   connectorId: string;
@@ -47,13 +48,14 @@ interface EventMappingDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-interface EventSetting {
-  id: string;
-  label: string;
-  description: string;
-  iconName: string;
-  isActive: boolean;
-}
+const ICON_MAP: Record<string, React.ElementType> = {
+  "rocket": Rocket,
+  "trash": Trash2,
+  "user-plus": UserPlus,
+  "shield-check": ShieldCheck,
+  "user-minus": UserMinus,
+  "settings": Settings,
+};
 
 export function EventMappingDialog({
   connectorId,
@@ -63,31 +65,30 @@ export function EventMappingDialog({
   open,
   onOpenChange,
 }: EventMappingDialogProps) {
+  const t = useTranslations("Settings.integrations");
+  const [events, setEvents] = React.useState<EventType[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [events, setEvents] = React.useState<EventSetting[]>([]);
   const [toggling, setToggling] = React.useState<string | null>(null);
 
-  const fetchEvents = React.useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await getConnectorEventsAction({ connectorId, orgId });
-      if (result.success && result.events) {
-        setEvents(result.events as EventSetting[]);
-      } else {
-        toast.error(result.error || "Failed to load event settings");
-      }
-    } catch {
-      toast.error("An error occurred while loading settings");
-    } finally {
-      setLoading(false);
-    }
-  }, [connectorId, orgId]);
-
   React.useEffect(() => {
-    if (open) {
-      fetchEvents();
-    }
-  }, [open, fetchEvents]);
+    if (!open) return;
+
+    const loadEvents = async () => {
+      setLoading(true);
+      try {
+        const result = await getConnectorEventsAction({ connectorId, orgId });
+        if (result.success && result.events) {
+          setEvents(result.events as EventType[]);
+        }
+      } catch {
+        toast.error(t("toastUnexpectedError"));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadEvents();
+  }, [open, connectorId, orgId, t]);
 
   const handleToggle = async (eventId: string, currentStatus: boolean) => {
     setToggling(eventId);
@@ -101,15 +102,14 @@ export function EventMappingDialog({
       });
 
       if (result.success) {
-        setEvents(prev => prev.map(e => 
-          e.id === eventId ? { ...e, isActive: !currentStatus } : e
-        ));
-        toast.success(`${currentStatus ? "Disabled" : "Enabled"} notification`);
+        setEvents((prev) =>
+          prev.map((e) => (e.id === eventId ? { ...e, isActive: !currentStatus } : e))
+        );
       } else {
         toast.error(result.error);
       }
     } catch {
-      toast.error("Failed to update setting");
+      toast.error(t("toastUnexpectedError"));
     } finally {
       setToggling(null);
     }
@@ -126,10 +126,13 @@ export function EventMappingDialog({
               </div>
               <div>
                 <DialogTitle className="text-xl font-bold tracking-tight">
-                  Notification Settings
+                  {t("notificationSettings")}
                 </DialogTitle>
                 <DialogDescription className="text-zinc-500 text-xs">
-                  Configure which events trigger alerts in <span className="text-zinc-300 font-medium">{connectorName}</span>
+                  {t.rich("notificationSettingsDesc", {
+                    name: connectorName,
+                    highlight: (chunks: any) => <span className="text-zinc-300 font-medium">{chunks}</span>
+                  })}
                 </DialogDescription>
               </div>
             </div>
@@ -141,13 +144,13 @@ export function EventMappingDialog({
             {loading ? (
               <div className="flex flex-col items-center justify-center py-12 gap-3">
                 <Loader2 className="h-8 w-8 text-zinc-700 animate-spin" />
-                <p className="text-zinc-600 text-sm animate-pulse">Loading events...</p>
+                <p className="text-zinc-600 text-sm animate-pulse">{t("loadingEvents")}</p>
               </div>
             ) : (
               <div className="space-y-2">
                 <AnimatePresence>
                   {events.map((event, index) => {
-                    const Icon = ICON_MAP[event.iconName] || Settings2;
+                    const Icon = Reflect.get(ICON_MAP, event.iconName) || Settings2;
                     return (
                       <motion.div
                         key={event.id}
@@ -206,7 +209,7 @@ export function EventMappingDialog({
             onClick={() => onOpenChange(false)}
             className="text-xs font-medium text-zinc-500 hover:text-zinc-200 transition-colors px-4 py-2"
           >
-            Done
+            {t("doneButton")}
           </button>
         </div>
       </DialogContent>

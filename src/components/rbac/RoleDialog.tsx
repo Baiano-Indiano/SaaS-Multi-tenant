@@ -21,6 +21,7 @@ import { useState } from "react";
 import { ShieldCheck, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 interface RoleDialogProps {
   trigger: React.ReactElement;
@@ -48,6 +49,7 @@ export function RoleDialog({ trigger, orgId, orgSlug, role }: RoleDialogProps) {
   const [selectedPermissions, setSelectedPermissions] = useState<PermissionKey[]>(
     role?.permissions || []
   );
+  const t = useTranslations("RBAC");
 
   const isEditing = !!role;
   const isSystemRole = isEditing && ['admin', 'member', 'viewer'].includes(role?.slug || '');
@@ -81,9 +83,9 @@ export function RoleDialog({ trigger, orgId, orgSlug, role }: RoleDialogProps) {
     };
 
     toast.promise(promise(), {
-      loading: isEditing ? "Updating role..." : "Creating role profile...",
-      success: isEditing ? "Role updated successfully." : "Role profile created successfully.",
-      error: (err) => err instanceof Error ? err.message : "Could not save role.",
+      loading: isEditing ? t("updatingRole") : t("creatingRoleProfile"),
+      success: isEditing ? t("roleUpdated") : t("roleProfileCreated"),
+      error: (err) => err instanceof Error ? err.message : t("couldNotSaveRole"),
     });
   }
 
@@ -103,17 +105,17 @@ export function RoleDialog({ trigger, orgId, orgSlug, role }: RoleDialogProps) {
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <DialogTitle className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                  {isEditing ? "Edit Role" : "Create Custom Role"}
+                  {isEditing ? t("editRole") : t("createCustomRole")}
                   {isSystemRole && (
                     <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-[10px] h-5 uppercase tracking-wider font-black">
-                      System Base
+                      {t("systemBase")}
                     </Badge>
                   )}
                 </DialogTitle>
                 <DialogDescription className="text-zinc-400 text-sm">
                   {isSystemRole 
-                    ? "Base system roles are core to the platform and cannot be modified."
-                    : "Define specific capabilities and access rules for this organization."}
+                    ? t("systemRoleWarning")
+                    : t("customRoleInstructions")}
                 </DialogDescription>
               </div>
               <div className="hidden sm:block">
@@ -126,12 +128,12 @@ export function RoleDialog({ trigger, orgId, orgSlug, role }: RoleDialogProps) {
             {/* Core Info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Role Display Name</Label>
+                <Label htmlFor="name" className="text-zinc-400 text-xs font-bold uppercase tracking-widest">{t("roleDisplayName")}</Label>
                 <Input
                   id="name"
                   name="name"
                   defaultValue={role?.name}
-                  placeholder="e.g. Creative Lead"
+                  placeholder={t("placeholderName")}
                   className="bg-zinc-900/50 border-zinc-800 text-zinc-100 h-10 focus:ring-1 focus:ring-zinc-700 transition-all rounded-lg"
                   required
                   disabled={isSystemRole}
@@ -140,23 +142,23 @@ export function RoleDialog({ trigger, orgId, orgSlug, role }: RoleDialogProps) {
 
               {!isEditing && (
                 <div className="space-y-2">
-                  <Label htmlFor="slug" className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Role Identifier</Label>
+                  <Label htmlFor="slug" className="text-zinc-400 text-xs font-bold uppercase tracking-widest">{t("roleIdentifier")}</Label>
                   <Input
                     id="slug"
                     name="slug"
-                    placeholder="e.g. creative-lead"
+                    placeholder={t("placeholderSlug")}
                     className="bg-zinc-900/50 border-zinc-800 text-zinc-100 h-10 font-mono text-[11px] focus:ring-1 focus:ring-zinc-700 transition-all rounded-lg"
                   />
                 </div>
               )}
 
               <div className={cn("space-y-2", !isEditing ? "col-span-2" : "col-span-1 sm:col-span-2")}>
-                <Label htmlFor="description" className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Description</Label>
+                <Label htmlFor="description" className="text-zinc-400 text-xs font-bold uppercase tracking-widest">{t("descriptionLabel")}</Label>
                 <Input
                   id="description"
                   name="description"
                   defaultValue={role?.description || ""}
-                  placeholder="Describe the purpose of this role..."
+                  placeholder={t("placeholderDescription")}
                   className="bg-zinc-900/50 border-zinc-800 text-zinc-100 h-10 focus:ring-1 focus:ring-zinc-700 transition-all rounded-lg"
                   disabled={isSystemRole}
                 />
@@ -166,10 +168,10 @@ export function RoleDialog({ trigger, orgId, orgSlug, role }: RoleDialogProps) {
             {/* Permissions Matrix */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <Label className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Capability Matrix</Label>
+                <Label className="text-zinc-400 text-xs font-bold uppercase tracking-widest">{t("capabilityMatrix")}</Label>
                 <div className="flex items-center gap-1 text-[10px] text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-800">
                   <Info className="h-3 w-3" />
-                  Select specific actions this role can perform
+                  {t("selectActionsInstruction")}
                 </div>
               </div>
               
@@ -183,6 +185,7 @@ export function RoleDialog({ trigger, orgId, orgSlug, role }: RoleDialogProps) {
                     <div className="space-y-4 pr-2">
                       {keys.map((key) => {
                         const isSelected = selectedPermissions.includes(key);
+                        const permInfo = Reflect.get(PERMISSIONS, key);
                         return (
                           <div key={key} className={cn(
                             "flex items-start space-x-3 group transition-all duration-200",
@@ -209,10 +212,10 @@ export function RoleDialog({ trigger, orgId, orgSlug, role }: RoleDialogProps) {
                                   isSystemRole && "cursor-not-allowed"
                                 )}
                               >
-                                {PERMISSIONS[key].name}
+                                {permInfo?.name}
                               </label>
                               <p className="text-[10px] text-zinc-600 leading-normal max-w-[200px]">
-                                {PERMISSIONS[key].description}
+                                {permInfo?.description}
                               </p>
                             </div>
                           </div>
@@ -227,7 +230,7 @@ export function RoleDialog({ trigger, orgId, orgSlug, role }: RoleDialogProps) {
 
           <DialogFooter className="p-6 border-t border-zinc-900 bg-zinc-900/10 flex sm:justify-between items-center bg-zinc-950/80 backdrop-blur-md">
             <div className="hidden sm:block text-[11px] text-zinc-600 font-medium">
-              {selectedPermissions.length} permissions explicitly assigned
+              {t("permissionsAssigned", { count: selectedPermissions.length })}
             </div>
             <div className="flex gap-3 w-full sm:w-auto">
               <Button
@@ -236,7 +239,7 @@ export function RoleDialog({ trigger, orgId, orgSlug, role }: RoleDialogProps) {
                 onClick={() => setOpen(false)}
                 className="text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900 rounded-lg flex-1 sm:flex-none h-11 px-6 font-medium"
               >
-                Discard Changes
+                {t("discardChanges")}
               </Button>
               <Button
                 type="submit"
@@ -244,7 +247,7 @@ export function RoleDialog({ trigger, orgId, orgSlug, role }: RoleDialogProps) {
                 disabled={isSystemRole}
                 className="bg-zinc-100 text-zinc-950 hover:bg-zinc-200 min-w-[140px] rounded-lg flex-1 sm:flex-none h-11 px-6 font-bold transition-all shadow-lg active:scale-95 disabled:hover:bg-zinc-100"
               >
-                {isSystemRole ? "System Protected" : (isEditing ? "Update Role" : "Create Role Profile")}
+                {isSystemRole ? t("systemProtected") : (isEditing ? t("updateRole") : t("createRoleProfile"))}
               </Button>
             </div>
           </DialogFooter>

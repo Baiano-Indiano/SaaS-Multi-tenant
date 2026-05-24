@@ -21,13 +21,16 @@ vi.mock('@/lib/auth/rbac-utils', () => ({
   can: vi.fn(),
 }))
 
-vi.mock('@/lib/db', () => ({
-  db: {
+vi.mock('@/lib/db', () => {
+  const mockDb = {
     update: vi.fn().mockReturnThis(),
     set: vi.fn().mockReturnThis(),
-    where: vi.fn().mockResolvedValue({}),
-  },
-}))
+    select: vi.fn().mockReturnThis(),
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockResolvedValue([{ slug: 'old-slug', require2FA: false }]),
+  };
+  return { db: mockDb };
+})
 
 vi.mock('@/lib/audit', () => ({
   recordAuditLog: vi.fn().mockResolvedValue({}),

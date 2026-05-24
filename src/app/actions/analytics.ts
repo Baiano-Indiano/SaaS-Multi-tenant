@@ -7,10 +7,14 @@ import { eq, and, count } from "drizzle-orm";
 import { headers } from "next/headers";
 import { getTenantDb } from "@/lib/db/tenant-db";
 import { PLANS } from "@/lib/billing/plans";
+import { logger } from "@/lib/logger";
 
 export async function getDashboardStatsAction(orgId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) throw new Error("Unauthorized");
+
+  const _start = Date.now();
+  logger.info('action', `➜ getDashboardStatsAction | user: ${session.user.id} | org: ${orgId}`);
 
   try {
     // 1. Fetch Organization Plan
@@ -20,7 +24,7 @@ export async function getDashboardStatsAction(orgId: string) {
 
     if (!org) throw new Error("Organization not found");
 
-    const currentPlan = PLANS[org.plan.toUpperCase() as keyof typeof PLANS] || PLANS.FREE;
+    const currentPlan = Reflect.get(PLANS, org.plan.toUpperCase()) || PLANS.FREE;
 
     // 2. Fetch data from PUBLIC schema
     const memberCountResult = await db
@@ -57,6 +61,8 @@ export async function getDashboardStatsAction(orgId: string) {
 
     const totalProjects = tenantStats.projects.reduce((acc, curr) => acc + curr.val, 0);
 
+    logger.info('action', `✓ getDashboardStatsAction completed | members: ${memberCountResult[0]?.val || 0}, projects: ${totalProjects} | ${Date.now() - _start}ms`);
+
     return {
       success: true,
       stats: {
@@ -72,7 +78,7 @@ export async function getDashboardStatsAction(orgId: string) {
       }
     };
   } catch (error) {
-    console.error("Failed to fetch dashboard stats:", error);
+    logger.error('action', `✗ getDashboardStatsAction failed | ${error instanceof Error ? error.message : 'Unknown error'} | ${Date.now() - _start}ms`, error);
     throw new Error("Failed to load analytics data.");
   }
 }

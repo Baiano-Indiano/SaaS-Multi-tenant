@@ -9,6 +9,8 @@ import { recordAuditLog } from "@/lib/audit";
 import { can } from "@/lib/auth/rbac-utils";
 import { toggle2FAEnforcementSchema, check2FAComplianceSchema } from "@/lib/validations";
 import { securityActionRateLimit, enforceRateLimit } from "@/lib/rate-limit";
+import { redis } from "@/lib/redis";
+import { l1Cache } from "@/lib/cache/l1-cache";
 
 type SecurityActionResponse =
   | { success: true }
@@ -43,10 +45,24 @@ export async function toggle2FAEnforcementAction(
       return { success: false, error: "Você não tem permissão para gerenciar a segurança desta organização." };
     }
 
+    // Fetch organization details to get the slug for cache updating/invalidation
+    const org = await db.query.organizations.findFirst({
+      where: eq(organizations.id, organizationId),
+    });
+
     // 2. Update organization
     await db.update(organizations)
       .set({ require2FA: enabled })
       .where(eq(organizations.id, organizationId));
+
+    // Cache write-through
+    const cacheData = { require2FA: enabled, id: organizationId };
+    await redis.set(`org:${organizationId}`, cacheData);
+    l1Cache.set(`org:${organizationId}`, cacheData);
+    if (org?.slug) {
+      await redis.set(`org:${org.slug}`, cacheData);
+      l1Cache.set(`org:${org.slug}`, cacheData);
+    }
 
     // 3. Record Audit Log
     await recordAuditLog({

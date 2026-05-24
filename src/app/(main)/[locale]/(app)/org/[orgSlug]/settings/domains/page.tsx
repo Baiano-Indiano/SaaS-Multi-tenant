@@ -6,6 +6,7 @@ import { organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { DomainManagement } from "@/components/settings/DomainManagement";
 import { PLANS, PlanType } from "@/lib/billing/plans";
+import { getTranslations } from "next-intl/server";
 
 export default async function DomainSettingsPage({
   params,
@@ -23,14 +24,15 @@ export default async function DomainSettingsPage({
 
   if (!org) redirect("/selecionar-org");
 
-  const currentPlan = PLANS[org.plan.toUpperCase() as PlanType];
+  const currentPlan = Reflect.get(PLANS, org.plan.toUpperCase());
+  const t = await getTranslations("Settings.connectivity.integrationsSection");
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-2xl font-bold tracking-tight">Domínios Enterprise</h3>
+        <h3 className="text-2xl font-bold tracking-tight">{t("dominiosEnterprise")}</h3>
         <p className="text-zinc-500 dark:text-zinc-400">
-          Configure e gerencie domínios customizados para sua organização.
+          {t("domainsDescription")}
         </p>
       </div>
 

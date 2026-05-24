@@ -43,8 +43,8 @@ export default async function DashboardPage() {
                 <div className="h-16 w-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-6 shadow-2xl">
                     <span className="text-2xl">🏢</span>
                 </div>
-                <h2 className="text-xl font-black text-white uppercase tracking-tighter mb-2">No Active Organization</h2>
-                <p className="text-zinc-500 max-w-xs font-medium">Please select or create an organization to access your command center.</p>
+                <h2 className="text-xl font-black text-white uppercase tracking-tighter mb-2">{t("noActiveOrgTitle")}</h2>
+                <p className="text-zinc-500 max-w-xs font-medium">{t("noActiveOrgDesc")}</p>
             </div>
         </DashboardClient>
     );
@@ -157,7 +157,7 @@ export default async function DashboardPage() {
           <div className="lg:col-span-2 space-y-10">
             <div className="space-y-4">
                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 px-1 border-l-2 border-emerald-500/50 pl-3 ml-1">
-                 Quick Operations
+                 {t("quickOperations")}
                </h2>
                 <QuickActions
                   orgId={orgId}
@@ -173,14 +173,14 @@ export default async function DashboardPage() {
 
             <div className="space-y-4">
                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 px-1 border-l-2 border-blue-500/50 pl-3 ml-1">
-                 Live Feed
+                 {t("liveFeed")}
                </h2>
                <LogStream />
             </div>
 
             <div className="space-y-4">
                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 px-1 border-l-2 border-amber-500/50 pl-3 ml-1">
-                 Health & Usage
+                 {t("healthUsage")}
                </h2>
                <InfraHealthMonitor
                  latencyTrend={advancedAnalytics.latencyTrend}

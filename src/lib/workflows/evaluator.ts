@@ -19,7 +19,10 @@ function getNestedValue(obj: any, path: string): any {
   if (!obj || !path) return undefined;
   return path.split(".").reduce((acc, part) => {
     if (acc === null || acc === undefined) return undefined;
-    return acc[part];
+    if (part === "__proto__" || part === "constructor" || part === "prototype") {
+      return undefined;
+    }
+    return Reflect.get(acc, part);
   }, obj);
 }
 

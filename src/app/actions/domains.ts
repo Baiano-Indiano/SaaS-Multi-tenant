@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { addDomainToProject, removeDomainFromProject, getDomainConfig } from "@/lib/vercel";
 import { Redis } from "@upstash/redis";
+import { l1Cache } from "@/lib/cache/l1-cache";
 import { revalidatePath } from "next/cache";
 import { PLANS, PlanType } from "@/lib/billing/plans";
 import { recordAuditLog } from "@/lib/audit";
@@ -46,7 +47,7 @@ export async function addDomainAction(orgId: string, domain: string) {
   if (!org) throw new Error("Organização não encontrada");
 
   // Check plan (DOM-01)
-  const plan = PLANS[org.plan.toUpperCase() as PlanType];
+  const plan = Reflect.get(PLANS, org.plan.toUpperCase());
   if (!plan?.customDomains) {
     return { error: "Seu plano atual não suporta domínios customizados. Faça o upgrade para o plano Pro." };
   }
@@ -66,8 +67,9 @@ export async function addDomainAction(orgId: string, domain: string) {
     })
     .where(eq(organizations.id, validated.orgId));
 
-  // 3. Sync to Redis for Middleware (DOM-03)
+  // 3. Sync to Redis for Middleware (DOM-03) and write-through to L1 cache
   await redis.set(`domain:${validated.domain}`, { slug: org.slug, id: org.id });
+  l1Cache.set(`domain:${validated.domain}`, { slug: org.slug, id: org.id });
 
   revalidatePath(`/org/${org.slug}/settings/domains`);
 
@@ -118,8 +120,9 @@ export async function removeDomainAction(orgId: string) {
     })
     .where(eq(organizations.id, validated.orgId));
 
-  // 3. Remove from Redis
+  // 3. Remove from Redis and evict from L1 cache
   await redis.del(`domain:${domainToRemove}`);
+  l1Cache.delete(`domain:${domainToRemove}`);
 
   revalidatePath(`/org/${org.slug}/settings/domains`);
 

@@ -51,11 +51,11 @@ export default async function LandingPage() {
           <div className="max-w-6xl mx-auto px-6 text-center">
             <p className="text-sm font-medium text-zinc-500 mb-8 uppercase tracking-widest">{t('trustedBy')}</p>
             <div className="flex flex-wrap justify-center gap-8 md:gap-16 opacity-50 grayscale">
-              <div className="text-2xl font-bold tracking-tighter">Acme Corp</div>
-              <div className="text-2xl font-bold tracking-tighter">Globex</div>
-              <div className="text-2xl font-bold tracking-tighter">Soylent</div>
-              <div className="text-2xl font-bold tracking-tighter">Initech</div>
-              <div className="text-2xl font-bold tracking-tighter">Umbrella</div>
+              <div className="text-2xl font-bold tracking-tighter">{t('companies.acme')}</div>
+              <div className="text-2xl font-bold tracking-tighter">{t('companies.globex')}</div>
+              <div className="text-2xl font-bold tracking-tighter">{t('companies.soylent')}</div>
+              <div className="text-2xl font-bold tracking-tighter">{t('companies.initech')}</div>
+              <div className="text-2xl font-bold tracking-tighter">{t('companies.umbrella')}</div>
             </div>
           </div>
         </ScrollReveal>

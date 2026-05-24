@@ -32,7 +32,10 @@ export const tierLimiters = {
  * Defaults to the free tier limiter if the plan is unknown.
  */
 export function getApiRateLimiter(planId: string = 'free') {
-  return tierLimiters[planId as keyof typeof tierLimiters] || tierLimiters.free;
+  if (planId === "__proto__" || planId === "constructor" || planId === "prototype") {
+    return tierLimiters.free;
+  }
+  return (Reflect.get(tierLimiters, planId) as typeof tierLimiters.free) || tierLimiters.free;
 }
 
 /**

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { env } from "@/lib/env";
 import { redis } from "@/lib/redis";
 import { db } from "@/lib/db";
@@ -26,6 +27,8 @@ interface SlackOauthResponse {
 }
 
 export async function GET(req: NextRequest) {
+  const _start = Date.now();
+  logger.info('api', '➜ GET /api/connectors/slack/callback');
   const code = req.nextUrl.searchParams.get("code");
   const state = req.nextUrl.searchParams.get("state");
 
@@ -72,7 +75,7 @@ export async function GET(req: NextRequest) {
     const slackData = (await response.json()) as SlackOauthResponse;
 
     if (!slackData.ok || !slackData.incoming_webhook || !slackData.team || !slackData.access_token) {
-      console.error("[Slack Callback] OAuth access exchange failed:", slackData.error);
+      logger.error('api', `✗ GET /api/connectors/slack/callback | OAuth exchange failed: ${slackData.error}`);
       return NextResponse.json(
         { error: `Slack OAuth exchange failed: ${slackData.error || "Missing token or webhook info"}` },
         { status: 400 }
@@ -142,9 +145,10 @@ export async function GET(req: NextRequest) {
     }
 
     // 7. Redirect back to integrations page
+    logger.info('api', `✓ GET /api/connectors/slack/callback | 302 | ${Date.now() - _start}ms`);
     return NextResponse.redirect(`${env.NEXT_PUBLIC_APP_URL}/org/${orgSlug}/settings/integrations?success=slack`);
   } catch (error) {
-    console.error("[Slack Callback] Error during callback processing:", error);
+    logger.error('api', '✗ GET /api/connectors/slack/callback | Error during callback processing', error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

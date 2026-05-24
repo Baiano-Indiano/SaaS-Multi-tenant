@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, primaryKey, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, primaryKey, unique, integer } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const users = pgTable("user", {
@@ -93,6 +93,7 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
 	domains: many(organizationDomains),
 	statusComponents: many(statusComponents),
 	statusIncidents: many(statusIncidents),
+	billingUsage: many(billingUsage),
 }));
 
 /**
@@ -354,3 +355,20 @@ export const twoFactors = pgTable("two_factor", {
 	userId: text("userId").notNull().references(() => users.id, { onDelete: 'cascade' }),
 	verified: boolean("verified").notNull().default(false)
 });
+
+export const billingUsage = pgTable("billing_usage", {
+	id: text("id").primaryKey(),
+	organizationId: text("organizationId").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+	metric: text("metric").notNull(),
+	quantity: integer("quantity").notNull().default(0),
+	updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+}, (t) => ({
+	unq: unique().on(t.organizationId, t.metric)
+}));
+
+export const billingUsageRelations = relations(billingUsage, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [billingUsage.organizationId],
+		references: [organizations.id],
+	}),
+}));

@@ -377,8 +377,8 @@ export function AuthForm({ type }: AuthFormProps) {
                           <Shield className="h-4 w-4 text-white" />
                         </div>
                         <div>
-                          <p className="text-xs font-medium text-white">Enterprise SSO Ativo</p>
-                          <p className="text-[10px] text-zinc-500">Faça login com sua conta corporativa de {detectedDomain}</p>
+                          <p className="text-xs font-medium text-white">{t("enterpriseSSOActive")}</p>
+                          <p className="text-[10px] text-zinc-500">{t("corporateAccountNotice", { domain: detectedDomain })}</p>
                         </div>
                         <Button 
                           variant="ghost" 
@@ -386,7 +386,7 @@ export function AuthForm({ type }: AuthFormProps) {
                           className="ml-auto text-[10px] h-7 px-2 text-zinc-400 hover:text-white"
                           onClick={() => setSsoAvailable(false)}
                         >
-                          Usar senha
+                          {t("usePassword")}
                         </Button>
                       </motion.div>
                     )}

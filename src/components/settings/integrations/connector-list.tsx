@@ -20,6 +20,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 interface Connector {
   id: string;
@@ -37,6 +38,7 @@ interface ConnectorListProps {
 }
 
 export function ConnectorList({ connectors, orgId, orgSlug }: ConnectorListProps) {
+  const t = useTranslations("Settings.integrations");
   const [testingId, setTestingId] = React.useState<string | null>(null);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
   const [mappingConnector, setMappingConnector] = React.useState<{ id: string, name: string } | null>(null);
@@ -46,25 +48,25 @@ export function ConnectorList({ connectors, orgId, orgSlug }: ConnectorListProps
   React.useEffect(() => {
     const success = searchParams.get("success");
     if (success === "slack") {
-      toast.success("Slack workspace connected successfully!");
+      toast.success(t("slackConnectedToast"));
       // Clean up query param from URL
       const params = new URLSearchParams(searchParams.toString());
       params.delete("success");
       const cleanPath = window.location.pathname + (params.toString() ? `?${params.toString()}` : "");
       router.replace(cleanPath);
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, t]);
 
   const handleDelete = async (connectorId: string) => {
-    if (!confirm("Are you sure you want to delete this integration?")) return;
+    if (!confirm(t("deleteConfirm"))) return;
     
     setDeletingId(connectorId);
     try {
       const result = await deleteConnectorAction({ connectorId, orgId, orgSlug });
       if (result.error) toast.error(result.error);
-      else toast.success("Integration removed");
+      else toast.success(t("integrationRemovedToast"));
     } catch {
-      toast.error("Failed to delete");
+      toast.error(t("deleteFailedToast"));
     } finally {
       setDeletingId(null);
     }
@@ -75,9 +77,9 @@ export function ConnectorList({ connectors, orgId, orgSlug }: ConnectorListProps
     try {
       const result = await testConnectorAction({ connectorId, orgId });
       if (result.error) toast.error(result.error);
-      else toast.success("Test message sent! Check your channel.");
+      else toast.success(t("testSuccessToast"));
     } catch {
-      toast.error("Test failed to send");
+      toast.error(t("testFailedToast"));
     } finally {
       setTestingId(null);
     }
@@ -89,9 +91,9 @@ export function ConnectorList({ connectors, orgId, orgSlug }: ConnectorListProps
         <div className="h-12 w-12 rounded-full bg-zinc-900 flex items-center justify-center mb-4 ring-1 ring-zinc-800">
           <AlertCircle className="h-6 w-6 text-zinc-500" />
         </div>
-        <h3 className="text-zinc-200 font-medium">No integrations yet</h3>
+        <h3 className="text-zinc-200 font-medium">{t("noIntegrations")}</h3>
         <p className="text-zinc-500 text-sm mt-1 text-center max-w-xs">
-          Connect Slack or Discord to start receiving rich notifications about your organization&apos;s activity.
+          {t("noIntegrationsDesc")}
         </p>
       </div>
     );
@@ -142,7 +144,7 @@ export function ConnectorList({ connectors, orgId, orgSlug }: ConnectorListProps
               </CardDescription>
             </div>
             <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[10px] h-5">
-              Active
+              {t("activeBadge")}
             </Badge>
           </CardHeader>
           <CardContent className="pt-4 flex items-center justify-between gap-2 border-t border-zinc-900/50 mt-2 bg-zinc-900/10">
@@ -159,7 +161,7 @@ export function ConnectorList({ connectors, orgId, orgSlug }: ConnectorListProps
                 ) : (
                   <Play className="h-3 w-3 mr-2" />
                 )}
-                Test
+                {t("testButton")}
               </Button>
               <Button
                 variant="ghost"
@@ -168,7 +170,7 @@ export function ConnectorList({ connectors, orgId, orgSlug }: ConnectorListProps
                 className="h-8 text-xs text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
               >
                 <Settings2 className="h-3 w-3 mr-2" />
-                Events
+                {t("eventsButton")}
               </Button>
             </div>
             <div className="flex items-center gap-2">

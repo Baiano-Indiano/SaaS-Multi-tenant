@@ -5,6 +5,7 @@ import { webhookDeliveries, connectors } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { transformToSlack, transformToDiscord } from "@/lib/integrations/transformer";
 import { generateWebhookSignature } from "@/lib/webhooks";
+import { logger } from "@/lib/logger";
 
 const receiver = new Receiver({
   currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY!,
@@ -26,6 +27,7 @@ interface QStashPayload {
 export async function POST(req: NextRequest) {
   const signature = req.headers.get("upstash-signature");
   if (!signature) {
+    logger.warn('webhook', 'QStash request missing signature header');
     return new NextResponse("Missing signature", { status: 401 });
   }
 
@@ -38,13 +40,14 @@ export async function POST(req: NextRequest) {
   }).catch(() => false);
 
   if (!isValid) {
+    logger.warn('webhook', 'QStash request signature verification failed');
     return new NextResponse("Invalid signature", { status: 401 });
   }
 
   const data = JSON.parse(body) as QStashPayload;
   const { orgId, deliveryId, connectorId, targetUrl, event, payload, secret } = data;
 
-  console.log(`[QStash Handler] Processing delivery ${deliveryId} for org ${orgId}, event ${event}`);
+  logger.info('webhook', `Processing QStash delivery ${deliveryId} for org ${orgId}, event ${event}`);
 
   let finalUrl = targetUrl;
   let finalPayload = payload;
@@ -90,7 +93,7 @@ export async function POST(req: NextRequest) {
     responseStatus = response.status;
     responseBody = await response.text();
   } catch (error: unknown) {
-    console.error(`[QStash Handler] Webhook delivery failed for ${targetUrl}:`, error);
+    logger.error('webhook', `Webhook delivery failed for target URL ${targetUrl}`, error);
     responseStatus = 500;
     responseBody = error instanceof Error ? error.message : "Unknown error";
   } finally {
@@ -110,8 +113,9 @@ export async function POST(req: NextRequest) {
           })
           .where(eq(webhookDeliveries.id, deliveryId));
       });
+      logger.info('webhook', `Finalized QStash delivery ${deliveryId}. Target URL: ${finalUrl}, Status: ${responseStatus}, Duration: ${duration}`);
     } catch (dbError: unknown) {
-      console.error(`[QStash Handler] Failed to finalize delivery ${deliveryId}:`, dbError);
+      logger.error('webhook', `Failed to finalize delivery status in DB for delivery ${deliveryId}`, dbError);
     }
   }
 

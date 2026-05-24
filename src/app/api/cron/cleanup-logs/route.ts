@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { db } from "@/lib/db";
 import { withAdminTenantDb } from "@/lib/db/tenant-db";
 import { cleanupAuditLogs } from "@/lib/audit";
@@ -12,6 +13,8 @@ export const dynamic = "force-dynamic";
  * Secured via CRON_SECRET environment variable.
  */
 export async function GET(request: Request) {
+  const _start = Date.now();
+  logger.info('cron', '➜ GET /api/cron/cleanup-logs');
   const authHeader = request.headers.get("authorization");
   
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -44,7 +47,7 @@ export async function GET(request: Request) {
         });
         results.success++;
       } catch (error) {
-        console.error(`[CRON] Cleanup failed for Org ${org.id}:`, error);
+        logger.error('cron', `✗ GET /api/cron/cleanup-logs | Cleanup failed for Org ${org.id}`, error);
         results.failed++;
         results.errors.push({ 
           orgId: org.id, 
@@ -53,13 +56,14 @@ export async function GET(request: Request) {
       }
     }
 
+    logger.info('cron', `✓ GET /api/cron/cleanup-logs | 200 | ${Date.now() - _start}ms`);
     return NextResponse.json({ 
       message: "Audit log cleanup completed",
       ...results
     });
 
   } catch (error) {
-    console.error("[CRON] Global cleanup error:", error);
+    logger.error('cron', '✗ GET /api/cron/cleanup-logs | Global cleanup error', error);
     return new Response("Internal Server Error", { status: 500 });
   }
 }

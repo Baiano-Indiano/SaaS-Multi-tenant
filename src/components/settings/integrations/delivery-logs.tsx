@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslations } from "next-intl";
 
 interface Log {
   id: string;
@@ -28,6 +29,7 @@ interface Log {
 }
 
 export function DeliveryLogs({ orgId }: { orgId: string }) {
+  const t = useTranslations("Settings.integrations");
   const [logs, setLogs] = useState<Log[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -62,7 +64,7 @@ export function DeliveryLogs({ orgId }: { orgId: string }) {
     return (
       <div className="py-20 flex flex-col items-center justify-center text-zinc-500 gap-4">
         <RefreshCcw className="h-6 w-6 animate-spin text-zinc-700" />
-        <p className="text-sm">Loading activity history...</p>
+        <p className="text-sm">{t("loadingActivity")}</p>
       </div>
     );
   }
@@ -74,8 +76,8 @@ export function DeliveryLogs({ orgId }: { orgId: string }) {
           <Activity className="h-5 w-5 text-zinc-700" />
         </div>
         <div className="text-center">
-          <p className="text-sm font-medium text-zinc-300">No activity yet</p>
-          <p className="text-xs text-zinc-500 mt-1">Events will appear here as they are triggered.</p>
+          <p className="text-sm font-medium text-zinc-300">{t("noActivity")}</p>
+          <p className="text-xs text-zinc-500 mt-1">{t("activityInstructions")}</p>
         </div>
       </div>
     );
@@ -85,7 +87,7 @@ export function DeliveryLogs({ orgId }: { orgId: string }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between px-2">
         <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-          Last 50 Deliveries
+          {t("last50Deliveries")}
         </p>
         <Button 
           variant="ghost" 
@@ -95,7 +97,7 @@ export function DeliveryLogs({ orgId }: { orgId: string }) {
           className="h-7 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800/50"
         >
           <RefreshCcw className={cn("h-3 w-3 mr-2", loading && "animate-spin")} />
-          Refresh
+          {t("refresh")}
         </Button>
       </div>
 
@@ -104,11 +106,11 @@ export function DeliveryLogs({ orgId }: { orgId: string }) {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-zinc-900/50 border-b border-zinc-800">
-                <th className="px-4 py-3 text-[10px] font-bold uppercase text-zinc-500">Status</th>
-                <th className="px-4 py-3 text-[10px] font-bold uppercase text-zinc-500">Event</th>
-                <th className="px-4 py-3 text-[10px] font-bold uppercase text-zinc-500">Integration</th>
-                <th className="px-4 py-3 text-[10px] font-bold uppercase text-zinc-500">Duration</th>
-                <th className="px-4 py-3 text-[10px] font-bold uppercase text-zinc-500">Time</th>
+                <th className="px-4 py-3 text-[10px] font-bold uppercase text-zinc-500">{t("statusHeader")}</th>
+                <th className="px-4 py-3 text-[10px] font-bold uppercase text-zinc-500">{t("eventHeader")}</th>
+                <th className="px-4 py-3 text-[10px] font-bold uppercase text-zinc-500">{t("integrationHeader")}</th>
+                <th className="px-4 py-3 text-[10px] font-bold uppercase text-zinc-500">{t("durationHeader")}</th>
+                <th className="px-4 py-3 text-[10px] font-bold uppercase text-zinc-500">{t("timeHeader")}</th>
                 <th className="px-4 py-3 text-[10px] font-bold uppercase text-zinc-500"></th>
               </tr>
             </thead>

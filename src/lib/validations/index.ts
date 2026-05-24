@@ -67,15 +67,7 @@ export const inviteMemberSchema = z.object({
   orgSlug: slugSchema,
 });
 
-export const cancelInvitationSchema = z.object({
-  id: uuidSchema,
-  orgId: uuidSchema,
-  orgSlug: slugSchema,
-});
 
-export const acceptInvitationSchema = z.object({
-  invitationId: uuidSchema,
-});
 
 // ─── Project Actions ─────────────────────────────────────────────────────────
 
@@ -244,23 +236,7 @@ export const check2FAComplianceSchema = z.object({
   organizationId: uuidSchema,
 });
 
-export const listMemberSessionsSchema = z.object({
-  organizationId: uuidSchema,
-  memberUserId: z.string().min(1),
-});
 
-export const revokeMemberSessionsSchema = z.object({
-  organizationId: uuidSchema,
-  memberUserId: z.string().min(1),
-  memberEmail: emailSchema,
-});
-
-export const revokeMemberSessionSchema = z.object({
-  organizationId: uuidSchema,
-  memberUserId: z.string().min(1),
-  sessionId: z.string().min(1),
-  memberEmail: emailSchema,
-});
 
 // ─── Domain Actions ──────────────────────────────────────────────────────────
 

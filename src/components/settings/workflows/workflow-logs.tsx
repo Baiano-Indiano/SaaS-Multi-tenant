@@ -23,6 +23,7 @@ import { Loader2, CheckCircle2, XCircle, Clock, RefreshCcw } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 interface Log {
   id: string;
@@ -51,6 +52,7 @@ export function WorkflowLogsModal({
   orgId,
   orgSlug
 }: WorkflowLogsModalProps) {
+  const t = useTranslations("WorkflowLogs");
   const [logs, setLogs] = useState<Log[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -86,10 +88,10 @@ export function WorkflowLogsModal({
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Retry request sent to QStash");
+        toast.success(t("retrySuccess"));
       }
     } catch {
-      toast.error("Failed to re-trigger delivery");
+      toast.error(t("retryFailed"));
     } finally {
       setRetryingId(null);
     }
@@ -100,10 +102,13 @@ export function WorkflowLogsModal({
       <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            Execution Logs: <span className="text-primary">{workflowName}</span>
+            {t.rich("title", {
+              name: workflowName,
+              highlight: (chunks) => <span className="text-primary">{chunks}</span>
+            })}
           </DialogTitle>
           <DialogDescription>
-            Showing the last 50 execution attempts for this automation.
+            {t("description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -115,17 +120,17 @@ export function WorkflowLogsModal({
           ) : logs.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-muted-foreground border-2 border-dashed rounded-xl bg-secondary/5 border-primary/5">
               <Clock className="w-12 h-12 mb-4 opacity-20" />
-              <p>No execution logs found for this workflow yet.</p>
+              <p>{t("noLogs")}</p>
             </div>
           ) : (
             <ScrollArea className="h-full pr-4">
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
-                    <TableHead>Status</TableHead>
-                    <TableHead>Event</TableHead>
-                    <TableHead>Duration</TableHead>
-                    <TableHead>Executed At</TableHead>
+                    <TableHead>{t("status")}</TableHead>
+                    <TableHead>{t("event")}</TableHead>
+                    <TableHead>{t("duration")}</TableHead>
+                    <TableHead>{t("executedAt")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -166,15 +171,15 @@ export function WorkflowLogsModal({
                               <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="space-y-2">
-                                    <div className="text-[10px] font-bold uppercase text-muted-foreground">Payload</div>
+                                    <div className="text-[10px] font-bold uppercase text-muted-foreground">{t("payload")}</div>
                                     <pre className="p-3 rounded-lg bg-black/20 text-[10px] overflow-auto max-h-[200px] border border-white/5">
                                       {JSON.stringify(JSON.parse(log.payload), null, 2)}
                                     </pre>
                                   </div>
                                   <div className="space-y-2">
-                                    <div className="text-[10px] font-bold uppercase text-muted-foreground">Response</div>
+                                    <div className="text-[10px] font-bold uppercase text-muted-foreground">{t("response")}</div>
                                     <pre className="p-3 rounded-lg bg-black/20 text-[10px] overflow-auto max-h-[200px] border border-white/5">
-                                      {log.responseBody || "No response body recorded."}
+                                      {log.responseBody || t("noResponseBody")}
                                     </pre>
                                   </div>
                                 </div>
@@ -194,7 +199,7 @@ export function WorkflowLogsModal({
                                     ) : (
                                       <RefreshCcw className="w-3 h-3" />
                                     )}
-                                    {retryingId === log.id ? "Retrying..." : "Retry Delivery"}
+                                    {retryingId === log.id ? t("retrying") : t("retryDelivery")}
                                   </Button>
                                 </div>
                               </div>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { env } from "@/lib/env";
@@ -6,6 +7,9 @@ import { redis } from "@/lib/redis";
 import { randomBytes } from "crypto";
 
 export async function GET(req: NextRequest) {
+  const _start = Date.now();
+  logger.info('api', '➜ GET /api/connectors/slack/authorize');
+
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -50,9 +54,10 @@ export async function GET(req: NextRequest) {
     slackUrl.searchParams.set("redirect_uri", redirectUri);
     slackUrl.searchParams.set("state", state);
 
+    logger.info('api', `✓ GET /api/connectors/slack/authorize | 302 | ${Date.now() - _start}ms`);
     return NextResponse.redirect(slackUrl.toString());
   } catch (error) {
-    console.error("[Slack Authorize] Error initializing OAuth flow:", error);
+    logger.error('api', '✗ GET /api/connectors/slack/authorize | Error initializing OAuth flow', error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

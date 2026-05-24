@@ -13,6 +13,9 @@ import { randomUUID } from "crypto";
 import { recordAuditLog } from "@/lib/audit";
 import { createOrgSchema, updateOrgSchema } from "@/lib/validations";
 import { orgCreateRateLimit, enforceRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
+import { redis } from "@/lib/redis";
+import { l1Cache } from "@/lib/cache/l1-cache";
 
 const connectionString = process.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/saas_db";
 
@@ -27,8 +30,11 @@ type UpdateOrganizationResult =
 export async function createOrganizationAction(name: string, slug: string): Promise<CreateOrganizationResult> {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
+    logger.warn('action', 'createOrganizationAction aborted: Unauthenticated access attempt');
     return { success: false, error: "Sessão expirada. Faça login novamente." };
   }
+
+  logger.info('action', `createOrganizationAction called by User ${session.user.id} for Org Name: "${name}", Slug: "${slug}"`);
 
   try {
     // Input Validation
@@ -47,8 +53,10 @@ export async function createOrganizationAction(name: string, slug: string): Prom
         userId: session.user.id,
       }
     });
-
-    if (!org) throw new Error("Failed to create organization");
+    if (!org) {
+      logger.warn('action', `createOrganizationAction failed: better-auth could not create organization`);
+      throw new Error("Failed to create organization");
+    }
 
     // 2. Provision Tenant Schema (Simple logic for now)
     const tenantSchema = `tenant_${org.slug.replace(/-/g, "_")}`.toLowerCase();
@@ -56,6 +64,7 @@ export async function createOrganizationAction(name: string, slug: string): Prom
     // Security: Validate schema name to prevent SQL injection in DDL
     const SAFE_SCHEMA_REGEX = /^tenant_[a-zA-Z0-9_]+$/;
     if (!SAFE_SCHEMA_REGEX.test(tenantSchema)) {
+      logger.warn('action', `createOrganizationAction aborted: Invalid tenant schema name "${tenantSchema}" derived from slug`);
       throw new Error("Invalid tenant schema name derived from slug. Aborting provisioning.");
     }
 
@@ -67,6 +76,7 @@ export async function createOrganizationAction(name: string, slug: string): Prom
     // 3. Create Schema and Initial Tables
     const client = postgres(connectionString, { prepare: false });
     try {
+      logger.info('db', `Provisioning schema "${tenantSchema}" for organization "${org.id}"`);
       await client`CREATE SCHEMA IF NOT EXISTS ${client(tenantSchema)}`;
       
       // I'll define the exact DDL to ensure consistency with Rule 2 & 3
@@ -153,8 +163,10 @@ export async function createOrganizationAction(name: string, slug: string): Prom
         WHERE "userId" = ${session.user.id} AND "organizationId" = ${org.id}
       `);
 
+      logger.info('db', `Successfully provisioned schema "${tenantSchema}" and seeded default roles & permissions`);
+
     } catch (dbErr) {
-      console.error("Error provisioning tenant:", dbErr);
+      logger.error('db', `Error provisioning tenant schema "${tenantSchema}"`, dbErr);
       // We don't throw here to not break the org creation, but it's a critical failure in production.
     } finally {
       await client.end();
@@ -169,13 +181,22 @@ export async function createOrganizationAction(name: string, slug: string): Prom
       details: `Created organization "${name}" (${slug})`
     });
 
+    logger.info('action', `createOrganizationAction completed successfully. Org ID: ${org.id}`);
+
+    // Write-through caching to Redis and L1 Cache for MFA policy checks
+    const orgCacheData = { require2FA: false, id: org.id };
+    await redis.set(`org:${org.id}`, orgCacheData);
+    await redis.set(`org:${org.slug}`, orgCacheData);
+    l1Cache.set(`org:${org.id}`, orgCacheData);
+    l1Cache.set(`org:${org.slug}`, orgCacheData);
+
     return { 
       success: true, 
       organizationId: org.id, 
       slug: org.slug 
     };
   } catch (error) {
-    console.error("Organization creation failed:", error);
+    logger.error('action', `createOrganizationAction failed for User ${session.user.id}`, error);
     const message = error instanceof Error ? error.message : "Falha ao criar organização.";
     return { success: false, error: message };
   }
@@ -184,8 +205,11 @@ export async function createOrganizationAction(name: string, slug: string): Prom
 export async function updateOrganizationAction(orgId: string, name: string, slug: string): Promise<UpdateOrganizationResult> {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
+    logger.warn('action', 'updateOrganizationAction aborted: Unauthenticated access attempt');
     return { success: false, error: "Sessão expirada. Faça login novamente." };
   }
+
+  logger.info('action', `updateOrganizationAction called by User ${session.user.id} for Org ID: "${orgId}" to Name: "${name}", Slug: "${slug}"`);
 
   try {
     // Input Validation
@@ -197,8 +221,15 @@ export async function updateOrganizationAction(orgId: string, name: string, slug
     // 1. Verify Permission via RBAC
     const allowed = await can(session.user.id, orgId, "org:update");
     if (!allowed) {
+      logger.warn('action', `updateOrganizationAction denied: User ${session.user.id} lacks 'org:update' on Org ${orgId}`);
       return { success: false, error: "Você não tem permissão para editar esta organização." };
     }
+
+    // Fetch old organization details to get the old slug for cache invalidation
+    const [oldOrg] = await db
+      .select({ slug: organizations.slug, require2FA: organizations.require2FA })
+      .from(organizations)
+      .where(eq(organizations.id, orgId));
 
     // 2. Update organization
     await db.update(organizations)
@@ -207,6 +238,19 @@ export async function updateOrganizationAction(orgId: string, name: string, slug
         slug,
       })
       .where(eq(organizations.id, orgId));
+
+    // Cache invalidation and write-through
+    if (oldOrg) {
+      if (oldOrg.slug !== slug) {
+        await redis.del(`org:${oldOrg.slug}`);
+        l1Cache.delete(`org:${oldOrg.slug}`);
+      }
+      const orgCacheData = { require2FA: oldOrg.require2FA, id: orgId };
+      await redis.set(`org:${orgId}`, orgCacheData);
+      await redis.set(`org:${slug}`, orgCacheData);
+      l1Cache.set(`org:${orgId}`, orgCacheData);
+      l1Cache.set(`org:${slug}`, orgCacheData);
+    }
 
     // 3. Record Audit Log
     await recordAuditLog({
@@ -217,9 +261,10 @@ export async function updateOrganizationAction(orgId: string, name: string, slug
       details: `Updated organization name to "${name}" and slug to "${slug}"`
     });
 
+    logger.info('action', `updateOrganizationAction completed successfully for Org ${orgId}`);
     return { success: true };
   } catch (error) {
-    console.error("Organization update failed:", error);
+    logger.error('action', `updateOrganizationAction failed for Org ${orgId}`, error);
     const message = error instanceof Error ? error.message : "Falha ao atualizar organização.";
     return { success: false, error: message };
   }

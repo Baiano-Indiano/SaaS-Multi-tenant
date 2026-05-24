@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { db } from "@/lib/db";
 import { organizations } from "@/lib/db/schema";
 import { runDailyAuditExport } from "@/lib/security/audit-exporter";
@@ -10,13 +11,14 @@ import { runDailyAuditExport } from "@/lib/security/audit-exporter";
  * Triggers daily SIEM exports for all organizations with active configurations.
  */
 export async function GET(req: Request) {
+  const _start = Date.now();
+  logger.info('cron', '➜ GET /api/cron/audit-export');
+
   // 1. Authorization check (e.g., QStash secret)
   const authHeader = req.headers.get("authorization");
   if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
-
-  console.log("[Cron] Starting Global Audit Export Job");
 
   try {
     // 2. Fetch all organizations
@@ -32,11 +34,12 @@ export async function GET(req: Request) {
           results.push({ orgId: org.id, ...result });
         }
       } catch (err) {
-        console.error(`[Cron] Failed export for org ${org.id}:`, err);
+        logger.error('cron', `✗ GET /api/cron/audit-export | Failed export for org ${org.id}`, err);
         results.push({ orgId: org.id, error: "Failed" });
       }
     }
 
+    logger.info('cron', `✓ GET /api/cron/audit-export | 200 | ${Date.now() - _start}ms`);
     return NextResponse.json({
       success: true,
       processed: allOrgs.length,
@@ -44,7 +47,7 @@ export async function GET(req: Request) {
     });
 
   } catch (error) {
-    console.error("[Cron] Global Audit Export Job failed:", error);
+    logger.error('cron', '✗ GET /api/cron/audit-export | Global Audit Export Job failed', error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

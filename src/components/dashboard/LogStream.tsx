@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { Terminal } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface LogEntry {
   id: string;
@@ -15,6 +16,7 @@ interface LogEntry {
 export function LogStream() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const t = useTranslations("Dashboard");
 
   useEffect(() => {
     const methods = ["GET", "POST", "PUT", "DELETE", "PATCH"];
@@ -25,9 +27,9 @@ export function LogStream() {
       const entry: LogEntry = {
         id: Math.random().toString(36).substring(2, 9),
         timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
-        method: methods[Math.floor(Math.random() * methods.length)],
-        path: paths[Math.floor(Math.random() * paths.length)],
-        status: statuses[Math.floor(Math.random() * statuses.length)],
+        method: methods.at(Math.floor(Math.random() * methods.length)) || "GET",
+        path: paths.at(Math.floor(Math.random() * paths.length)) || "",
+        status: statuses.at(Math.floor(Math.random() * statuses.length)) || 200,
         latency: `${Math.floor(Math.random() * 100 + 10)}ms`,
       };
       setLogs((prev) => [...prev.slice(-7), entry]);
@@ -50,7 +52,7 @@ export function LogStream() {
       <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800/50 bg-zinc-900/40">
         <div className="flex items-center gap-2">
           <Terminal className="h-3 w-3 text-zinc-500" />
-          <span className="text-zinc-500 font-bold uppercase tracking-widest">System Events</span>
+          <span className="text-zinc-500 font-bold uppercase tracking-widest">{t("logStream.systemEvents")}</span>
         </div>
         <div className="flex gap-1">
           <div className="h-1.5 w-1.5 rounded-full bg-zinc-800" />
@@ -74,7 +76,7 @@ export function LogStream() {
           </div>
         ))}
         {logs.length === 0 && (
-          <div className="text-zinc-700 italic">Awaiting events...</div>
+          <div className="text-zinc-700 italic">{t("logStream.awaitingEvents")}</div>
         )}
       </div>
     </div>

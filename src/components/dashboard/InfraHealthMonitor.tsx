@@ -1,9 +1,19 @@
 "use client";
 
-import { motion } from "framer-motion";
+// Let's use the exact original imports:
+import { useRef } from "react";
+// wait, the original had:
+// import { motion } from "framer-motion";
+// import { MagneticCard } from "./MagneticCard";
+// import { Activity, Database, Cloud, Zap } from "lucide-react";
+// import { cn } from "@/lib/utils";
+// Let's check imports carefully. We shouldn't change other imports.
+// Let's write the ReplacementContent using framer-motion:
+import { motion as motionFramer } from "framer-motion";
 import { MagneticCard } from "./MagneticCard";
 import { Activity, Database, Cloud, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface InfraHealthMonitorProps {
   latencyTrend: number[];
@@ -14,6 +24,8 @@ interface InfraHealthMonitorProps {
 }
 
 export function InfraHealthMonitor({ latencyTrend, systemLoad }: InfraHealthMonitorProps) {
+  const t = useTranslations("Dashboard");
+  
   // Normalize latency for sparkline (max height 20px)
   const maxLatency = Math.max(...latencyTrend, 100);
   const sparklinePoints = latencyTrend.map((l, i) => ({
@@ -25,6 +37,10 @@ export function InfraHealthMonitor({ latencyTrend, systemLoad }: InfraHealthMoni
     ? `M ${sparklinePoints.map(p => `${p.x},${p.y}`).join(" L ")}`
     : "";
 
+  const systemOperationalStatus = "SYSTEM_OPERATIONAL";
+  const cpuLoadLabel = "CPU Load";
+  const ramUsageLabel = "RAM Usage";
+
   const services = [
     { name: "API Gateway", icon: Zap, status: "operational", latency: `${latencyTrend[0] || 42}ms` },
     { name: "PostgreSQL", icon: Database, status: "operational", latency: "12ms" },
@@ -35,19 +51,19 @@ export function InfraHealthMonitor({ latencyTrend, systemLoad }: InfraHealthMoni
   return (
     <MagneticCard className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-zinc-100">Infra Health</h3>
+        <h3 className="text-lg font-semibold text-zinc-100">{t("infraHealth.title")}</h3>
         <div className="flex items-center gap-2">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
-          <span className="text-xs font-mono text-emerald-500">SYSTEM_OPERATIONAL</span>
+          <span className="text-xs font-mono text-emerald-500">{systemOperationalStatus}</span>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         {services.map((s, i) => (
-          <motion.div
+          <motionFramer.div
             key={s.name}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -64,14 +80,14 @@ export function InfraHealthMonitor({ latencyTrend, systemLoad }: InfraHealthMoni
                 {s.status}
               </div>
             </div>
-          </motion.div>
+          </motionFramer.div>
         ))}
       </div>
 
       <div className="mt-6">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-zinc-500 font-medium">Latency Trend (20m)</span>
-          <span className="text-xs font-mono text-zinc-400">Avg: {Math.round(latencyTrend.reduce((a, b) => a + b, 0) / (latencyTrend.length || 1))}ms</span>
+          <span className="text-xs text-zinc-500 font-medium">{t("infraHealth.latencyTrend")}</span>
+          <span className="text-xs font-mono text-zinc-400">{t("infraHealth.avg")}{Math.round(latencyTrend.reduce((a, b) => a + b, 0) / (latencyTrend.length || 1))}ms</span>
         </div>
         <div className="h-8 w-full bg-zinc-900/50 rounded-lg border border-zinc-800/50 p-1 flex items-end">
           <svg viewBox="0 0 100 20" className="w-full h-full overflow-visible">
@@ -81,7 +97,7 @@ export function InfraHealthMonitor({ latencyTrend, systemLoad }: InfraHealthMoni
                 <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
               </linearGradient>
             </defs>
-            <motion.path
+            <motionFramer.path
               d={pathData}
               fill="none"
               stroke="#10b981"
@@ -103,11 +119,11 @@ export function InfraHealthMonitor({ latencyTrend, systemLoad }: InfraHealthMoni
       <div className="mt-6 pt-6 border-t border-zinc-800/50 grid grid-cols-2 gap-6">
         <div className="space-y-2">
           <div className="flex items-center justify-between text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">
-            <span>CPU Load</span>
+            <span>{cpuLoadLabel}</span>
             <span className="text-zinc-300 font-mono">{systemLoad.cpu}%</span>
           </div>
           <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden">
-            <motion.div 
+            <motionFramer.div 
               initial={{ width: 0 }}
               animate={{ width: `${systemLoad.cpu}%` }}
               className={cn(
@@ -119,11 +135,11 @@ export function InfraHealthMonitor({ latencyTrend, systemLoad }: InfraHealthMoni
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">
-            <span>RAM Usage</span>
+            <span>{ramUsageLabel}</span>
             <span className="text-zinc-300 font-mono">{systemLoad.memory}%</span>
           </div>
           <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden">
-            <motion.div 
+            <motionFramer.div 
               initial={{ width: 0 }}
               animate={{ width: `${systemLoad.memory}%` }}
               className="h-full bg-blue-500/50"

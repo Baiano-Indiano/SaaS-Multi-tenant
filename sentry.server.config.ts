@@ -45,8 +45,8 @@ function scrubSensitiveData(event: Sentry.ErrorEvent) {
       "x-forwarded-for",
     ];
     for (const header of sensitiveHeaders) {
-      if (event.request.headers[header]) {
-        event.request.headers[header] = "[REDACTED]";
+      if (Reflect.has(event.request.headers, header)) {
+        Reflect.set(event.request.headers, header, "[REDACTED]");
       }
     }
   }
@@ -64,13 +64,16 @@ function scrubSensitiveData(event: Sentry.ErrorEvent) {
       const scrub = (obj: unknown): unknown => {
         if (Array.isArray(obj)) return obj.map(scrub);
         if (typeof obj === "object" && obj !== null) {
-          const sanitized: Record<string, unknown> = {};
+          const sanitized: Record<string, unknown> = Object.create(null);
           for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+            if (key === "__proto__" || key === "constructor" || key === "prototype") {
+              continue;
+            }
             const lowerKey = key.toLowerCase();
             if (sensitiveKeywords.some(kw => lowerKey.includes(kw))) {
-              sanitized[key] = "[REDACTED]";
+              Reflect.set(sanitized, key, "[REDACTED]");
             } else {
-              sanitized[key] = scrub(value);
+              Reflect.set(sanitized, key, scrub(value));
             }
           }
           return sanitized;

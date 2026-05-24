@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShieldAlert, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 interface Org2FAEnforcementProps {
   organizationId: string;
@@ -14,6 +15,7 @@ interface Org2FAEnforcementProps {
 }
 
 export function Org2FAEnforcement({ organizationId, initialEnabled }: Org2FAEnforcementProps) {
+  const t = useTranslations("Settings.security");
   const [enabled, setEnabled] = useState(initialEnabled);
   const [isPending, setIsPending] = useState(false);
 
@@ -25,14 +27,14 @@ export function Org2FAEnforcement({ organizationId, initialEnabled }: Org2FAEnfo
         setEnabled(checked);
         toast.success(
           checked 
-            ? "2FA enforcement enabled for the organization." 
-            : "2FA enforcement disabled."
+            ? t("enforceEnabledToast") 
+            : t("enforceDisabledToast")
         );
       } else {
         toast.error(result.error);
       }
     } catch {
-      toast.error("Failed to update security policy.");
+      toast.error(t("enforceErrorToast"));
     } finally {
       setIsPending(false);
     }
@@ -46,9 +48,9 @@ export function Org2FAEnforcement({ organizationId, initialEnabled }: Org2FAEnfo
             <ShieldAlert className="h-5 w-5 text-emerald-500" />
           </div>
           <div>
-            <CardTitle className="text-zinc-100">Global 2FA Enforcement</CardTitle>
+            <CardTitle className="text-zinc-100">{t("global2faEnforcement")}</CardTitle>
             <CardDescription className="text-zinc-500">
-              Require all members to have two-factor authentication enabled to access this organization.
+              {t("global2faEnforcementDesc")}
             </CardDescription>
           </div>
         </div>
@@ -57,10 +59,10 @@ export function Org2FAEnforcement({ organizationId, initialEnabled }: Org2FAEnfo
         <div className="flex items-center justify-between space-x-4">
           <div className="flex-1 space-y-1">
             <Label htmlFor="enforce-2fa" className="text-zinc-200 font-medium">
-              Require 2FA for all members
+              {t("require2faLabel")}
             </Label>
             <p className="text-sm text-zinc-500 max-w-md">
-              When enabled, members without 2FA will be blocked from accessing any part of this organization until they set up a TOTP device.
+              {t("require2faHelp")}
             </p>
           </div>
           <div className="flex items-center gap-3">

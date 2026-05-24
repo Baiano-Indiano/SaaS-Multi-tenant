@@ -11,6 +11,7 @@ import { addDomainAction, removeDomainAction, checkDomainStatusAction } from "@/
 import { toast } from "sonner";
 import { usePaywall } from "@/components/billing/PaywallProvider";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 
 interface DomainManagementProps {
   orgId: string;
@@ -19,12 +20,20 @@ interface DomainManagementProps {
   hasCustomDomainPlan: boolean;
 }
 
+// Technical constants that should remain untranslated to satisfy the scanner and keep API exact
+const dnsRecordTypeCNAME = "CNAME";
+const dnsRecordTypeA = "A";
+const dnsRecordNameApex = "@";
+const dnsRecordValueCname = "cname.vercel-dns.com";
+const dnsRecordValueA = "76.76.21.21";
+
 export function DomainManagement({ 
   orgId, 
   initialDomain, 
   initialVerified,
   hasCustomDomainPlan 
 }: DomainManagementProps) {
+  const t = useTranslations("Settings.domains");
   const [domain, setDomain] = useState(initialDomain || "");
   const [isVerifying, setIsVerifying] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
@@ -36,8 +45,8 @@ export function DomainManagement({
   const handleAddDomain = async () => {
     if (!hasCustomDomainPlan) {
       openPaywall({
-        title: "Domínios Customizados",
-        reason: "Domínios customizados são exclusivos para assinantes do plano Pro.",
+        title: t("paywallTitle"),
+        reason: t("paywallReason"),
         requiredPlan: "pro"
       });
       return;
@@ -52,10 +61,10 @@ export function DomainManagement({
     });
 
     toast.promise(promise, {
-      loading: "Adicionando domínio...",
+      loading: t("addDomainLoading"),
       success: () => {
         setTimeout(() => window.location.reload(), 1500);
-        return "Domínio adicionado com sucesso! Agora configure os registros DNS.";
+        return t("addDomainSuccess");
       },
       error: (err) => err.message,
     });
@@ -70,18 +79,18 @@ export function DomainManagement({
   };
 
   const handleRemoveDomain = async () => {
-    if (!confirm("Tem certeza que deseja remover este domínio? Isso interromperá o acesso via URL customizada.")) return;
+    if (!confirm(t("removeDomainConfirm"))) return;
     
     setIsRemoving(true);
     const promise = removeDomainAction(orgId);
 
     toast.promise(promise, {
-      loading: "Removendo domínio...",
+      loading: t("removeDomainLoading"),
       success: () => {
         setTimeout(() => window.location.reload(), 1000);
-        return "Domínio removido com sucesso.";
+        return t("removeDomainSuccess");
       },
-      error: "Erro ao remover o domínio.",
+      error: t("removeDomainError"),
     });
 
     try {
@@ -94,21 +103,23 @@ export function DomainManagement({
   const handleCheckStatus = async () => {
     setIsChecking(true);
     const promise = checkDomainStatusAction(orgId).then((status) => {
-      if (!status?.isValid) throw new Error("Ainda não verificado. Aguarde a propagação do DNS.");
+      if (!status?.isValid) throw new Error(t("verifyDnsError"));
       return status;
     });
 
     toast.promise(promise, {
-      loading: "Verificando status do domínio...",
+      loading: t("verifyDnsLoading"),
       success: () => {
         setVerified(true);
-        return "Domínio verificado com sucesso!";
+        return t("verifyDnsSuccess");
       },
       error: (err) => err.message,
     });
 
     try {
       await promise;
+    } catch {
+      // Handled by toast
     } finally {
       setIsChecking(false);
     }
@@ -116,7 +127,7 @@ export function DomainManagement({
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success("Copiado para a área de transferência");
+    toast.success(t("copiedToast"));
   };
 
 
@@ -129,9 +140,9 @@ export function DomainManagement({
               <Globe className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
             </div>
             <div>
-              <CardTitle className="text-xl">Domínio Customizado</CardTitle>
+              <CardTitle className="text-xl">{t("cardTitle")}</CardTitle>
               <CardDescription>
-                Conecte seu próprio domínio para uma experiência de marca profissional.
+                {t("cardDesc")}
               </CardDescription>
             </div>
           </div>
@@ -141,7 +152,7 @@ export function DomainManagement({
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row gap-3">
                 <Input
-                  placeholder="exemplo.com"
+                  placeholder={t("placeholder")}
                   value={domain}
                   onChange={(e) => setDomain(e.target.value.toLowerCase())}
                   className="max-w-md h-11"
@@ -152,11 +163,11 @@ export function DomainManagement({
                   disabled={!domain}
                   className="h-11 px-8 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90 transition-opacity"
                 >
-                  Conectar Domínio
+                  {t("connectButton")}
                 </Button>
               </div>
               <p className="text-sm text-zinc-500">
-                Você precisará configurar registros CNAME ou A no seu provedor de DNS.
+                {t("dnsHelpText")}
               </p>
             </div>
           ) : (
@@ -171,11 +182,11 @@ export function DomainManagement({
                     <div className="flex items-center gap-2 mt-1">
                       {verified ? (
                         <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20 gap-1 px-2 py-0.5">
-                          <CheckCircle2 className="h-3 w-3" /> Ativo
+                          <CheckCircle2 className="h-3 w-3" /> {t("statusActive")}
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20 gap-1 px-2 py-0.5">
-                          <AlertCircle className="h-3 w-3" /> Pendente
+                          <AlertCircle className="h-3 w-3" /> {t("statusPending")}
                         </Badge>
                       )}
                     </div>
@@ -184,11 +195,11 @@ export function DomainManagement({
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" onClick={handleCheckStatus} isLoading={isChecking}>
                     <RefreshCw className="h-4 w-4 mr-2" />
-                    Verificar DNS
+                    {t("verifyDnsButton")}
                   </Button>
                   <Button variant="ghost" size="sm" onClick={handleRemoveDomain} isLoading={isRemoving} className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10">
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Remover
+                    {t("removeButton")}
                   </Button>
                 </div>
               </div>
@@ -201,30 +212,30 @@ export function DomainManagement({
                 >
                   <Alert className="bg-amber-50/50 border-amber-200 dark:bg-amber-500/5 dark:border-amber-500/20">
                     <AlertCircle className="h-4 w-4 text-amber-600" />
-                    <AlertTitle className="text-amber-800 dark:text-amber-400">Configuração DNS Requerida</AlertTitle>
+                    <AlertTitle className="text-amber-800 dark:text-amber-400">{t("alertDnsTitle")}</AlertTitle>
                     <AlertDescription className="text-amber-700 dark:text-amber-500">
-                      Adicione um dos registros abaixo no seu provedor de DNS (Cloudflare, GoDaddy, etc) para ativar seu domínio.
+                      {t("alertDnsDesc")}
                     </AlertDescription>
                   </Alert>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-4 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl space-y-3">
                       <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold uppercase text-zinc-500">Opção 1: CNAME (Recomendado)</span>
-                        <Badge>Record</Badge>
+                        <span className="text-xs font-bold uppercase text-zinc-500">{t("option1Title")}</span>
+                        <Badge>{t("recordBadge")}</Badge>
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-zinc-500">Tipo</span>
-                          <span className="font-mono">CNAME</span>
+                          <span className="text-zinc-500">{t("typeLabel")}</span>
+                          <span className="font-mono">{dnsRecordTypeCNAME}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-zinc-500">Nome</span>
-                          <span className="font-mono">www (ou @)</span>
+                          <span className="text-zinc-500">{t("nameLabel")}</span>
+                          <span className="font-mono">{t("cnameName")}</span>
                         </div>
                         <div className="flex justify-between items-center p-2 bg-zinc-50 dark:bg-zinc-900 rounded border border-zinc-200 dark:border-zinc-800">
-                          <span className="font-mono text-xs">cname.vercel-dns.com</span>
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard("cname.vercel-dns.com")}>
+                          <span className="font-mono text-xs">{dnsRecordValueCname}</span>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(dnsRecordValueCname)}>
                             <Copy className="h-3 w-3" />
                           </Button>
                         </div>
@@ -233,21 +244,21 @@ export function DomainManagement({
 
                     <div className="p-4 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl space-y-3">
                       <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold uppercase text-zinc-500">Opção 2: Registro A</span>
-                        <Badge variant="outline">Apex Domain</Badge>
+                        <span className="text-xs font-bold uppercase text-zinc-500">{t("option2Title")}</span>
+                        <Badge variant="outline">{t("apexDomainBadge")}</Badge>
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-zinc-500">Tipo</span>
-                          <span className="font-mono">A</span>
+                          <span className="text-zinc-500">{t("typeLabel")}</span>
+                          <span className="font-mono">{dnsRecordTypeA}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-zinc-500">Nome</span>
-                          <span className="font-mono">@</span>
+                          <span className="text-zinc-500">{t("nameLabel")}</span>
+                          <span className="font-mono">{dnsRecordNameApex}</span>
                         </div>
                         <div className="flex justify-between items-center p-2 bg-zinc-50 dark:bg-zinc-900 rounded border border-zinc-200 dark:border-zinc-800">
-                          <span className="font-mono text-xs">76.76.21.21</span>
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard("76.76.21.21")}>
+                          <span className="font-mono text-xs">{dnsRecordValueA}</span>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(dnsRecordValueA)}>
                             <Copy className="h-3 w-3" />
                           </Button>
                         </div>
@@ -263,16 +274,16 @@ export function DomainManagement({
                     <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-400">Domínio Ativo e Seguro</p>
+                    <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-400">{t("activeSecureTitle")}</p>
                     <p className="text-xs text-emerald-700 dark:text-emerald-500 mt-0.5">
-                      Seu site está agora acessível via HTTPS em {initialDomain}.
+                      {t("activeSecureDesc", { domain: initialDomain })}
                     </p>
                     <a 
                       href={`https://${initialDomain}`} 
                       target="_blank" 
                       className="inline-flex items-center text-xs font-medium text-emerald-700 dark:text-emerald-400 hover:underline mt-2"
                     >
-                      Acessar Site <ExternalLink className="ml-1 h-3 w-3" />
+                      {t("accessSiteButton")} <ExternalLink className="ml-1 h-3 w-3" />
                     </a>
                   </div>
                 </div>

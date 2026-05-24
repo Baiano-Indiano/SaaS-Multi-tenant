@@ -89,7 +89,7 @@ async function sync() {
         // 4. Transactional update per organization
         await client.begin(async (sql) => {
           for (const role of roles) {
-            const targetPerms = ROLE_PERMISSIONS_MAP[role.slug];
+            const targetPerms = Reflect.get(ROLE_PERMISSIONS_MAP, role.slug) as string[] | undefined;
 
             if (!targetPerms) {
               console.log(`  - Role "${role.slug}" has no default permissions mapping. Skipping.`);

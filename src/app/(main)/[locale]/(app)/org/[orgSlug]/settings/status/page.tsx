@@ -3,6 +3,7 @@ import { statusComponents, statusIncidents, organizations } from "@/lib/db/schem
 import { eq, desc } from "drizzle-orm";
 import { StatusSettings } from "@/components/dashboard/settings/StatusSettings";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 export default async function StatusSettingsPage({
   params,
@@ -28,12 +29,14 @@ export default async function StatusSettingsPage({
     limit: 10,
   });
 
+  const t = await getTranslations("Settings.connectivity.integrationsSection");
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-white">Status Page</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-white">{t("statusPage")}</h1>
         <p className="text-zinc-400">
-          Gerencie a transparência do seu sistema para seus usuários finais.
+          {t("statusPageDescription")}
         </p>
       </div>
 

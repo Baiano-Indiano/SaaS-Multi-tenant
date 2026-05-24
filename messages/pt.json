@@ -28,6 +28,14 @@
       "title": "Pronto para construir seu SaaS?",
       "subtitle": "Pare de reconstruir autenticação, cobrança e organizações. Comece a construir seu produto.",
       "button": "Comece a Construir Agora"
+    },
+    "brandName": "SaaS Multi-tenant",
+    "companies": {
+      "acme": "Acme Corp",
+      "globex": "Globex",
+      "soylent": "Soylent",
+      "initech": "Initech",
+      "umbrella": "Umbrella"
     }
   },
   "Auth": {
@@ -72,7 +80,10 @@
     "couldNotCreateAccount": "Não foi possível criar a conta. Tente novamente.",
     "invalidEmail": "E-mail inválido",
     "passwordTooShort": "A senha deve ter pelo menos 6 caracteres",
-    "nameRequired": "Nome é obrigatório"
+    "nameRequired": "Nome é obrigatório",
+    "enterpriseSSOActive": "Enterprise SSO Ativo",
+    "corporateAccountNotice": "Faça login com sua conta corporativa de {domain}",
+    "usePassword": "Usar senha"
   },
   "Navigation": {
     "dashboard": "Painel de Controle",
@@ -108,7 +119,8 @@
     "save": "Salvar",
     "delete": "Excluir",
     "create": "Criar",
-    "loading": "Carregando..."
+    "loading": "Carregando...",
+    "close": "Fechar"
   },
   "Dashboard": {
     "title": "Painel de Controle",
@@ -145,7 +157,71 @@
     "invitations": "Convites",
     "quickOperations": "Operações Rápidas",
     "liveFeed": "Feed ao Vivo",
-    "healthUsage": "Saúde e Uso"
+    "healthUsage": "Saúde e Uso",
+    "noActiveOrgTitle": "Nenhuma Organização Ativa",
+    "noActiveOrgDesc": "Por favor, selecione ou crie uma organização para acessar sua central de comando.",
+    "noRecentActivity": "Nenhuma atividade recente",
+    "diagnostics": {
+      "title": "Ferramentas de Diagnóstico",
+      "requestInspector": "Inspetor de Requisições",
+      "active": "Ativo",
+      "apiSandbox": "Sandbox da API",
+      "cacheHitRate": "Taxa de Hit do Cache",
+      "securityScan": "Varredura de Segurança",
+      "passed": "Aprovado",
+      "revalidateCache": "Revalidar Cache do Sistema",
+      "revalidating": "Revalidando...",
+      "toastSuccess": "Cache do sistema revalidado com sucesso",
+      "toastError": "Falha ao revalidar o cache"
+    },
+    "trafficMap": {
+      "globalTraffic": "Tráfego Global",
+      "liveAuditStream": "Stream de Auditoria ao Vivo v4",
+      "activeNodes": "Nós Ativos",
+      "requestsPerMinute": "Requisições/m",
+      "latency": "Latência: "
+    },
+    "infraHealth": {
+      "title": "Saúde da Infra",
+      "systemOperational": "Sistema Operacional",
+      "latencyTrend": "Tendência de Latência (20m)",
+      "avg": "Média: ",
+      "cpuLoad": "Carga de CPU",
+      "ramUsage": "Uso de RAM"
+    },
+    "logStream": {
+      "systemEvents": "Eventos do Sistema",
+      "awaitingEvents": "Aguardando eventos..."
+    },
+    "securityTerminal": {
+      "logHeader": "SEC_AUDIT_LOG_V2.0",
+      "filterPackets": "Filtrar pacotes...",
+      "packetsCaptured": "Pacotes Capturados",
+      "threatLevel": "Nível de Ameaça",
+      "low": "Baixo",
+      "inspectPacket": "Inspecionar Pacote: ",
+      "rawJsonPayload": "RAW_JSON_PAYLOAD",
+      "awaitingSelection": "Aguardando Seleção de Pacote",
+      "selectionDescription": "Selecione um rastreamento de segurança na barra lateral para iniciar a inspeção",
+      "systemOperational": "Sistema Operacional"
+    },
+    "technicalHeader": {
+      "systemOperational": "Sistema Operacional",
+      "productionVersion": "Production-v4.2",
+      "tenantDatabase": "Tenant_Isolated_Postgres",
+      "normal": "Normal",
+      "commandCenter": "Central de Comando",
+      "environment": "Ambiente",
+      "schema": "Schema",
+      "latency": "Latência",
+      "globalTraffic": "Tráfego Global"
+    },
+    "usageQuotas": {
+      "planUsage": "Uso do Plano",
+      "activeProjects": "Projetos Ativos",
+      "teamMembers": "Membros da Equipe",
+      "upgradeToEnterprise": "Precisa de mais? Mude para o Enterprise"
+    }
   },
   "SelectOrg": {
     "title": "Suas Organizações",
@@ -220,7 +296,6 @@
     "postman": "Postman Runtime",
     "unexpectedError": "Ocorreu um erro inesperado",
     "genericError": "Ocorreu um erro",
-    "status": "Status",
     "enable2FA": "Ativar 2FA",
     "disable2FA": "Desativar 2FA",
     "setup2FA": "Configurar Autenticação de Dois Fatores",
@@ -248,7 +323,26 @@
     "backupCodesDownloaded": "Códigos de backup baixados",
     "TwoFactor": {
       "BackupCodesWarning": "Se você perder o acesso ao seu aplicativo de autenticação, esses códigos são a ÚNICA maneira de acessar sua conta."
-    }
+    },
+    "siemExportTitle": "Exportação de Log de Auditoria SIEM (S3)",
+    "siemExportDesc": "Exportações diárias automáticas em lote de eventos de segurança para sua infraestrutura.",
+    "bucketName": "Nome do Bucket",
+    "region": "Região",
+    "endpointUrl": "URL do Endpoint (Compatível com S3)",
+    "endpointHelp": "Deixe em branco para AWS S3. Obrigatório para Cloudflare R2, MinIO ou DigitalOcean.",
+    "accessKeyId": "ID da Chave de Acesso",
+    "secretAccessKey": "Chave de Acesso Secreta",
+    "siemComplianceReady": "Pronto para Conformidade SIEM",
+    "siemComplianceDesc": "Os logs de auditoria são exportados em uma estrutura JSON simples às <highlight>00:00 UTC diariamente</highlight>. As credenciais são criptografadas usando <highlight>AES-256-GCM</highlight>. O streaming em tempo real pode ser configurado separadamente via <webhooksLink>Webhooks</webhooksLink> usando o gatilho <highlight>audit.log_created</highlight>.",
+    "testingConnection": "Testando Conexão...",
+    "saveVerify": "Salvar e Verificar Integração",
+    "lastExport": "Última exportação bem-sucedida: {time}",
+    "fillRequiredFields": "Por favor, preencha todos os campos obrigatórios.",
+    "configSaved": "Configuração de exportação de auditoria salva e verificada.",
+    "configSaveFailed": "Falha ao salvar a configuração.",
+    "keepCurrentKey": "Manter chave atual",
+    "keepCurrentSecret": "Manter segredo atual",
+    "enterSecretKey": "Inserir chave secreta"
   },
   "Hero": {
     "totalRevenue": "Receita Total",
@@ -266,7 +360,17 @@
     "securityNotice": "A proteção de dados da organização exige que o e-mail seja idêntico ao do convidado.",
     "processing": "Processando seu acesso...",
     "success": "Acesso confirmado à organização!",
-    "error": "Falha ao aceitar o convite"
+    "error": "Falha ao aceitar o convite",
+    "invalidOrExpiredTitle": "Convite Inválido ou Expirado",
+    "invalidOrExpiredDesc": "Este convite não existe mais ou já foi processado.",
+    "backToHome": "Voltar para o início",
+    "brandName": "Antigravity Multi-Tenant",
+    "roleLabel": "Cargo:",
+    "invalidTitle": "Convite Inválido",
+    "backToSite": "Voltar para o site",
+    "invitedTo": "{name} convidou você para",
+    "termsNotice": "Ao ingressar, você concorda com os termos de uso e políticas de privacidade da organização.",
+    "roleErrorDesc": "O contexto deste convite foi alterado pela administração. Por favor, solicite um novo acesso."
   },
   "Members": {
     "title": "Membros da Equipe",
@@ -391,7 +495,14 @@
       "warningDescription": "Sua organização não está impondo o 2FA no momento. Isso aumenta o risco de acesso não autorizado por meio de credenciais comprometidas.",
       "enabledSuccess": "Imposição de 2FA ativada para todos os membros.",
       "disabledSuccess": "Imposição de 2FA desativada.",
-      "updateError": "Ocorreu um erro ao atualizar as configurações."
+      "updateError": "Ocorreu um erro ao atualizar as configurações.",
+      "global2faEnforcement": "Imposição Global de 2FA",
+      "global2faEnforcementDesc": "Exigir que todos os membros tenham a autenticação de dois fatores ativada para acessar esta organização.",
+      "require2faLabel": "Exigir 2FA para todos os membros",
+      "require2faHelp": "Quando ativado, os membros sem 2FA serão bloqueados de acessar qualquer parte desta organização até que configurem um dispositivo TOTP.",
+      "enforceEnabledToast": "Imposição de 2FA ativada para a organização.",
+      "enforceDisabledToast": "Imposição de 2FA desativada.",
+      "enforceErrorToast": "Falha ao atualizar a política de segurança."
     },
     "nav": {
       "general": "Geral",
@@ -664,7 +775,12 @@
             "endpointPlaceholder": "https://hooks.slack.com/services/...",
             "endpointDesc": "Enviaremos os dados do evento como um payload JSON para este endereço.",
             "managedIntegration": "Integração Gerenciada Ativa",
-            "managedIntegrationDesc": "Esta automação usará o conector pré-configurado. Os payloads serão formatados automaticamente para a plataforma de destino (Slack/Discord)."
+            "managedIntegrationDesc": "Esta automação usará o conector pré-configurado. Os payloads serão formatados automaticamente para a plataforma de destino (Slack/Discord).",
+            "noFilters": "Nenhum filtro configurado neste grupo",
+            "noValueRequired": "(Nenhum valor necessário)",
+            "selectField": "Selecionar campo",
+            "customPath": "Caminho personalizado...",
+            "reset": "Redefinir"
           },
           "buttons": {
             "cancel": "Cancelar",
@@ -674,16 +790,46 @@
             "create": "Criar Automação"
           },
           "triggers": {
-            "project_created": { "label": "Projeto Criado", "description": "Acionado quando um novo projeto é criado." },
-            "project_deleted": { "label": "Projeto Excluído", "description": "Acionado quando um projeto é removido." },
-            "member_invited": { "label": "Membro Convidado", "description": "Acionado quando um convite é enviado." },
-            "member_removed": { "label": "Membro Removido", "description": "Acionado quando um membro é removido." },
-            "organization_invitation_accepted": { "label": "Convite Aceito", "description": "Acionado quando um membro entra na organização." },
-            "role_updated": { "label": "Função Atualizada", "description": "Acionado quando a função de um membro muda." }
+            "project_created": {
+              "label": "Projeto Criado",
+              "description": "Acionado quando um novo projeto é criado."
+            },
+            "project_deleted": {
+              "label": "Projeto Excluído",
+              "description": "Acionado quando um projeto é removido."
+            },
+            "member_invited": {
+              "label": "Membro Convidado",
+              "description": "Acionado quando um convite é enviado."
+            },
+            "member_removed": {
+              "label": "Membro Removido",
+              "description": "Acionado quando um membro é removido."
+            },
+            "organization_invitation_accepted": {
+              "label": "Convite Aceito",
+              "description": "Acionado quando um membro entra na organização."
+            },
+            "role_updated": {
+              "label": "Função Atualizada",
+              "description": "Acionado quando a função de um membro muda."
+            }
           },
           "actions": {
-            "webhook": { "label": "Enviar Webhook", "description": "Entrega uma requisição POST com o payload do evento para uma URL." }
-          }
+            "webhook": {
+              "label": "Enviar Webhook",
+              "description": "Entrega uma requisição POST com o payload do evento para uma URL."
+            }
+          },
+          "operators": {
+            "eq": "Igual",
+            "ne": "Diferente",
+            "contains": "Contém",
+            "not_contains": "Não contém",
+            "exists": "Existe",
+            "not_exists": "Não existe"
+          },
+          "customWebhookLabel": "Webhook Personalizado (JSON)"
         },
         "logs": {
           "title": "Logs de Automação",
@@ -702,7 +848,22 @@
           }
         }
       },
-      "footer": "Motor de Conectividade Premium • Segurança Reforçada"
+      "footer": "Motor de Conectividade Premium • Segurança Reforçada",
+      "integrationsSection": {
+        "dominiosEnterprise": "Domínios Enterprise",
+        "domainsDescription": "Configure e gerencie domínios customizados para sua organização.",
+        "statusPage": "Página de Status",
+        "statusPageDescription": "Gerencie a transparência do seu sistema para seus usuários finais.",
+        "automaticFormatting": "Formatação Automática",
+        "activeConnections": "Conexões Ativas",
+        "availableIntegrations": "Integrações Disponíveis",
+        "slack": "Slack",
+        "slackDesc": "Notificações de equipe em tempo real via Block Kit.",
+        "discord": "Discord",
+        "discordDesc": "Rich embeds para canais de comunidade e desenvolvedores.",
+        "customWebhook": "Webhook Personalizado",
+        "customWebhookDesc": "Em breve: Payloads JSON puros."
+      }
     },
     "integrations": {
       "title": "Integrações",
@@ -726,7 +887,84 @@
       "customWebhook": {
         "title": "Webhook Personalizado",
         "desc": "Em breve: Payloads JSON puros."
-      }
+      },
+      "connectSlack": "Conectar Slack",
+      "noIntegrations": "Nenhuma integração encontrada",
+      "noIntegrationsDesc": "Conecte o Slack ou o Discord para começar a receber notificações ricas sobre a atividade da sua organização.",
+      "slackConnectedToast": "Workspace do Slack conectada com sucesso!",
+      "deleteConfirm": "Tem certeza de que deseja excluir esta integração?",
+      "integrationRemovedToast": "Integração removida",
+      "deleteFailedToast": "Falha ao excluir",
+      "testSuccessToast": "Mensagem de teste enviada! Verifique seu canal.",
+      "testFailedToast": "Falha ao enviar mensagem de teste",
+      "activeBadge": "Ativo",
+      "testButton": "Testar",
+      "eventsButton": "Eventos",
+      "addIntegration": "Adicionar Integração",
+      "newIntegration": "Nova Integração",
+      "dialogDesc": "Conecte um novo serviço externo para receber notificações ricas.",
+      "namePlaceholder": "ex: Slack da Engenharia",
+      "selectService": "Selecione um serviço",
+      "webhookPlaceholder": "https://hooks.slack.com/services/...",
+      "securityNotice": "Suas credenciais são criptografadas e armazenadas com segurança no schema do seu tenant.",
+      "creating": "Criando...",
+      "createConnector": "Criar Conector",
+      "toastSuccess": "Conector criado com sucesso!",
+      "toastUnexpectedError": "Ocorreu um erro inesperado",
+      "notificationSettings": "Configurações de Notificação",
+      "notificationSettingsDesc": "Configure quais eventos disparam alertas no <highlight>{name}</highlight>",
+      "doneButton": "Concluído",
+      "nameLabel": "Nome",
+      "serviceType": "Tipo de Serviço",
+      "slackLabel": "Slack",
+      "discordLabel": "Discord",
+      "webhookUrlLabel": "URL do Webhook",
+      "loadingActivity": "Carregando histórico de atividades...",
+      "noActivity": "Nenhuma atividade registrada",
+      "activityInstructions": "Eventos aparecerão aqui conforme forem acionados.",
+      "last50Deliveries": "Últimas 50 Entregas",
+      "refresh": "Atualizar",
+      "statusHeader": "Status",
+      "eventHeader": "Evento",
+      "integrationHeader": "Integração",
+      "durationHeader": "Duração",
+      "timeHeader": "Data/Hora",
+      "loadingEvents": "Carregando eventos..."
+    },
+    "domains": {
+      "paywallTitle": "Domínios Customizados",
+      "paywallReason": "Domínios customizados são exclusivos para assinantes do plano Pro.",
+      "addDomainLoading": "Adicionando domínio...",
+      "addDomainSuccess": "Domínio adicionado com sucesso! Agora configure os registros DNS.",
+      "removeDomainConfirm": "Tem certeza que deseja remover este domínio? Isso interromperá o acesso via URL customizada.",
+      "removeDomainLoading": "Removendo domínio...",
+      "removeDomainSuccess": "Domínio removido com sucesso.",
+      "removeDomainError": "Erro ao remover o domínio.",
+      "verifyDnsLoading": "Verificando status do domínio...",
+      "verifyDnsSuccess": "Domínio verificado com sucesso!",
+      "verifyDnsError": "Ainda não verificado. Aguarde a propagação do DNS.",
+      "copiedToast": "Copiado para a área de transferência",
+      "cardTitle": "Domínio Customizado",
+      "cardDesc": "Conecte seu próprio domínio para uma experiência de marca profissional.",
+      "placeholder": "exemplo.com",
+      "connectButton": "Conectar Domínio",
+      "dnsHelpText": "Você precisará configurar registros CNAME ou A no seu provedor de DNS.",
+      "statusActive": "Ativo",
+      "statusPending": "Pendente",
+      "verifyDnsButton": "Verificar DNS",
+      "removeButton": "Remover",
+      "alertDnsTitle": "Configuração DNS Requerida",
+      "alertDnsDesc": "Adicione um dos registros abaixo no seu provedor de DNS (Cloudflare, GoDaddy, etc) para ativar seu domínio.",
+      "option1Title": "Opção 1: CNAME (Recomendado)",
+      "option2Title": "Opção 2: Registro A",
+      "recordBadge": "Record",
+      "apexDomainBadge": "Apex Domain",
+      "typeLabel": "Tipo",
+      "nameLabel": "Nome",
+      "cnameName": "www (ou @)",
+      "activeSecureTitle": "Domínio Ativo e Seguro",
+      "activeSecureDesc": "Seu site está agora acessível via HTTPS em {domain}.",
+      "accessSiteButton": "Acessar Site"
     }
   },
   "Projects": {
@@ -829,7 +1067,20 @@
     "pasteKey": "Cole sua chave de API aqui...",
     "keySelectionLabel": "Autenticação Ativa",
     "testKeyLabel": "Temporária (1h)",
-    "persistentKeyLabel": "Chave Padrão"
+    "persistentKeyLabel": "Chave Padrão",
+    "sandbox": "Sandbox da API",
+    "endpoints": "Endpoints",
+    "responseBody": "RESPONSE_BODY",
+    "executingProbe": "EXECUTING_PROBE...",
+    "readyForExecution": "READY_FOR_EXECUTION",
+    "runDiagnostic": "RUN DIAGNOSTIC",
+    "telemetryDescription": "Esta operação executa uma sonda em tempo real no subsistema especificado e retorna uma carga útil de telemetria detalhada.",
+    "endpointPingName": "Ping do Sistema",
+    "endpointPingDesc": "Verificar latência global de borda",
+    "endpointDbName": "Saúde do Banco de Dados",
+    "endpointDbDesc": "Verificar status do pool de conexões",
+    "endpointCacheName": "Diagnósticos de Cache",
+    "endpointCacheDesc": "Analisar memória e taxa de acertos"
   },
   "Billing": {
     "title": "Plano e Faturamento",
@@ -998,5 +1249,219 @@
         "answer": "O plano Starter inclui 2 projetos, enquanto os planos Professional e Enterprise oferecem criação ilimitada de projetos para apoiar o crescimento do seu negócio."
       }
     }
+  },
+  "Errors": {
+    "failedToLoad": "Falha ao carregar o conteúdo",
+    "somethingWentWrong": "Algo deu errado",
+    "accessRestricted": "Acesso Restrito",
+    "rolesManage": "roles:manage",
+    "tryAgain": "Tentar novamente",
+    "encounterProblem": "Encontramos um problema ao carregar esta seção.",
+    "criticalError": "Ocorreu um erro crítico. Se isso persistir, entre em contato com o suporte."
+  },
+  "StatusPage": {
+    "components": "Componentes",
+    "updatedRealTime": "Atualizado em tempo real",
+    "noComponents": "Nenhum componente monitorado no momento.",
+    "incidentHistory": "Histórico de Incidentes",
+    "noIncidents": "Nenhum incidente registrado nos últimos 30 dias.",
+    "poweredBy": "Powered by",
+    "brandName": "ANTIGRAVITY",
+    "systemStatus": "Status do Sistema",
+    "allSystemsOperational": "Todos os sistemas operacionais",
+    "criticalInstability": "Instabilidade Crítica Detectada",
+    "partialInstability": "Instabilidade Parcial em Alguns Sistemas",
+    "noIssues30Days": "Nenhum problema reportado nos últimos 30 dias.",
+    "teamWorkingOnResolve": "Nossa equipe técnica já está ciente e trabalhando na resolução.",
+    "operational": "Operacional",
+    "degradedPerformance": "Performance Degradada",
+    "partialOutage": "Instabilidade Parcial",
+    "majorOutage": "Instabilidade Crítica",
+    "unknown": "Desconhecido"
+  },
+  "SentryExample": {
+    "title": "sentry-example-page",
+    "throwError": "Disparar Erro de Exemplo",
+    "errorSent": "Erro enviado para o Sentry."
+  },
+  "SSOSettings": {
+    "securityTitle": "Segurança",
+    "description": "Configure o Single Sign-On (SAML/OIDC) e gerencie domínios verificados para garantir que sua empresa mantenha o controle total sobre o acesso.",
+    "type": "Tipo",
+    "txt": "TXT",
+    "hostName": "Host / Nome",
+    "valueContent": "Valor / Conteúdo",
+    "noDomains": "Nenhum domínio",
+    "noDomainsDesc": "Adicione seu domínio corporativo para começar a configurar o login único.",
+    "googleWorkspace": "Google Workspace",
+    "clientId": "Client ID",
+    "clientSecret": "Client Secret",
+    "microsoftEntraId": "Microsoft Entra ID",
+    "applicationClientId": "Application (Client) ID",
+    "issuerTenantId": "Issuer / Directory (Tenant) ID",
+    "strictSecurityEnforced": "Segurança Organizacional Estrita Imposta",
+    "strictSecurityDesc": "Nossa política de segurança garante que o acesso via SSO seja restrito. Usuários só serão provisionados se o domínio do e-mail estiver verificado ou se possuírem um convite pendente. Isso evita o acesso não autorizado de domínios públicos ou não gerenciados.",
+    "verified": "verificado",
+    "enterpriseGrade": "Enterprise Grade",
+    "corporateDomains": "Domínios Corporativos",
+    "corporateDomainsDesc": "Verifique a propriedade para habilitar Provisionamento Automático (JIT).",
+    "tooltipDomainHelp": "Domínios verificados permitem que usuários com o e-mail correspondente entrem automaticamente na organização via SSO.",
+    "placeholderDomain": "ex: acme.com",
+    "addDomain": "Adicionar Domínio",
+    "waitingDns": "Aguardando DNS",
+    "verifying": "Verificando...",
+    "verifyNow": "Verificar agora",
+    "confirmDeleteDomain": "Tem certeza que deseja excluir este domínio? Isso desabilitará o SSO para usuários deste domínio.",
+    "dnsConfigRequired": "Configuração DNS Necessária",
+    "dnsConfigDesc": "Adicione o seguinte registro TXT nas configurações de DNS do seu domínio (ex: Cloudflare, AWS Route53, GoDaddy).",
+    "copied": "Copiado!",
+    "valueCopied": "Valor copiado!",
+    "active": "Ativo",
+    "inactive": "Inativo",
+    "googleClientTooltip": "ID gerado no Google Cloud Console em APIs & Services > Credentials",
+    "microsoftClientTooltip": "UUID encontrado no Overview da sua App Registration no Portal Azure.",
+    "microsoftIssuerTooltip": "O ID do seu tenant Azure AD ou a URL completa do emissor STS.",
+    "googleWorkspaceRequiredNotice": "* Requer que o e-mail do usuário pertença a um domínio verificado.",
+    "microsoftEntraRequiredNotice": "* Verifique se o domínio do seu tenant Microsoft corresponde a um domínio verificado acima.",
+    "toastDomainAdded": "Domínio adicionado. Verifique os registros DNS.",
+    "toastDomainVerified": "Domínio verificado com sucesso!",
+    "toastDnsNotFound": "Registro TXT não encontrado. A propagação do DNS pode levar alguns minutos.",
+    "toastDomainRemoved": "Domínio removido.",
+    "toastConfigUpdated": "Configuração de {provider} atualizada."
+  },
+  "StatusSettings": {
+    "live": "Ao Vivo",
+    "components": "Componentes",
+    "identification": "Identificação",
+    "shortDescription": "Descrição curta",
+    "currentStatus": "Status Atual",
+    "operational": "Operacional",
+    "degradedPerformance": "Performance Degradada",
+    "partialOutage": "Instabilidade Parcial",
+    "majorOutage": "Instabilidade Crítica",
+    "everythingQuiet": "Tudo em silêncio por aqui",
+    "addComponentInstruction": "Adicione seu primeiro componente para começar a monitorar a saúde do seu sistema.",
+    "noDescription": "Sem descrição",
+    "incidents": "Incidentes",
+    "whatIsHappening": "O que está acontecendo?",
+    "impact": "Impacto",
+    "minorImpact": "Menor (Observação)",
+    "majorImpact": "Maior (Parcial)",
+    "currentPhase": "Fase Atual",
+    "investigating": "Investigando",
+    "identified": "Identificado",
+    "monitoring": "Monitorando",
+    "resolved": "Resolvido",
+    "noActiveIncidents": "Nenhum incidente ativo detectado. Todos os sistemas operando normalmente.",
+    "removeComponent": "Remover Componente?",
+    "removeIncident": "Remover Incidente?",
+    "title": "Página de Status",
+    "description": "Mantenha a transparência com seus clientes. Gerencie componentes do sistema e comunique incidentes em tempo real.",
+    "viewPortal": "Visualizar Portal",
+    "addComponent": "Adicionar",
+    "editComponentTitle": "Ajustar Componente",
+    "newComponentTitle": "Novo Componente",
+    "componentDialogDesc": "Defina o nome e o estado inicial do componente do sistema.",
+    "componentNamePlaceholder": "Ex: API Gateway, Dashboard, Pagamentos",
+    "componentDescPlaceholder": "Ex: Responsável pelo processamento de requisições",
+    "saveComponent": "Salvar Componente",
+    "lastCheckNow": "Último check: agora",
+    "report": "Reportar",
+    "updateEventTitle": "Atualizar Evento",
+    "reportIncidentTitle": "Reportar Incidente",
+    "updateIncidentDesc": "Forneça informações atualizadas sobre a evolução do incidente.",
+    "reportIncidentDesc": "Comunique rapidamente qualquer falha que afete a experiência do usuário.",
+    "incidentTitlePlaceholder": "Ex: Instabilidade no banco de dados regional",
+    "newUpdateLabel": "Novo Update",
+    "technicalExplanationLabel": "Explicação Técnica",
+    "incidentDescPlaceholder": "Descreva as ações tomadas e a situação atual...",
+    "criticalImpact": "Crítico (Total)",
+    "registerUpdate": "Registrar Atualização",
+    "notifyClients": "Notificar Clientes",
+    "clearSkyTitle": "Céu limpo",
+    "removeComponentDesc": "Esta ação não pode ser desfeita. O componente será removido permanentemente da sua página de status.",
+    "confirmRemoval": "Confirmar Remoção",
+    "removeIncidentDesc": "Esta ação removerá permanentemente o registro deste incidente do seu histórico público. Deseja continuar?",
+    "deleteIncident": "Apagar Incidente",
+    "toastComponentUpdated": "Componente atualizado",
+    "toastComponentCreated": "Componente criado",
+    "toastComponentRemoved": "Componente removido",
+    "toastIncidentUpdated": "Incidente atualizado",
+    "toastIncidentCreated": "Incidente registrado",
+    "toastIncidentRemoved": "Incidente removido",
+    "toastSaveError": "Erro ao salvar",
+    "toastRemoveError": "Erro ao remover",
+    "cancel": "Cancelar"
+  },
+  "Notifications": {
+    "title": "Notificações",
+    "none": "Nenhuma notificação ainda.",
+    "markAllAsRead": "Marcar todas como lidas",
+    "viewAll": "Ver todas as notificações"
+  },
+  "RBAC": {
+    "deleteRole": "Excluir Cargo",
+    "roles": "Cargos",
+    "accessRestricted": "Acesso Restrito",
+    "accessRestrictedDesc": "Seu cargo atual não tem a permissão roles:manage necessária para visualizar ou modificar cargos.",
+    "rolesManage": "roles:manage",
+    "title": "Cargos e Permissões",
+    "description": "Configure os níveis de acesso para sua organização. Os cargos do sistema são padrões fixos, enquanto os cargos personalizados podem ser adaptados ao seu fluxo de trabalho específico.",
+    "createCustomRole": "Criar Cargo Personalizado",
+    "deleteConfirm": "Tem certeza que deseja excluir o cargo <highlight>\"{roleName}\"</highlight>? Esta ação não pode ser desfeita e pode afetar os usuários atualmente atribuídos a este cargo.",
+    "deletingRole": "Excluindo cargo...",
+    "roleDeleted": "Cargo excluído com sucesso.",
+    "deleteRoleError": "Não foi possível excluir o cargo.",
+    "cancel": "Cancelar",
+    "roleDisplayName": "Nome de Exibição do Cargo",
+    "roleIdentifier": "Identificador do Cargo",
+    "descriptionLabel": "Descrição",
+    "capabilityMatrix": "Matriz de Permissões",
+    "selectActionsInstruction": "Selecione ações específicas que este cargo pode realizar",
+    "permissionsAssigned": "{count} permissões explicitamente atribuídas",
+    "discardChanges": "Descartar Alterações",
+    "systemProtected": "Protegido pelo Sistema",
+    "updateRole": "Atualizar Cargo",
+    "createRoleProfile": "Criar Perfil de Cargo",
+    "editRole": "Editar Cargo",
+    "systemBase": "Base do Sistema",
+    "systemRoleWarning": "Cargos base do sistema são essenciais para a plataforma e não podem ser modificados.",
+    "customRoleInstructions": "Defina capacidades específicas e regras de acesso para este schema de organização.",
+    "creatingRoleProfile": "Criando perfil de cargo...",
+    "roleProfileCreated": "Perfil de cargo criado com sucesso.",
+    "couldNotSaveRole": "Não foi possível salvar o cargo.",
+    "placeholderName": "ex: Líder Criativo",
+    "placeholderSlug": "ex: lider-criativo",
+    "placeholderDescription": "Descreva o propósito deste cargo...",
+    "noRolesFound": "Nenhum cargo encontrado",
+    "createFirstRoleInstructions": "Crie o primeiro cargo personalizado para começar a definir as permissões da organização. Isso ajudará você a gerenciar o acesso de forma segura e escalável.",
+    "createFirstRole": "Criar Primeiro Cargo",
+    "roleName": "Nome do Cargo",
+    "permissions": "Permissões",
+    "createdAt": "Criado em",
+    "system": "Sistema",
+    "noDescriptionProvided": "Nenhuma descrição específica fornecida.",
+    "noPermissionsAssigned": "Nenhuma permissão atribuída"
+  },
+  "Sidebar": {
+    "title": "Barra Lateral",
+    "description": "Exibe a barra lateral no celular.",
+    "toggle": "Alternar Barra Lateral"
+  },
+  "WorkflowLogs": {
+    "title": "Logs de Execução: {name}",
+    "description": "Mostrando as últimas 50 tentativas de execução para esta automação.",
+    "noLogs": "Nenhum log de execução encontrado para esta automação ainda.",
+    "status": "Status",
+    "event": "Evento",
+    "duration": "Duração",
+    "executedAt": "Executado em",
+    "payload": "Payload",
+    "response": "Resposta",
+    "noResponseBody": "Nenhum corpo de resposta registrado.",
+    "retrying": "Reenviando...",
+    "retryDelivery": "Reenviar Entrega",
+    "retrySuccess": "Solicitação de reenvio enviada para o QStash",
+    "retryFailed": "Falha ao redisparar a entrega"
   }
 }

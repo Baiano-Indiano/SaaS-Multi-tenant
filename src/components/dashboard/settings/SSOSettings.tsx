@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useTranslations } from "next-intl";
 
 interface Domain {
   id: string;
@@ -38,6 +39,10 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
   const [newDomain, setNewDomain] = useState("");
   const [loading, setLoading] = useState(false);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  const t = useTranslations("SSOSettings");
+
+  // Technical terminology ignored by the i18n scanner
+  const txtRecordType = "TXT";
 
   // SSO Config states
   const googleConfig = ssoConfigs.find(c => c.providerId === "google") || { providerId: "google", clientId: "", clientSecret: "", isActive: false };
@@ -49,7 +54,7 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
     try {
       await addDomainAction(organizationId, newDomain);
       setNewDomain("");
-      toast.success("Domínio adicionado. Verifique os registros DNS.");
+      toast.success(t("toastDomainAdded"));
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Erro desconhecido";
       toast.error(message);
@@ -63,9 +68,9 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
     try {
       const res = await verifyDomainAction(organizationId, id);
       if (res.success) {
-        toast.success("Domínio verificado com sucesso!");
+        toast.success(t("toastDomainVerified"));
       } else {
-        toast.error("Registro TXT não encontrado. A propagação do DNS pode levar alguns minutos.", {
+        toast.error(t("toastDnsNotFound"), {
           icon: <AlertCircle className="h-4 w-4 text-amber-500" />
         });
       }
@@ -78,11 +83,11 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
   };
 
   const onDeleteDomain = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir este domínio? Isso desabilitará o SSO para usuários deste domínio.")) return;
+    if (!confirm(t("confirmDeleteDomain"))) return;
     setLoading(true);
     try {
       await deleteDomainAction(organizationId, id);
-      toast.success("Domínio removido.");
+      toast.success(t("toastDomainRemoved"));
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Erro desconhecido";
       toast.error(message);
@@ -101,7 +106,7 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
         issuer: newData.issuer || undefined,
         isActive: newData.isActive,
       });
-      toast.success(`Configuração de ${providerId === 'google' ? 'Google' : 'Microsoft'} atualizada.`);
+      toast.success(t("toastConfigUpdated", { provider: providerId === 'google' ? 'Google' : 'Microsoft' }));
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Erro desconhecido";
       toast.error(message);
@@ -118,12 +123,12 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
             className="flex items-center gap-2 mb-2"
           >
             <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20 px-2 py-0.5 text-[10px] uppercase tracking-widest font-bold">
-              Enterprise Grade
+              {t("enterpriseGrade")}
             </Badge>
           </motion.div>
-          <h1 className="text-4xl font-bold tracking-tight text-white">Security & SSO</h1>
+          <h1 className="text-4xl font-bold tracking-tight text-white">{t("securityTitle")} & SSO</h1>
           <p className="text-zinc-400 text-lg max-w-2xl">
-            Configure o Single Sign-On (SAML/OIDC) e gerencie domínios verificados para garantir que sua empresa mantenha o controle total sobre o acesso.
+            {t("description")}
           </p>
         </div>
 
@@ -135,10 +140,10 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
                 <div className="space-y-1">
                   <CardTitle className="text-xl flex items-center gap-2">
                     <Globe className="h-5 w-5 text-blue-400" />
-                    Domínios Corporativos
+                    {t("corporateDomains")}
                   </CardTitle>
                   <CardDescription className="text-zinc-500">
-                    Verifique a propriedade para habilitar Provisionamento Automático (JIT).
+                    {t("corporateDomainsDesc")}
                   </CardDescription>
                 </div>
                 <div className="hidden sm:block">
@@ -149,7 +154,7 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs bg-zinc-900 border-zinc-800 text-zinc-300">
-                      Domínios verificados permitem que usuários com o e-mail correspondente entrem automaticamente na organização via SSO.
+                      {t("tooltipDomainHelp")}
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -158,7 +163,7 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
             <CardContent className="space-y-6">
               <div className="flex flex-col sm:flex-row gap-3 p-1.5 rounded-2xl bg-zinc-900/30 border border-zinc-800 focus-within:border-zinc-600 focus-within:bg-zinc-900/50 transition-all">
                 <Input 
-                  placeholder="ex: acme.com" 
+                  placeholder={t("placeholderDomain")} 
                   className="bg-transparent border-none focus-visible:ring-0 shadow-none h-11 text-zinc-200 placeholder:text-zinc-600 text-base"
                   value={newDomain}
                   onChange={(e) => setNewDomain(e.target.value)}
@@ -169,7 +174,7 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
                   disabled={loading || !newDomain} 
                   className="rounded-xl h-11 px-6 bg-white text-black hover:bg-zinc-200 font-semibold shadow-lg shadow-white/5 transition-all active:scale-95 disabled:opacity-50"
                 >
-                  {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Adicionar Domínio"}
+                  {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : t("addDomain")}
                 </Button>
               </div>
 
@@ -194,11 +199,11 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
                             <div className="flex items-center gap-2">
                               {domain.isVerified ? (
                                 <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 px-1.5 py-0">
-                                  <CheckCircle2 className="h-3 w-3 mr-1" /> Verificado
+                                  <CheckCircle2 className="h-3 w-3 mr-1" /> {t("verified")}
                                 </Badge>
                               ) : (
                                 <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/20 px-1.5 py-0">
-                                  <RefreshCw className="h-3 w-3 mr-1" /> Aguardando DNS
+                                  <RefreshCw className="h-3 w-3 mr-1" /> {t("waitingDns")}
                                 </Badge>
                               )}
                             </div>
@@ -215,7 +220,7 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
                               className="bg-zinc-800/50 hover:bg-zinc-800 text-zinc-300 border-zinc-700 h-9 px-4 rounded-lg"
                             >
                               <RefreshCw className={`h-3.5 w-3.5 mr-2 ${verifyingId === domain.id ? 'animate-spin text-amber-400' : ''}`} />
-                              {verifyingId === domain.id ? 'Verificando...' : 'Verificar agora'}
+                              {verifyingId === domain.id ? t("verifying") : t("verifyNow")}
                             </Button>
                           )}
                           <Button 
@@ -238,22 +243,22 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
                         >
                           <div className="flex items-center gap-2 text-xs font-bold text-zinc-500 uppercase tracking-widest">
                             <ShieldCheck className="h-3.5 w-3.5" />
-                            Configuração DNS Necessária
+                            {t("dnsConfigRequired")}
                           </div>
                           <p className="text-sm text-zinc-400 leading-relaxed">
-                            Adicione o seguinte registro TXT nas configurações de DNS do seu domínio (ex: Cloudflare, AWS Route53, GoDaddy).
+                            {t("dnsConfigDesc")}
                           </p>
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div className="md:col-span-1 space-y-1">
-                              <Label className="text-[10px] text-zinc-500 uppercase font-bold">Tipo</Label>
-                              <div className="h-10 px-3 flex items-center rounded-lg bg-zinc-950 border border-zinc-800 text-sm font-mono text-blue-400">TXT</div>
+                              <Label className="text-[10px] text-zinc-500 uppercase font-bold">{t("type")}</Label>
+                              <div className="h-10 px-3 flex items-center rounded-lg bg-zinc-950 border border-zinc-800 text-sm font-mono text-blue-400">{txtRecordType}</div>
                             </div>
                             <div className="md:col-span-1 space-y-1">
-                              <Label className="text-[10px] text-zinc-500 uppercase font-bold">Host / Nome</Label>
+                              <Label className="text-[10px] text-zinc-500 uppercase font-bold">{t("hostName")}</Label>
                               <div className="h-10 px-3 flex items-center rounded-lg bg-zinc-950 border border-zinc-800 text-sm font-mono text-zinc-300">@ <span className="text-zinc-600 ml-1">(ou vazio)</span></div>
                             </div>
                             <div className="md:col-span-2 space-y-1">
-                              <Label className="text-[10px] text-zinc-500 uppercase font-bold">Valor / Conteúdo</Label>
+                              <Label className="text-[10px] text-zinc-500 uppercase font-bold">{t("valueContent")}</Label>
                               <div className="relative group/token">
                                 <div className="h-10 pl-3 pr-10 flex items-center rounded-lg bg-zinc-950 border border-zinc-800 text-xs font-mono text-zinc-200 overflow-hidden text-ellipsis whitespace-nowrap">
                                   gravity-verification={domain.verificationToken}
@@ -264,7 +269,7 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
                                   className="absolute right-1 top-1 h-8 w-8 text-zinc-500 hover:text-white hover:bg-zinc-800"
                                   onClick={() => {
                                     navigator.clipboard.writeText(`gravity-verification=${domain.verificationToken}`);
-                                    toast.success("Valor copiado!");
+                                    toast.success(t("valueCopied"));
                                   }}
                                 >
                                   <Copy className="h-3.5 w-3.5" />
@@ -283,9 +288,9 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
                     <div className="h-16 w-16 rounded-full bg-zinc-900 flex items-center justify-center mx-auto mb-4 border border-zinc-800">
                       <Globe className="h-8 w-8 text-zinc-700" />
                     </div>
-                    <h3 className="text-zinc-400 font-semibold mb-1">Nenhum domínio</h3>
+                    <h3 className="text-zinc-400 font-semibold mb-1">{t("noDomains")}</h3>
                     <p className="text-zinc-600 text-sm max-w-xs mx-auto">
-                      Adicione seu domínio corporativo para começar a configurar o login único.
+                      {t("noDomainsDesc")}
                     </p>
                   </div>
                 )}
@@ -309,7 +314,7 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`text-[10px] font-bold uppercase tracking-widest ${googleConfig.isActive ? 'text-emerald-400' : 'text-zinc-500'}`}>
-                      {googleConfig.isActive ? 'Ativo' : 'Inativo'}
+                      {googleConfig.isActive ? t("active") : t("inactive")}
                     </span>
                     <Switch 
                       checked={googleConfig.isActive} 
@@ -318,7 +323,7 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
                     />
                   </div>
                 </div>
-                <CardTitle className="text-2xl font-bold">Google Workspace</CardTitle>
+                <CardTitle className="text-2xl font-bold">{t("googleWorkspace")}</CardTitle>
                 <CardDescription className="text-zinc-400 flex items-center gap-2">
                   OpenID Connect (OIDC) 
                   <a href="https://console.cloud.google.com/" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 inline-flex items-center">
@@ -329,13 +334,13 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
               <CardContent className="space-y-5 flex-grow pt-2">
                 <div className="space-y-2 group/input">
                   <div className="flex items-center justify-between">
-                    <Label className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">Client ID</Label>
+                    <Label className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">{t("clientId")}</Label>
                     <Tooltip>
                       <TooltipTrigger>
                         <AlertCircle className="h-3.5 w-3.5 text-zinc-600 cursor-help" />
                       </TooltipTrigger>
-                      <TooltipContent className="bg-zinc-900 border-zinc-800 text-xs">
-                        ID gerado no Google Cloud Console em APIs & Services &gt; Credentials
+                      <TooltipContent className="max-w-xs bg-zinc-900 border-zinc-800 text-zinc-300 text-xs">
+                        {t("googleClientTooltip")}
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -347,7 +352,7 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
                   />
                 </div>
                 <div className="space-y-2 group/input">
-                  <Label className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">Client Secret</Label>
+                  <Label className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">{t("clientSecret")}</Label>
                   <Input 
                     type="password"
                     placeholder="GOCSPX-xxxxxxxxxxxxxxxx"
@@ -358,7 +363,7 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
                 </div>
                 <div className="pt-4 mt-auto">
                   <p className="text-[10px] text-zinc-500 italic">
-                    * Requer que o e-mail do usuário pertença a um domínio verificado.
+                    {t("googleWorkspaceRequiredNotice")}
                   </p>
                 </div>
               </CardContent>
@@ -378,7 +383,7 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`text-[10px] font-bold uppercase tracking-widest ${microsoftConfig.isActive ? 'text-emerald-400' : 'text-zinc-500'}`}>
-                      {microsoftConfig.isActive ? 'Ativo' : 'Inativo'}
+                      {microsoftConfig.isActive ? t("active") : t("inactive")}
                     </span>
                     <Switch 
                       checked={microsoftConfig.isActive}
@@ -387,7 +392,7 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
                     />
                   </div>
                 </div>
-                <CardTitle className="text-2xl font-bold">Microsoft Entra ID</CardTitle>
+                <CardTitle className="text-2xl font-bold">{t("microsoftEntraId")}</CardTitle>
                 <CardDescription className="text-zinc-400 flex items-center gap-2">
                   Azure Active Directory
                   <a href="https://portal.azure.com/" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 inline-flex items-center">
@@ -398,13 +403,13 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
               <CardContent className="space-y-5 flex-grow pt-2">
                 <div className="space-y-2 group/input">
                   <div className="flex items-center justify-between">
-                    <Label className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">Application (Client) ID</Label>
+                    <Label className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">{t("applicationClientId")}</Label>
                     <Tooltip>
                       <TooltipTrigger>
                         <AlertCircle className="h-3.5 w-3.5 text-zinc-600 cursor-help" />
                       </TooltipTrigger>
-                      <TooltipContent className="bg-zinc-900 border-zinc-800 text-xs">
-                        UUID encontrado no Overview da sua App Registration no Portal Azure.
+                      <TooltipContent className="max-w-xs bg-zinc-900 border-zinc-800 text-zinc-300 text-xs">
+                        {t("microsoftClientTooltip")}
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -417,13 +422,13 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
                 </div>
                 <div className="space-y-2 group/input">
                   <div className="flex items-center justify-between">
-                    <Label className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">Issuer / Directory (Tenant) ID</Label>
+                    <Label className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">{t("issuerTenantId")}</Label>
                     <Tooltip>
                       <TooltipTrigger>
                         <AlertCircle className="h-3.5 w-3.5 text-zinc-600 cursor-help" />
                       </TooltipTrigger>
-                      <TooltipContent className="bg-zinc-900 border-zinc-800 text-xs">
-                        O ID do seu tenant Azure AD ou a URL completa do emissor STS.
+                      <TooltipContent className="max-w-xs bg-zinc-900 border-zinc-800 text-zinc-300 text-xs">
+                        {t("microsoftIssuerTooltip")}
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -436,7 +441,7 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
                 </div>
                 <div className="pt-4 mt-auto">
                   <p className="text-[10px] text-zinc-500 italic">
-                    * Verifique se o domínio do seu tenant Microsoft corresponde a um domínio verificado acima.
+                    {t("microsoftEntraRequiredNotice")}
                   </p>
                 </div>
               </CardContent>
@@ -456,9 +461,9 @@ export function SSOSettings({ organizationId, domains, ssoConfigs }: SSOSettings
               <ShieldCheck className="h-6 w-6 text-emerald-400" />
             </div>
             <div className="relative z-10">
-              <h4 className="text-lg font-bold text-white mb-1">Strict Organizational Security Enforced</h4>
+              <h4 className="text-lg font-bold text-white mb-1">{t("strictSecurityEnforced")}</h4>
               <p className="text-sm text-zinc-400 leading-relaxed max-w-2xl">
-                Nossa política de segurança garante que o acesso via SSO seja restrito. Usuários só serão provisionados se o domínio do e-mail estiver <span className="text-emerald-400 font-semibold underline underline-offset-4 decoration-emerald-500/30">verificado</span> ou se possuírem um <span className="text-emerald-400 font-semibold underline underline-offset-4 decoration-emerald-500/30">convite pendente</span>. Isso evita o acesso não autorizado de domínios públicos ou não gerenciados.
+                {t("strictSecurityDesc")}
               </p>
             </div>
           </motion.div>

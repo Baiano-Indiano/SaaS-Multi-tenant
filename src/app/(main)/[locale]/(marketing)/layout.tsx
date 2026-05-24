@@ -10,11 +10,12 @@ export default async function MarketingLayout({
 }) {
   const tNav = await getTranslations('Navigation');
   const tFooter = await getTranslations('Footer');
+  const tMarketing = await getTranslations('Marketing');
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col">
       <header className="flex items-center justify-between p-6 border-b border-zinc-800">
-        <Link href="/" className="text-xl font-bold tracking-tight">SaaS Multi-tenant</Link>
+        <Link href="/" className="text-xl font-bold tracking-tight">{tMarketing("brandName")}</Link>
         <nav className="flex items-center gap-4">
           <Link href="/login" className="text-sm font-medium hover:text-zinc-300 transition-colors">
             {tNav('login')}
@@ -27,7 +28,7 @@ export default async function MarketingLayout({
         {children}
       </main>
       <footer className="py-12 border-t border-zinc-800 text-center text-sm text-zinc-400">
-        &copy; {new Date().getFullYear()} SaaS Multi-tenant. {tFooter('allRightsReserved')}
+        &copy; {new Date().getFullYear()} {tMarketing("brandName")}. {tFooter('allRightsReserved')}
       </footer>
     </div>
   );

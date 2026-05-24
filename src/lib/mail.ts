@@ -10,6 +10,15 @@ interface SecurityAlertParams {
   location?: string; // Future: Add geo-ip support
 }
 
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 /**
  * Sends a security alert email when a new login environment is detected.
  */
@@ -25,6 +34,11 @@ export async function sendSecurityAlertEmail({
     return;
   }
   try {
+    const safeUserName = escapeHtml(userName);
+    const safeIp = escapeHtml(ip);
+    const safeLocation = escapeHtml(location);
+    const safeUserAgent = escapeHtml(userAgent);
+
     await resend.emails.send({
       from: "Security <security@mg.vittis.com.br>", // Replace with verified domain in production
       to,
@@ -32,13 +46,13 @@ export async function sendSecurityAlertEmail({
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
           <h2 style="color: #d32f2f;">Novo login não reconhecido</h2>
-          <p>Olá, <strong>${userName}</strong>,</p>
+          <p>Olá, <strong>${safeUserName}</strong>,</p>
           <p>Detectamos um novo login na sua conta a partir de um dispositivo ou local que você não costuma usar.</p>
           
           <div style="background-color: #f5f5f5; padding: 15px; border-radius: 4px; margin: 20px 0;">
-            <p style="margin: 5px 0;"><strong>IP:</strong> ${ip}</p>
-            <p style="margin: 5px 0;"><strong>Localização:</strong> ${location}</p>
-            <p style="margin: 5px 0;"><strong>Dispositivo:</strong> ${userAgent}</p>
+            <p style="margin: 5px 0;"><strong>IP:</strong> ${safeIp}</p>
+            <p style="margin: 5px 0;"><strong>Localização:</strong> ${safeLocation}</p>
+            <p style="margin: 5px 0;"><strong>Dispositivo:</strong> ${safeUserAgent}</p>
           </div>
 
           <p>Se foi você, pode ignorar este e-mail. Se você <strong>não reconhece</strong> este acesso, por favor:</p>

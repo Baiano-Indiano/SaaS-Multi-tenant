@@ -10,6 +10,7 @@ import { and, eq } from "drizzle-orm";
 import { recordAuditLog } from "../audit";
 import { v4 as uuidv4 } from "uuid";
 import { redis } from "../redis";
+import { l1Cache } from "../cache/l1-cache";
 import type { HookEndpointContext } from "@better-auth/core";
 import { detectSessionAnomaly } from "../security/anomaly-detection";
 
@@ -84,6 +85,7 @@ export const auth = betterAuth({
             action = "USER_2FA_ENABLED";
             details = "O usuário ativou a autenticação de dois fatores.";
             await redis.set(`user:${session.user.id}:mfa`, true);
+            l1Cache.set(`user:${session.user.id}:mfa`, true);
           } else if (ctx.path.includes("two-factor/verify")) {
              // Quando verifica o TOTP, o 2FA está oficialmente ativo
              await db.update(schema.users)
@@ -93,6 +95,7 @@ export const auth = betterAuth({
             action = "USER_2FA_DISABLED";
             details = "O usuário desativou a autenticação de dois fatores.";
             await redis.set(`user:${session.user.id}:mfa`, false);
+            l1Cache.set(`user:${session.user.id}:mfa`, false);
           } else if (ctx.path.includes("multi-session/revoke-all")) {
             action = "USER_ALL_SESSIONS_REVOKED";
             details = "O usuário revogou todas as outras sessões ativas.";

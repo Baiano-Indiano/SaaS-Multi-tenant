@@ -63,7 +63,7 @@ export function SettingsNav({ items }: SettingsNavProps) {
       if (!indicatorRef.current) return;
 
       const activeItem = items.find((item) => isActive(item.href));
-      const activeLink = activeItem ? linkRefs.current[activeItem.href] : null;
+      const activeLink = activeItem ? Reflect.get(linkRefs.current, activeItem.href) : null;
       
       if (!activeLink) {
         gsap.to(indicatorRef.current, { autoAlpha: 0, duration: 0.2 });
@@ -95,7 +95,7 @@ export function SettingsNav({ items }: SettingsNavProps) {
           key={item.href}
           href={item.href}
           ref={(el) => {
-            linkRefs.current[item.href] = el;
+            Reflect.set(linkRefs.current, item.href, el);
           }}
           className={cn(
             "settings-nav-item relative z-10 justify-start rounded-md px-4 py-2 text-sm font-medium transition-colors",

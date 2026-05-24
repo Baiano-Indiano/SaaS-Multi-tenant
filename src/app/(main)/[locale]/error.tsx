@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { AlertCircle, RefreshCcw } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export default function GlobalError({
   error,
@@ -10,6 +11,8 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations("Errors");
+
   useEffect(() => {
     // Log the error to an error reporting service
     console.error("Global Error Boundary caught:", error);
@@ -25,9 +28,9 @@ export default function GlobalError({
             </div>
             
             <div className="space-y-2">
-              <h2 className="text-xl font-semibold">Something went wrong</h2>
+              <h2 className="text-xl font-semibold">{t("somethingWentWrong")}</h2>
               <p className="text-zinc-400 text-sm">
-                A critical error occurred. If this persists, please contact support.
+                {t("criticalError")}
               </p>
             </div>
 
@@ -35,8 +38,8 @@ export default function GlobalError({
               onClick={() => reset()}
               className="w-full flex items-center justify-center gap-2 bg-zinc-50 text-zinc-950 hover:bg-zinc-200 transition-colors py-2 px-4 rounded-lg font-medium"
             >
-              <RefreshCcw className="w-4 h-4" />
-              Try again
+               <RefreshCcw className="w-4 h-4" />
+               {t("tryAgain")}
             </button>
           </div>
         </div>

@@ -139,7 +139,7 @@ export function PricingSection() {
                             prefix={currency}
                             duration={0.8}
                           />
-                          <span className={isPopular ? 'text-zinc-500' : 'text-zinc-500'}>
+                          <span className={isPopular ? 'text-zinc-500' : 'text-zinc-400'}>
                             {t("perMonth")}
                           </span>
                         </>
