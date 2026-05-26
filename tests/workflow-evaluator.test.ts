@@ -20,16 +20,16 @@ describe("Workflow Filters Evaluator Engine", () => {
   };
 
   describe("Basic Operator Evaluation", () => {
-    it("should evaluate null, undefined, or empty filters as true (always trigger)", () => {
-      expect(evaluateWorkflowFilters(null, samplePayload)).toBe(true);
-      expect(evaluateWorkflowFilters(undefined, samplePayload)).toBe(true);
-      expect(evaluateWorkflowFilters("", samplePayload)).toBe(true);
+    it("should evaluate null, undefined, or empty filters as true (always trigger)", async () => {
+      expect(await evaluateWorkflowFilters(null, samplePayload)).toBe(true);
+      expect(await evaluateWorkflowFilters(undefined, samplePayload)).toBe(true);
+      expect(await evaluateWorkflowFilters("", samplePayload)).toBe(true);
       
       const emptyGroup: FilterGroup = { combinator: "and", rules: [] };
-      expect(evaluateWorkflowFilters(JSON.stringify(emptyGroup), samplePayload)).toBe(true);
+      expect(await evaluateWorkflowFilters(JSON.stringify(emptyGroup), samplePayload)).toBe(true);
     });
 
-    it("should evaluate equals operator", () => {
+    it("should evaluate equals operator", async () => {
       const matchFilter: FilterGroup = {
         combinator: "and",
         rules: [{ field: "payload.status", operator: "equals", value: "active" }]
@@ -39,11 +39,11 @@ describe("Workflow Filters Evaluator Engine", () => {
         rules: [{ field: "payload.status", operator: "equals", value: "archived" }]
       };
 
-      expect(evaluateWorkflowFilters(JSON.stringify(matchFilter), samplePayload)).toBe(true);
-      expect(evaluateWorkflowFilters(JSON.stringify(mismatchFilter), samplePayload)).toBe(false);
+      expect(await evaluateWorkflowFilters(JSON.stringify(matchFilter), samplePayload)).toBe(true);
+      expect(await evaluateWorkflowFilters(JSON.stringify(mismatchFilter), samplePayload)).toBe(false);
     });
 
-    it("should evaluate not_equals operator", () => {
+    it("should evaluate not_equals operator", async () => {
       const matchFilter: FilterGroup = {
         combinator: "and",
         rules: [{ field: "payload.status", operator: "not_equals", value: "archived" }]
@@ -53,11 +53,11 @@ describe("Workflow Filters Evaluator Engine", () => {
         rules: [{ field: "payload.status", operator: "not_equals", value: "active" }]
       };
 
-      expect(evaluateWorkflowFilters(JSON.stringify(matchFilter), samplePayload)).toBe(true);
-      expect(evaluateWorkflowFilters(JSON.stringify(mismatchFilter), samplePayload)).toBe(false);
+      expect(await evaluateWorkflowFilters(JSON.stringify(matchFilter), samplePayload)).toBe(true);
+      expect(await evaluateWorkflowFilters(JSON.stringify(mismatchFilter), samplePayload)).toBe(false);
     });
 
-    it("should evaluate contains operator case-insensitively", () => {
+    it("should evaluate contains operator case-insensitively", async () => {
       const matchFilter: FilterGroup = {
         combinator: "and",
         rules: [{ field: "payload.name", operator: "contains", value: "enterprise" }]
@@ -67,11 +67,11 @@ describe("Workflow Filters Evaluator Engine", () => {
         rules: [{ field: "payload.name", operator: "contains", value: "blockchain" }]
       };
 
-      expect(evaluateWorkflowFilters(JSON.stringify(matchFilter), samplePayload)).toBe(true);
-      expect(evaluateWorkflowFilters(JSON.stringify(mismatchFilter), samplePayload)).toBe(false);
+      expect(await evaluateWorkflowFilters(JSON.stringify(matchFilter), samplePayload)).toBe(true);
+      expect(await evaluateWorkflowFilters(JSON.stringify(mismatchFilter), samplePayload)).toBe(false);
     });
 
-    it("should evaluate not_contains operator", () => {
+    it("should evaluate not_contains operator", async () => {
       const matchFilter: FilterGroup = {
         combinator: "and",
         rules: [{ field: "payload.name", operator: "not_contains", value: "blockchain" }]
@@ -81,11 +81,11 @@ describe("Workflow Filters Evaluator Engine", () => {
         rules: [{ field: "payload.name", operator: "not_contains", value: "migration" }]
       };
 
-      expect(evaluateWorkflowFilters(JSON.stringify(matchFilter), samplePayload)).toBe(true);
-      expect(evaluateWorkflowFilters(JSON.stringify(mismatchFilter), samplePayload)).toBe(false);
+      expect(await evaluateWorkflowFilters(JSON.stringify(matchFilter), samplePayload)).toBe(true);
+      expect(await evaluateWorkflowFilters(JSON.stringify(mismatchFilter), samplePayload)).toBe(false);
     });
 
-    it("should evaluate exists and not_exists operators", () => {
+    it("should evaluate exists and not_exists operators", async () => {
       const existsFilter: FilterGroup = {
         combinator: "and",
         rules: [{ field: "payload.description", operator: "exists", value: "" }]
@@ -95,13 +95,13 @@ describe("Workflow Filters Evaluator Engine", () => {
         rules: [{ field: "payload.nonexistent_field", operator: "not_exists", value: "" }]
       };
 
-      expect(evaluateWorkflowFilters(JSON.stringify(existsFilter), samplePayload)).toBe(true);
-      expect(evaluateWorkflowFilters(JSON.stringify(notExistsFilter), samplePayload)).toBe(true);
+      expect(await evaluateWorkflowFilters(JSON.stringify(existsFilter), samplePayload)).toBe(true);
+      expect(await evaluateWorkflowFilters(JSON.stringify(notExistsFilter), samplePayload)).toBe(true);
     });
   });
 
   describe("Fail-Closed Rules for Missing/Undefined Fields", () => {
-    it("should fail closed (return false) for standard comparisons on missing fields", () => {
+    it("should fail closed (return false) for standard comparisons on missing fields", async () => {
       // equals on missing field should be false
       const equalsFilter: FilterGroup = {
         combinator: "and",
@@ -128,14 +128,14 @@ describe("Workflow Filters Evaluator Engine", () => {
         rules: [{ field: "payload.nonexistent_field", operator: "exists", value: "" }]
       };
 
-      expect(evaluateWorkflowFilters(JSON.stringify(equalsFilter), samplePayload)).toBe(false);
-      expect(evaluateWorkflowFilters(JSON.stringify(notEqualsFilter), samplePayload)).toBe(false);
-      expect(evaluateWorkflowFilters(JSON.stringify(containsFilter), samplePayload)).toBe(false);
-      expect(evaluateWorkflowFilters(JSON.stringify(notContainsFilter), samplePayload)).toBe(false);
-      expect(evaluateWorkflowFilters(JSON.stringify(existsFilter), samplePayload)).toBe(false);
+      expect(await evaluateWorkflowFilters(JSON.stringify(equalsFilter), samplePayload)).toBe(false);
+      expect(await evaluateWorkflowFilters(JSON.stringify(notEqualsFilter), samplePayload)).toBe(false);
+      expect(await evaluateWorkflowFilters(JSON.stringify(containsFilter), samplePayload)).toBe(false);
+      expect(await evaluateWorkflowFilters(JSON.stringify(notContainsFilter), samplePayload)).toBe(false);
+      expect(await evaluateWorkflowFilters(JSON.stringify(existsFilter), samplePayload)).toBe(false);
     });
 
-    it("should return true for not_exists operator when field is missing, null, or empty string", () => {
+    it("should return true for not_exists operator when field is missing, null, or empty string", async () => {
       const missingFieldGroup: FilterGroup = {
         combinator: "and",
         rules: [{ field: "payload.missing", operator: "not_exists", value: "" }]
@@ -151,19 +151,19 @@ describe("Workflow Filters Evaluator Engine", () => {
         rules: [{ field: "payload.emptyField", operator: "not_exists", value: "" }]
       };
 
-      expect(evaluateWorkflowFilters(JSON.stringify(missingFieldGroup), samplePayload)).toBe(true);
-      expect(evaluateWorkflowFilters(JSON.stringify(nullFieldGroup), nullFieldPayload)).toBe(true);
-      expect(evaluateWorkflowFilters(JSON.stringify(emptyFieldGroup), emptyStringPayload)).toBe(true);
+      expect(await evaluateWorkflowFilters(JSON.stringify(missingFieldGroup), samplePayload)).toBe(true);
+      expect(await evaluateWorkflowFilters(JSON.stringify(nullFieldGroup), nullFieldPayload)).toBe(true);
+      expect(await evaluateWorkflowFilters(JSON.stringify(emptyFieldGroup), emptyStringPayload)).toBe(true);
     });
 
-    it("should return false (fail-closed) when filters JSON is malformed or invalid", () => {
+    it("should return false (fail-closed) when filters JSON is malformed or invalid", async () => {
       const malformedJson = "{ combinator: 'and', rules: [ { field: 'name', operator: 'equals', ";
-      expect(evaluateWorkflowFilters(malformedJson, samplePayload)).toBe(false);
+      expect(await evaluateWorkflowFilters(malformedJson, samplePayload)).toBe(false);
     });
   });
 
   describe("Complex Nested Branching (AND/OR Combinators)", () => {
-    it("should evaluate OR combinator", () => {
+    it("should evaluate OR combinator", async () => {
       const orFilter: FilterGroup = {
         combinator: "or",
         rules: [
@@ -171,10 +171,10 @@ describe("Workflow Filters Evaluator Engine", () => {
           { field: "actor.role", operator: "equals", value: "administrator" }  // true
         ]
       };
-      expect(evaluateWorkflowFilters(JSON.stringify(orFilter), samplePayload)).toBe(true);
+      expect(await evaluateWorkflowFilters(JSON.stringify(orFilter), samplePayload)).toBe(true);
     });
 
-    it("should evaluate nested rules (AND containing OR)", () => {
+    it("should evaluate nested rules (AND containing OR)", async () => {
       const nestedFilter: FilterGroup = {
         combinator: "and",
         rules: [
@@ -188,10 +188,10 @@ describe("Workflow Filters Evaluator Engine", () => {
           }
         ]
       };
-      expect(evaluateWorkflowFilters(JSON.stringify(nestedFilter), samplePayload)).toBe(true);
+      expect(await evaluateWorkflowFilters(JSON.stringify(nestedFilter), samplePayload)).toBe(true);
     });
 
-    it("should evaluate nested rules up to depth 3", () => {
+    it("should evaluate nested rules up to depth 3", async () => {
       // Depth 1 (AND)
       //   - Rule 1: payload.name contains "Enterprise" (true)
       //   - Depth 2 (OR)
@@ -218,7 +218,7 @@ describe("Workflow Filters Evaluator Engine", () => {
           }
         ]
       };
-      expect(evaluateWorkflowFilters(JSON.stringify(depth3Filter), samplePayload)).toBe(true);
+      expect(await evaluateWorkflowFilters(JSON.stringify(depth3Filter), samplePayload)).toBe(true);
     });
   });
 });

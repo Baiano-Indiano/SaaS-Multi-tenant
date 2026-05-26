@@ -5,8 +5,9 @@ import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { redis } from "@/lib/redis";
 import { env } from "@/lib/env";
-import { withAdminTenantDb } from "@/lib/db/tenant-db";
+import { getTenantDb, withAdminTenantDb } from "@/lib/db/tenant-db";
 import { db } from "@/lib/db";
+import { generateStateToken } from "@/lib/integrations/encryption";
 
 // Mock next/headers
 vi.mock("next/headers", () => ({
@@ -47,6 +48,9 @@ vi.mock("@/lib/db", () => ({
       users: {
         findFirst: vi.fn(),
       },
+      organizations: {
+        findFirst: vi.fn(),
+      },
     },
   },
 }));
@@ -54,16 +58,33 @@ vi.mock("@/lib/db", () => ({
 // Mock Tenant DB
 vi.mock("@/lib/db/tenant-db", () => ({
   withAdminTenantDb: vi.fn(),
-  getTenantDb: vi.fn((uid, oid, cb) => cb({
-    insert: vi.fn(() => ({
-      values: vi.fn().mockReturnThis(),
-    })),
-  })),
+  getTenantDb: vi.fn(),
 }));
 
 // Mock Audit logging
 vi.mock("@/lib/audit", () => ({
   recordAuditLog: vi.fn(),
+}));
+
+// Mock Slack WebClient
+vi.mock("@slack/web-api", () => ({
+  WebClient: function () {
+    return {
+      oauth: {
+        v2: {
+          access: vi.fn().mockResolvedValue({
+            ok: true,
+            access_token: "xoxb-test-token",
+            team: { id: "T123", name: "Acme Team" },
+            incoming_webhook: {
+              channel: "#alerts",
+              url: "https://hooks.slack.com/services/T123/B123/X123",
+            },
+          }),
+        },
+      },
+    };
+  },
 }));
 
 // Mock fetch globally
@@ -77,6 +98,10 @@ function createReq(urlStr: string) {
 describe("Slack OAuth Authorize Endpoint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.SLACK_CLIENT_ID = "slack_id_123";
+    process.env.SLACK_CLIENT_SECRET = "slack_secret_123";
+    process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
+    process.env.CONNECTOR_SECRET = "default-connector-secret-key-placeholder-32-bytes";
   });
 
   it("should return 401 if user is not authenticated", async () => {
@@ -92,6 +117,13 @@ describe("Slack OAuth Authorize Endpoint", () => {
       user: { id: "user_123" },
     } as any);
 
+    // Mock org lookup
+    vi.mocked(db.query.organizations.findFirst).mockResolvedValue({
+      id: "org_123",
+      name: "Acme",
+      slug: "acme",
+    } as any);
+
     const req = createReq("http://localhost:3000/api/connectors/slack/authorize?orgSlug=acme");
     const res = await authorizeGET(req);
 
@@ -99,70 +131,54 @@ describe("Slack OAuth Authorize Endpoint", () => {
     const location = res.headers.get("location");
     expect(location).toContain("slack.com/oauth/v2/authorize");
     expect(location).toContain("client_id=slack_id_123");
-    expect(location).toContain("scope=incoming-webhook");
-    expect(vi.mocked(redis.set)).toHaveBeenCalled();
+    expect(location).toContain("scope=chat:write,incoming-webhook");
   });
 });
 
 describe("Slack OAuth Callback Endpoint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.SLACK_CLIENT_ID = "slack_id_123";
+    process.env.SLACK_CLIENT_SECRET = "slack_secret_123";
+    process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
+    process.env.CONNECTOR_SECRET = "default-connector-secret-key-placeholder-32-bytes";
   });
 
-  it("should return 400 if state parameter is invalid or missing from Redis", async () => {
-    vi.mocked(redis.get).mockResolvedValue(null);
+  it("should redirect to error page if state parameter is invalid or missing", async () => {
     const req = createReq("http://localhost:3000/api/connectors/slack/callback?code=code_123&state=invalid_state");
     const res = await callbackGET(req);
 
-    expect(res.status).toBe(400);
-    const data = await res.json();
-    expect(data.error).toContain("Invalid or expired state parameter");
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toContain("/login?error=slack_integration_failed");
   });
 
   it("should exchange code, encrypt tokens, store connector, and redirect on success", async () => {
-    // 1. Mock Redis state recovery
-    vi.mocked(redis.get).mockResolvedValue({
-      userId: "user_123",
-      orgId: "org_123",
-      orgSlug: "acme",
-    });
+    // Generate valid signed state JWT
+    const state = generateStateToken("user_123", "org_123");
 
-    // 2. Mock Slack token exchange response
-    mockFetch.mockResolvedValue({
-      json: async () => ({
-        ok: true,
-        access_token: "xoxb-test-token",
-        team: { id: "T123", name: "Acme Team" },
-        incoming_webhook: {
-          channel: "#alerts",
-          url: "https://hooks.slack.com/services/T123/B123/X123",
-        },
-      }),
-    });
+    // Mock org lookup
+    vi.mocked(db.query.organizations.findFirst).mockResolvedValue({
+      id: "org_123",
+      name: "Acme",
+      slug: "acme",
+    } as any);
 
-    // Mock Drizzle insert transaction execution
+    // Mock Drizzle insert transaction execution inside getTenantDb
     const mockInsert = vi.fn().mockImplementation(() => ({
-      values: vi.fn().mockResolvedValue([{ id: "conn_123" }]),
+      values: vi.fn().mockReturnThis(),
     }));
-    vi.mocked(withAdminTenantDb).mockImplementation(async (orgId, cb) => {
+    
+    vi.mocked(getTenantDb).mockImplementation(async (userId, orgId, cb) => {
       return cb({
         insert: mockInsert,
       } as any);
     });
 
-    // Mock user record fetch
-    vi.mocked(db.query.users.findFirst).mockResolvedValue({
-      id: "user_123",
-      name: "John Doe",
-      email: "john@example.com",
-    } as any);
-
-    const req = createReq("http://localhost:3000/api/connectors/slack/callback?code=code_123&state=valid_state");
+    const req = createReq(`http://localhost:3000/api/connectors/slack/callback?code=code_123&state=${state}`);
     const res = await callbackGET(req);
 
     expect(res.status).toBe(307); // NextResponse.redirect
     expect(res.headers.get("location")).toContain("/org/acme/settings/integrations?success=slack");
-    expect(mockFetch).toHaveBeenCalledWith("https://slack.com/api/oauth.v2.access", expect.any(Object));
     expect(mockInsert).toHaveBeenCalled();
   });
 });
