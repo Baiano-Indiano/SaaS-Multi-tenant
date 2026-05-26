@@ -1,71 +1,58 @@
-# Requirements
+# Requirements: Multi-Tenant SaaS Starter
 
-High-level functional requirements for **Milestone v9.0 (Developer Experience & Scalability)**.
+**Defined:** 2026-05-26
+**Core Value:** Secure, tenant-isolated data architecture with flexible organization management that accelerates the launch of enterprise-ready B2B applications.
 
-## Quality Assurance & Testing (TEST)
+## v1 Requirements
 
-- [ ] **TEST-01**: Unit tests for proxy security logic (CSP, Nonce, Header Injection)
-- [ ] **TEST-02**: E2E tests (Playwright) for tenant onboarding and organization switching
-- [ ] **TEST-03**: Regression tests for RBAC permission enforcement on server-side routes
+Requirements for Milestone v10.0. Each maps to roadmap phases.
 
-## Infrastructure CLI & Tooling (TOOL)
+### Integrations (INT)
 
-- [ ] **TOOL-01**: CLI script for local schema generation and tenant seeding
-- [ ] **TOOL-02**: Batch migration utility to run Drizzle migrations across multiple tenant schemas
-- [ ] **TOOL-03**: Database cleanup command for test environments
+- [ ] **INT-01**: User can install Slack integration via OAuth "Add to Slack" flow with secure server-side bot token exchange and isolated storage in tenant database.
+- [ ] **INT-02**: User can install Microsoft Teams integration via MS Graph client, enabling message routing to selected channels.
 
-## Public API & Extensibility (API)
+### Workflows (WF)
 
-- [ ] **API-01**: System health check endpoint with database connection monitoring
-- [ ] **API-02**: Event-driven Webhooks infrastructure (Table-based queue + worker)
-- [ ] **API-03**: Proxy-based API Key authentication with Upstash rate limiting
+- [ ] **WF-01**: User can define conditional rules (e.g. status code, payload matching) for trigger actions using `json-rules-engine` to filter notification routing.
 
-## Enterprise Edge (SSO)
+### Reporting (REP)
 
-- [ ] **SSO-01**: Corporate login via Google Workspace and Microsoft Entra ID (Azure AD)
-- [ ] **SSO-02**: Domain verification via DNS (TXT Records)
-- [ ] **SSO-03**: Just-In-Time (JIT) provisioning for verified domains
-
-## Developer Experience (DX)
-
-- [ ] **DX-01**: Native API Playground (Scalar) integrated into dashboard
-- [ ] **DX-02**: Automatic authentication using existing API Keys
-- [ ] **DX-03**: Integrated code snippet generator (CURL, JS, Python)
+- [ ] **REP-01**: System dispatches weekly email digests summarizing tenant activity using Resend.
+- [ ] **REP-02**: System compiles data statistics into PDF/JSON report buffers on the server and delivers them on-demand or on schedule.
 
 ## Future Requirements (Deferred)
 
-- OAuth "Add to Slack" flow (marketplace-level integration)
-- Microsoft Teams connector
-- Email digest connector
-- Complex workflow branching logic
+- **WF-02**: Multi-action branching execution chains in rule evaluations.
+- **REP-03**: Custom report layout visual constructor.
 
 ## Out of Scope
 
-- Custom theme builders / tenant CSS — B2B prioritizes security over cosmetics
-- Real-time collaboration (cursors, co-editing) — Excessive infrastructure complexity
+| Feature | Reason |
+|---------|--------|
+| Custom CSS email editors | Hard to guarantee CSS email delivery across Outlook/Gmail. Pre-designed templates are much safer. |
+| Native recursive workflow execution | Can cause infinite loops. Restricting cascades to depth of 5 max. |
 
 ## Traceability
 
-| REQ-ID | Phase | Status |
-|--------|-------|--------|
-| TEST-01 | 32 | Planned |
-| TEST-02 | 32 | Planned |
-| TEST-03 | 32 | Planned |
-| TOOL-01 | 33 | Planned |
-| TOOL-02 | 33 | Planned |
-| TOOL-03 | 33 | Planned |
-| API-01 | 34 | Planned |
-| API-02 | 34 | Planned |
-| API-03 | 34 | Planned |
-| SSO-01 | 35 | Planned |
-| SSO-02 | 35 | Planned |
-| SSO-03 | 35 | Planned |
-| DX-01 | 36 | Planned |
-| DX-02 | 36 | Planned |
-| DX-03 | 36 | Planned |
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| INT-01 | Phase 39 | Pending |
+| INT-02 | Phase 39 | Pending |
+| WF-01 | Phase 40 | Pending |
+| REP-01 | Phase 41 | Pending |
+| REP-02 | Phase 41 | Pending |
+
+**Coverage:**
+- v1 requirements: 5 total
+- Mapped to phases: 5
+- Unmapped: 0 ✓
 
 ---
-*Archive: [v4.0 Requirements](file:///c:/Users/Bernardo/Desktop/SaaS-Multi-tenant/.planning/milestones/v4.0-REQUIREMENTS.md)*
-*Archive: [v3.0 Requirements](file:///c:/Users/Bernardo/Desktop/SaaS-Multi-tenant/.planning/milestones/v3.0-REQUIREMENTS.md)*
-*Archive: [v2.0 Requirements](file:///c:/Users/Bernardo/Desktop/SaaS-Multi-tenant/.planning/milestones/v2.0-REQUIREMENTS.md)*
-*Archive: [v1.0 Requirements](file:///c:/Users/Bernardo/Desktop/SaaS-Multi-tenant/.planning/milestones/v1.0-REQUIREMENTS.md)*
+*Requirements defined: 2026-05-26*
+*Last updated: 2026-05-26 after initial definition*
+*Archive: [v9.0 Requirements](file:///.planning/milestones/v9.0-REQUIREMENTS.md)*
+*Archive: [v4.0 Requirements](file:///.planning/milestones/v4.0-REQUIREMENTS.md)*
+*Archive: [v3.0 Requirements](file:///.planning/milestones/v3.0-REQUIREMENTS.md)*
+*Archive: [v2.0 Requirements](file:///.planning/milestones/v2.0-REQUIREMENTS.md)*
+*Archive: [v1.0 Requirements](file:///.planning/milestones/v1.0-REQUIREMENTS.md)*
