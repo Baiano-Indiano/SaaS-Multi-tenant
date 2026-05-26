@@ -517,6 +517,10 @@
     "activity": {
       "title": "Log de Atividades",
       "description": "Monitore todas as ações administrativas e eventos de segurança em sua organização.",
+      "exportTitle": "Exportar Dados",
+      "exportDescription": "Baixe relatórios de atividade em formato PDF ou JSON para fins de auditoria.",
+      "downloadPdf": "Baixar Relatório PDF",
+      "downloadJson": "Baixar Logs JSON",
       "searchPlaceholder": "Buscar atividades...",
       "filters": {
         "all": "Todos",

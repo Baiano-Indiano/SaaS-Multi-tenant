@@ -517,6 +517,10 @@
     "activity": {
       "title": "Activity Log",
       "description": "Monitor all administrative actions and security events within your organization.",
+      "exportTitle": "Export Data",
+      "exportDescription": "Download activity reports in PDF or JSON format for auditing purposes.",
+      "downloadPdf": "Download PDF Report",
+      "downloadJson": "Download JSON Logs",
       "searchPlaceholder": "Search activities...",
       "filters": {
         "all": "All",
