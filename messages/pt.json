@@ -873,25 +873,28 @@
         "activity": "Atividade"
       },
       "alertTitle": "Formatação Automática",
-      "alertDesc": "Todas as notificações do Slack e Discord são transformadas automaticamente em cartões ricos de alta qualidade. Nenhum payload JSON manual é necessário.",
+      "alertDesc": "Todas as notificações do Slack e Microsoft Teams são transformadas automaticamente em cartões ricos de alta qualidade. Nenhum payload JSON manual é necessário.",
       "activeConnections": "Conexões Ativas",
       "availableIntegrations": "Integrações Disponíveis",
       "slack": {
         "title": "Slack",
         "desc": "Notificações de equipe em tempo real via Block Kit."
       },
-      "discord": {
-        "title": "Discord",
-        "desc": "Rich embeds para canais de comunidade e desenvolvedores."
+      "teams": {
+        "title": "Microsoft Teams",
+        "desc": "Receba notificações de canal e mensagens via Graph API ou webhook customizado."
       },
       "customWebhook": {
-        "title": "Webhook Personalizado",
-        "desc": "Em breve: Payloads JSON puros."
+        "title": "Webhook Customizado",
+        "desc": "Entregue payloads JSON brutos diretamente para qualquer endpoint."
       },
       "connectSlack": "Conectar Slack",
+      "connectTeams": "Conectar Teams",
+      "connectWebhook": "Conectar Webhook",
       "noIntegrations": "Nenhuma integração encontrada",
-      "noIntegrationsDesc": "Conecte o Slack ou o Discord para começar a receber notificações ricas sobre a atividade da sua organização.",
+      "noIntegrationsDesc": "Conecte o Slack ou o Microsoft Teams para começar a receber notificações ricas sobre a atividade da sua organização.",
       "slackConnectedToast": "Workspace do Slack conectada com sucesso!",
+      "teamsConnectedToast": "Workspace do Microsoft Teams conectada com sucesso!",
       "deleteConfirm": "Tem certeza de que deseja excluir esta integração?",
       "integrationRemovedToast": "Integração removida",
       "deleteFailedToast": "Falha ao excluir",
@@ -903,6 +906,10 @@
       "addIntegration": "Adicionar Integração",
       "newIntegration": "Nova Integração",
       "dialogDesc": "Conecte um novo serviço externo para receber notificações ricas.",
+      "dialogTeamsDesc": "Escolha entre a conexão Nativa Microsoft Graph (OAuth) ou Webhook de Entrada (Fallback).",
+      "dialogWebhookDesc": "Forneça uma URL de webhook para receber eventos JSON personalizados.",
+      "teamsWebhookLabel": "Webhook de Entrada (Fallback)",
+      "teamsOidcLabel": "Graph API Nativo (OAuth)",
       "namePlaceholder": "ex: Slack da Engenharia",
       "selectService": "Selecione um serviço",
       "webhookPlaceholder": "https://hooks.slack.com/services/...",
@@ -917,7 +924,7 @@
       "nameLabel": "Nome",
       "serviceType": "Tipo de Serviço",
       "slackLabel": "Slack",
-      "discordLabel": "Discord",
+      "teamsLabel": "Microsoft Teams",
       "webhookUrlLabel": "URL do Webhook",
       "loadingActivity": "Carregando histórico de atividades...",
       "noActivity": "Nenhuma atividade registrada",

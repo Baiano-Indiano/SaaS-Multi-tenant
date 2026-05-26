@@ -399,9 +399,10 @@ export async function proxy(request: NextRequest) {
       });
     }
 
-    // Optimization: Skip request cloning for auth routes to prevent internal Better Auth context loss
-    if (pathname.startsWith('/api/auth')) {
-      if (request.method === 'POST') {
+    // Optimization: Skip request cloning for auth and connector routes to prevent internal context loss
+    if (pathname.startsWith('/api/auth') || pathname.startsWith('/api/connectors')) {
+      console.log(`[Proxy-Auth] ${request.method} ${pathname} Cookies:`, request.cookies.getAll().map(c => `${c.name}=${c.value.substring(0, 10)}...`));
+      if (pathname.startsWith('/api/auth') && request.method === 'POST') {
         const { success, limit, remaining, reset } = await authRateLimit.limit(`ip_${ip}`);
         if (!success) {
           return NextResponse.json(
@@ -418,11 +419,7 @@ export async function proxy(request: NextRequest) {
         }
       }
 
-      return NextResponse.next({
-        request: {
-          headers: requestHeaders,
-        },
-      });
+      return NextResponse.next();
     }
 
     return NextResponse.next({

@@ -40,13 +40,13 @@ export const auth = betterAuth({
     enabled: true
   },
   plugins: [
-    nextCookies(),
     sso(),
     organization(),
     twoFactor({
       issuer: "Gravity SaaS",
     }),
     multiSession(),
+    nextCookies(),
   ],
   hooks: {
     after: async (ctx: HookEndpointContext) => {
@@ -71,6 +71,7 @@ export const auth = betterAuth({
 
         // Handle audit logging for specific security actions
         if (ctx.path?.includes("two-factor/enable") ||
+          ctx.path?.includes("two-factor/verify") ||
           ctx.path?.includes("two-factor/disable") ||
           ctx.path?.includes("multi-session/revoke") ||
           ctx.path?.includes("multi-session/revoke-all")) {

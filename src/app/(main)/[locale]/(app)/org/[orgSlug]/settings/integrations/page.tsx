@@ -4,18 +4,15 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { Puzzle, Info, Plus, History, Settings2 } from "lucide-react";
-import { SlackIcon, DiscordIcon } from "@/components/icons";
+import { Puzzle, Info, History, Settings2 } from "lucide-react";
 import { getConnectorsAction } from "@/app/actions/connectors";
 import { ConnectorList } from "@/components/settings/integrations/connector-list";
 import { CreateConnectorDialog } from "@/components/settings/integrations/create-connector-dialog";
+import { IntegrationsMarketplace } from "@/components/settings/integrations/integrations-marketplace";
 import { DeliveryLogs } from "@/components/settings/integrations/delivery-logs";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { buttonVariants } from "@/components/ui/button-variants";
-import { cn } from "@/lib/utils";
 import { getTranslations } from "next-intl/server";
 
 export default async function IntegrationsSettingsPage({
@@ -88,48 +85,7 @@ export default async function IntegrationsSettingsPage({
 
           <section className="space-y-4">
             <h4 className="text-sm font-semibold text-zinc-300">{t("availableIntegrations")}</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/30 flex flex-col justify-between gap-4 transition-all group">
-                <div className="flex flex-col gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-[#4A154B]/10 flex items-center justify-center">
-                    <SlackIcon className="h-5 w-5 text-[#4A154B]" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-zinc-200">{t("slack.title")}</p>
-                    <p className="text-xs text-zinc-500">{t("slack.desc")}</p>
-                  </div>
-                </div>
-                <a 
-                  href={`/api/connectors/slack/authorize?orgSlug=${org.slug}`}
-                  className={cn(
-                    buttonVariants({ variant: "outline", size: "sm" }),
-                    "w-full border-zinc-800 hover:bg-zinc-800 hover:text-zinc-100 bg-transparent text-zinc-300 font-bold"
-                  )}
-                >
-                  {t("connectSlack")}
-                </a>
-              </div>
-
-              <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/30 flex flex-col gap-3 opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-default">
-                <div className="h-10 w-10 rounded-lg bg-[#5865F2]/10 flex items-center justify-center">
-                  <DiscordIcon className="h-5 w-5 text-[#5865F2]" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-zinc-200">{t("discord.title")}</p>
-                  <p className="text-xs text-zinc-500">{t("discord.desc")}</p>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/30 flex flex-col gap-3 opacity-40 cursor-not-allowed">
-                <div className="h-10 w-10 rounded-lg bg-zinc-800 flex items-center justify-center">
-                  <Plus className="h-5 w-5 text-zinc-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-zinc-400">{t("customWebhook.title")}</p>
-                  <p className="text-xs text-zinc-600 italic">{t("customWebhook.desc")}</p>
-                </div>
-              </div>
-            </div>
+            <IntegrationsMarketplace orgId={org.id} orgSlug={org.slug || ""} />
           </section>
         </TabsContent>
 

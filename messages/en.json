@@ -873,25 +873,28 @@
         "activity": "Activity"
       },
       "alertTitle": "Automatic Formatting",
-      "alertDesc": "All Slack and Discord notifications are automatically transformed into high-quality rich cards. No manual JSON payload required.",
+      "alertDesc": "All Slack and Microsoft Teams notifications are automatically transformed into high-quality rich cards. No manual JSON payload required.",
       "activeConnections": "Active Connections",
       "availableIntegrations": "Available Integrations",
       "slack": {
         "title": "Slack",
         "desc": "Real-time team notifications via Block Kit."
       },
-      "discord": {
-        "title": "Discord",
-        "desc": "Rich embeds for community and dev channels."
+      "teams": {
+        "title": "Microsoft Teams",
+        "desc": "Receive channel notifications and messages via Graph API or custom webhook."
       },
       "customWebhook": {
         "title": "Custom Webhook",
-        "desc": "Coming soon: Raw JSON payloads."
+        "desc": "Deliver raw JSON event payloads directly to any endpoint."
       },
       "connectSlack": "Connect Slack",
+      "connectTeams": "Connect Teams",
+      "connectWebhook": "Connect Webhook",
       "noIntegrations": "No integrations yet",
-      "noIntegrationsDesc": "Connect Slack or Discord to start receiving rich notifications about your organization's activity.",
+      "noIntegrationsDesc": "Connect Slack or Microsoft Teams to start receiving rich notifications about your organization's activity.",
       "slackConnectedToast": "Slack workspace connected successfully!",
+      "teamsConnectedToast": "Microsoft Teams workspace connected successfully!",
       "deleteConfirm": "Are you sure you want to delete this integration?",
       "integrationRemovedToast": "Integration removed",
       "deleteFailedToast": "Failed to delete",
@@ -903,6 +906,10 @@
       "addIntegration": "Add Integration",
       "newIntegration": "New Integration",
       "dialogDesc": "Connect a new external service to receive rich notifications.",
+      "dialogTeamsDesc": "Choose between Native Microsoft Graph (OAuth) or Incoming Webhook (Fallback) connection.",
+      "dialogWebhookDesc": "Provide a webhook URL to receive custom JSON events.",
+      "teamsWebhookLabel": "Incoming Webhook (Fallback)",
+      "teamsOidcLabel": "Native Graph API (OAuth)",
       "namePlaceholder": "e.g. Engineering Slack",
       "selectService": "Select a service",
       "webhookPlaceholder": "https://hooks.slack.com/services/...",
@@ -917,7 +924,7 @@
       "nameLabel": "Name",
       "serviceType": "Service Type",
       "slackLabel": "Slack",
-      "discordLabel": "Discord",
+      "teamsLabel": "Microsoft Teams",
       "webhookUrlLabel": "Webhook URL",
       "loadingActivity": "Loading activity history...",
       "noActivity": "No activity yet",

@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
-import { cva, type VariantProps } from "class-variance-authority"
 import gsap from "gsap"
 import { useGSAP } from "@gsap/react"
 import { useRef } from "react"
@@ -36,6 +35,19 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const contentRef = useRef<HTMLSpanElement>(null)
     const loaderRef = useRef<HTMLDivElement>(null)
+    const buttonRef = useRef<HTMLButtonElement>(null)
+
+    const setRef = React.useCallback(
+      (node: HTMLButtonElement | null) => {
+        (buttonRef as React.MutableRefObject<HTMLButtonElement | null>).current = node;
+        if (typeof ref === "function") {
+          ref(node);
+        } else if (ref) {
+          (ref as React.MutableRefObject<HTMLButtonElement | null>).current = node;
+        }
+      },
+      [ref]
+    )
 
     const isReducedMotion = () =>
       typeof window !== "undefined" &&
@@ -85,12 +97,12 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           })
         }
       },
-      { dependencies: [isLoading], scope: ref as React.RefObject<HTMLButtonElement> }
+      { dependencies: [isLoading], scope: buttonRef }
     )
 
     return (
       <ButtonPrimitive
-        ref={ref}
+        ref={setRef}
         data-slot={dataSlot ?? "button"}
         className={cn(buttonVariants({ variant, size, className }), "relative")}
         disabled={isDisabled}

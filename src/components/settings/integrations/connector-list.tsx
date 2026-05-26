@@ -6,9 +6,10 @@ import {
   Play, 
   AlertCircle,
   Loader2,
-  Settings2
+  Settings2,
+  Globe
 } from "lucide-react";
-import { SlackIcon, DiscordIcon } from "@/components/icons";
+import { SlackIcon, DiscordIcon, TeamsIcon } from "@/components/icons";
 import { EventMappingDialog } from "./event-mapping-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,8 +48,9 @@ export function ConnectorList({ connectors, orgId, orgSlug }: ConnectorListProps
 
   React.useEffect(() => {
     const success = searchParams.get("success");
-    if (success === "slack") {
-      toast.success(t("slackConnectedToast"));
+    if (success === "slack" || success === "teams") {
+      const toastMessage = success === "slack" ? t("slackConnectedToast") : t("teamsConnectedToast");
+      toast.success(toastMessage);
       // Clean up query param from URL
       const params = new URLSearchParams(searchParams.toString());
       params.delete("success");
@@ -106,11 +108,21 @@ export function ConnectorList({ connectors, orgId, orgSlug }: ConnectorListProps
           <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
             <div className={cn(
               "h-10 w-10 rounded-lg flex items-center justify-center ring-1 ring-inset",
-              connector.type === 'slack' ? "bg-[#4A154B]/10 ring-[#4A154B]/30" : "bg-[#5865F2]/10 ring-[#5865F2]/30"
+              connector.type === 'slack' ? "bg-[#4A154B]/10 ring-[#4A154B]/30" : 
+              connector.type === 'teams' ? "bg-[#4B53BC]/10 ring-[#4B53BC]/30" : 
+              connector.type === 'webhook' ? "bg-zinc-800/10 ring-zinc-700/30" : 
+              "bg-[#5865F2]/10 ring-[#5865F2]/30"
             )}>
-              {connector.type === 'slack' ? (
+              {connector.type === 'slack' && (
                 <SlackIcon className="h-5 w-5 text-[#4A154B]" />
-              ) : (
+              )}
+              {connector.type === 'teams' && (
+                <TeamsIcon className="h-5 w-5 text-[#7B83EB]" />
+              )}
+              {connector.type === 'webhook' && (
+                <Globe className="h-5 w-5 text-zinc-400" />
+              )}
+              {connector.type === 'discord' && (
                 <DiscordIcon className="h-5 w-5 text-[#5865F2]" />
               )}
             </div>
@@ -119,10 +131,13 @@ export function ConnectorList({ connectors, orgId, orgSlug }: ConnectorListProps
                 {connector.name}
               </CardTitle>
               <CardDescription className="text-xs text-zinc-500 flex items-center gap-1.5">
-                {connector.type.charAt(0).toUpperCase() + connector.type.slice(1)} {(() => {
+                {connector.type === 'slack' ? 'Slack' : 
+                 connector.type === 'teams' ? 'Microsoft Teams' : 
+                 connector.type === 'webhook' ? 'Webhook' : 
+                 connector.type.charAt(0).toUpperCase() + connector.type.slice(1)} {(() => {
                   try {
                     const config = JSON.parse(connector.config);
-                    return config.accessToken ? "OAuth" : "Webhook";
+                    return (config.accessToken || config.flow === 'oauth') ? "OAuth" : "Webhook";
                   } catch {
                     return "Webhook";
                   }
@@ -135,7 +150,10 @@ export function ConnectorList({ connectors, orgId, orgSlug }: ConnectorListProps
                       if (connector.type === "slack" && config.teamName && config.channel) {
                         return `${config.teamName} (${config.channel})`;
                       }
-                      return config.url;
+                      if (connector.type === "teams" && config.flow === "oauth") {
+                        return "Graph API Connection";
+                      }
+                      return config.url || "";
                     } catch {
                       return "";
                     }
@@ -193,7 +211,10 @@ export function ConnectorList({ connectors, orgId, orgSlug }: ConnectorListProps
           {/* Subtle bottom accent line */}
           <div className={cn(
             "h-[2px] w-full mt-auto opacity-30",
-            connector.type === 'slack' ? "bg-[#4A154B]" : "bg-[#5865F2]"
+            connector.type === 'slack' ? "bg-[#4A154B]" : 
+            connector.type === 'teams' ? "bg-[#4B53BC]" : 
+            connector.type === 'webhook' ? "bg-zinc-700" :
+            "bg-[#5865F2]"
           )} />
         </Card>
       ))}
