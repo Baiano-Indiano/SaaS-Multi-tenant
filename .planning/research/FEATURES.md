@@ -1,36 +1,78 @@
-# Features Research
+# Feature Research
 
-**Domain:** B2B Multi-Tenant SaaS
-**Researched:** 2026-04-16
+**Domain:** Enterprise Integrations, Workflow Automation, and Telemetry Reporting
+**Researched:** 2026-05-26
 **Confidence:** HIGH
 
-## Feature Categories
+## Feature Landscape
 
-### 1. Table Stakes (Must Have)
-Features that users absolutely expect. Without these, the B2B SaaS is not viable.
+### Table Stakes (Users Expect These)
 
-*   **Global Authentication:** Login, Registration, Password Reset, Magic Links.
-*   **Organization Creation:** Users can create and manage their own "Tenants" or "Workspaces".
-*   **Member Invitations:** Token-based or Email-based invitations to join an existing organization.
-*   **Dynamic RBAC (Role-Based Access Control):** The ability to assign members into roles that determine page/action visibility.
-*   **Strict Data Isolation:** Guarantee that Tenant A cannot read/mutate Tenant B data.
-*   **User/Profile Settings:** Basic name, avatar, and preference management.
+Features users assume exist. Missing these = product feels incomplete.
 
-### 2. Differentiators (Competitive Advantage)
-Features that make this starter stand out as premium.
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| Slack Integration | Standard destination for enterprise team notifications | MEDIUM | Requires secure OAuth callback flow, active integration status UI, and action payload formatter |
+| Weekly Email Digest | Admins need a high-level summary of tenant activity without logging in | LOW | Run via a serverless cron job (QStash) sending dynamic HTML summaries using Resend |
+| JSON/CSV Export | Basic compliance/audit requirement for data ownership | LOW | Endpoint providing raw data payload download for tenant assets |
 
-*   **Custom Roles Creation:** Letting organizations define their own roles and map specific permissions to them instead of hardcoded `Admin`/`Member`.
-*   **High-Wow Landing Page:** Using `Anime.js` for complex svg timeline animations in the hero section to immediately signal high quality.
-*   **Schema-Per-Tenant Data Access:** Providing ultimate enterprise data safety out-of-the-box leveraging PostgreSQL schemas and Drizzle.
-*   **Multi-Workspace Context Switching:** Fast, App-Router driven switching between different organizations the user is part of without re-authenticating.
+### Differentiators (Competitive Advantage)
 
-### 3. Anti-Features (Do Not Build)
-*   **Custom Domain Routing:** Wildcard domains (`tenant.saas.com`) introduce massive DNS and Edge middleware complexity for a starter. Keep isolation to path-based or context-based first.
-*   **Full Anime.js UI Overrides:** Using Anime.js for App dashboard routes. It introduces lifecycle bugs in React. Stick to Framer Motion/CSS for App UI.
+Features that set the product apart. Not required, but valuable.
 
-## Dependencies Between Features
-*   **Invitations depend on RBAC:** When inviting a user, a role must be assigned to securely restrict them immediately upon joining.
-*   **RBAC depends on Schema isolation:** The permission tables must be properly scoped either in a global schema referencing the tenant ID, or explicitly inside the tenant schema.
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| MS Teams Connector | Increases coverage to corporate enterprise tenants | MEDIUM | Integrates with Microsoft Graph client for team channel message delivery |
+| Conditional Workflow Branching | Filters out notification noise by matching event payloads against specific rule predicates | HIGH | Uses `json-rules-engine` to match fields like `status >= 400` or `actor == 'admin'` |
+| Scheduled PDF Telemetry | Sleek, branded PDF reports delivered directly to stakeholder inboxes | HIGH | Server-side PDF generation using `pdfmake` attached directly to Resend emails |
+
+### Anti-Features (Commonly Requested, Often Problematic)
+
+Features that seem good but create problems.
+
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|-----------------|-------------|
+| Recursive Workflow Actions | "If Slack notification fails, trigger email" | Creates loops and infinite api credit consumption | Enforce linear multi-action execution chains without recursion |
+| Custom HTML Email Editor | Let admins design emails from scratch | High maintenance, CSS layout compatibility failures in Outlook, security risks | Provide beautiful pre-designed themed layouts |
+
+## Feature Dependencies
+
+```
+[Conditional Workflows]
+     └──requires──> [Slack Integration / MS Teams Connector]
+     └──requires──> [json-rules-engine]
+
+[Scheduled PDF Telemetry]
+     └──requires──> [resend / pdfmake]
+```
+
+## MVP Definition
+
+### Launch With (v10.0)
+
+Minimum viable product — what's needed to validate the concept.
+
+- [ ] **INT-01 (Slack Integration)** — Essential first integration.
+- [ ] **WF-01 (Conditional Filtering)** — Filter triggers by key-value rules.
+- [ ] **REP-01 (Email Digests)** — Weekly automated stats summary via Resend.
+
+### Add After Validation (v10.1)
+
+Features to add once core is working.
+
+- [ ] **INT-02 (MS Teams Connector)** — Corporate connectivity.
+- [ ] **REP-02 (PDF Report Generator)** — Automated PDF digest attachment.
+
+## Feature Prioritization Matrix
+
+| Feature | User Value | Implementation Cost | Priority |
+|---------|------------|---------------------|----------|
+| Slack Integration | HIGH | MEDIUM | P1 |
+| Conditional Workflows | HIGH | HIGH | P1 |
+| Weekly Email Digest | HIGH | LOW | P1 |
+| MS Teams Connector | MEDIUM | MEDIUM | P2 |
+| PDF Report Service | HIGH | HIGH | P2 |
 
 ---
-*Features research for: B2B Multi-Tenant SaaS App*
+*Feature research for: Enterprise Integrations & Workflow Automation*
+*Researched: 2026-05-26*

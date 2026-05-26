@@ -1,74 +1,78 @@
-# Research Summary — Milestone v4.0 (Security & Integrations)
+# Project Research Summary
 
-**Researched:** 2026-04-24
+**Project:** Multi-Tenant SaaS Starter
+**Domain:** Enterprise Integrations & Workflow Automation (v10.0)
+**Researched:** 2026-05-26
 **Confidence:** HIGH
 
-## Stack Additions
+## Executive Summary
 
-| Library | Version | Purpose | Integration Point |
-|---------|---------|---------|-------------------|
-| Better-Auth `twoFactor` plugin | built-in | TOTP-based 2FA | Extends existing Better-Auth config |
-| Better-Auth `admin` plugin | built-in | Revoke user sessions remotely | Extends existing Better-Auth config |
-| Better-Auth `multiSession` plugin | built-in | List active device sessions | Extends existing Better-Auth config |
-| `otpauth` / `@better-auth/totp` | latest | TOTP token generation & QR codes | Used internally by Better-Auth 2FA |
-| `@slack/web-api` | latest | Slack Bot API (post messages) | Server-side only, Next.js Route Handlers |
-| Discord Webhook API | native fetch | Post messages to Discord channels | Server Actions, no SDK needed |
+This research establishes the core stack, features, and architecture patterns required to deliver Milestone v10.0 (Enterprise Integrations & Workflow Automation) securely. The main goal is to expand the platform's connectivity with native Slack/Microsoft Teams OAuth integrations, event-driven conditional workflows, and scheduled telemetry email/PDF digests.
 
-**What NOT to add:**
-- `@slack/bolt` — Overkill for our use case (outbound notifications only, not interactive bots)
-- `next-auth` Discord provider — We use Better-Auth, not NextAuth
-- Any TOTP library manually — Better-Auth's `twoFactor` plugin handles generation internally
+The key technical challenges are (1) maintaining strict tenant data isolation (Rule 2) when storing external integration tokens, (2) preventing infinite execution loops in cascading workflow rules, and (3) generating scheduled PDF reports on the server without blocking the Next.js event loop or crashing under serverless memory constraints. We recommend using `@slack/web-api` and Microsoft Graph clients for integrations, `json-rules-engine` for safe rule matching, and `pdfmake` for serverless-compatible server-side PDF compilation.
 
-## Feature Table Stakes
+## Key Findings
 
-### Security & Compliance
-| Feature | Category | Complexity |
-|---------|----------|------------|
-| User enables/disables 2FA (TOTP) | Table Stakes | Medium |
-| QR code generation for authenticator apps | Table Stakes | Low (plugin handles it) |
-| Backup/recovery codes | Table Stakes | Medium |
-| Org admin enforces 2FA for all members | Differentiator | Medium |
-| List active sessions (device, IP, last active) | Table Stakes | Low |
-| Revoke specific session | Table Stakes | Low |
-| Revoke all other sessions | Table Stakes | Low |
-| Admin revokes member sessions remotely | Differentiator | Medium |
+### Recommended Stack
+- **Slack Connector:** `@slack/web-api` for server-side OAuth exchange and message delivery.
+- **Teams Connector:** `@microsoft/microsoft-graph-client` to communicate with Microsoft Graph for Teams channel delivery.
+- **Rule Evaluation:** `json-rules-engine` for evaluating trigger filters safely.
+- **PDF Compilation:** `pdfmake` for lightweight, non-blocking PDF generation.
+- **Email Dispatch:** `resend` (already installed) for sending summaries.
 
-### External Connectors
-| Feature | Category | Complexity |
-|---------|----------|------------|
-| Slack: Connect workspace via Webhook URL | Table Stakes | Low |
-| Slack: OAuth "Add to Slack" flow | Differentiator | Medium |
-| Discord: Connect channel via Webhook URL | Table Stakes | Low |
-| Event routing: map system events → connectors | Table Stakes | Medium |
-| Connector management UI (list, edit, delete, test) | Table Stakes | Medium |
+### Expected Features
+- **Table Stakes:** Slack OAuth integration, weekly email digests, JSON/CSV exports.
+- **Differentiators:** MS Teams OAuth integration, conditional triggers matching event values, high-polish scheduled PDF attachments.
+- **Anti-Features:** Recursive triggers, custom HTML email editors.
 
-## Key Architecture Decisions
+### Architecture Approach
+- Storing integration bot tokens and custom rules directly in tenant-specific database schemas (Rule 2).
+- Server actions emit lightweight events, which are processed asynchronously by the workflow pipeline using the rule evaluation engine.
+- Cron schedules (via QStash) trigger Next.js routes to query public schemas, activate the tenant's context, compile the data, and dispatch emails.
 
-1. **2FA via Better-Auth plugin** — No custom TOTP implementation. The `twoFactor` plugin provides `enableTwoFactor()`, `verifyTOTP()`, and `disableTwoFactor()` out of the box.
+### Critical Pitfalls
+- **Token Leakage:** Prevented by encrypting tokens at rest and isolating tables inside tenant schemas.
+- **Infinite Loops:** Prevented by tracking trigger execution depth (limit = 5).
+- **CPU Thread Blocking:** Prevented by compiling PDFs asynchronously using stream/buffer outputs.
 
-2. **Session management via Better-Auth core** — `revokeSession(token)`, `revokeSessions()`, and `revokeOtherSessions()` are built-in. The `admin` plugin adds `POST /admin/revoke-user-session` for org admin use.
+## Implications for Roadmap
 
-3. **Slack integration: Webhook URL first, OAuth later** — Start with simple incoming webhook URLs (user pastes their Slack webhook). OAuth "Add to Slack" is a differentiator but adds complexity (redirect flow, token storage, scope management).
+Suggested phase structure:
 
-4. **Discord: Webhook URL only** — Discord webhooks require zero OAuth. User creates webhook in channel settings, pastes URL. We store it encrypted and POST to it via Server Actions.
+### Phase 39: OAuth Integrations & Marketplace (Slack/Teams)
+- **Rationale:** Establishes the foundations of external token exchange and storage.
+- **Delivers:** Integrations setup UI, secure OAuth callback routes, and credentials storage.
+- **Avoids:** Token leakage pitfalls by encrypting keys at rest.
 
-5. **Connector abstraction** — Build a `ConnectorProvider` interface so Slack and Discord share the same contract: `{ type, config, sendNotification(event) }`. Future connectors (Teams, email) slot in easily.
+### Phase 40: Advanced Workflow Branching
+- **Rationale:** Connects event triggers to integrations via business logic rules.
+- **Delivers:** Event triggers observer pipeline, rule-engine integrations, and conditional execution.
+- **Avoids:** Execution loop pitfalls by implementing trace headers and depth limits.
 
-6. **Event routing via existing QStash** — System events (`project.created`, `member.joined`) are already emitted by the workflow engine. Connectors subscribe to specific events and QStash handles reliable delivery.
+### Phase 41: Email Digests & Automated Reporting
+- **Rationale:** Connects database statistics to automated delivery.
+- **Delivers:** Weekly scheduled digests (Resend) and pdfmake reporting service.
+- **Avoids:** CPU event blocking by handling compilation in asynchronous tasks.
 
-## Watch Out For
+## Confidence Assessment
 
-1. **2FA enforcement timing** — When org admin enables mandatory 2FA, existing members without 2FA need a grace period (not instant lockout). Show a "Setup 2FA" interstitial on next login.
+| Area | Confidence | Notes |
+|------|------------|-------|
+| Stack | HIGH | Off-the-shelf official packages with low server footprint. |
+| Features | HIGH | Table stakes features well defined with explicit scope limits. |
+| Architecture | HIGH | Aligns with existing tenant-isolation logic (`getTenantDb`). |
+| Pitfalls | HIGH | Specific mitigations identified for looping and blocking concerns. |
 
-2. **Session table bloat** — Better-Auth stores sessions in DB. With multi-session support, rows accumulate. Add a cleanup cron or TTL-based expiry.
+**Overall confidence:** HIGH
 
-3. **Slack webhook URL security** — URLs contain secrets. Store encrypted in DB, never expose to client-side. Validate URL format before saving.
+### Gaps to Address
+- **Local HTTPS Testing:** Slack and MS Teams webhook delivery require public HTTPS callbacks. Developers must use `ngrok` or similar tools for local development verification.
 
-4. **Discord rate limits** — Discord webhooks have rate limits (30 requests/60 seconds per channel). QStash retry logic must respect `Retry-After` headers.
-
-5. **TOTP clock drift** — TOTP tokens are time-based. Better-Auth handles a ±1 window by default, but document this for users whose device clocks are off.
-
-6. **Connector test flow** — Always provide a "Send Test Message" button so users can verify their webhook URL works before saving. Prevents silent failures.
+## Sources
+- Official Slack OAuth Documentation
+- Microsoft Graph API Documentation
+- pdfmake and json-rules-engine Official API specs
 
 ---
-*Research synthesis for Milestone v4.0 (Security & Integrations)*
+*Research completed: 2026-05-26*
+*Ready for roadmap: yes*

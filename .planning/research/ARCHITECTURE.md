@@ -1,40 +1,124 @@
 # Architecture Research
 
-**Domain:** B2B Multi-Tenant SaaS
-**Researched:** 2026-04-16
+**Domain:** Enterprise Integrations, Workflow Automation, and Telemetry Reporting
+**Researched:** 2026-05-26
 **Confidence:** HIGH
 
-## Component Boundaries
+## Standard Architecture
 
-### 1. Global / Auth Layer (Public Schema)
-*   **Responsibilities:** Handles user identities, global sessions, organization master records, and billing status.
-*   **Components:** `Users`, `Sessions`, `Accounts`, `Organizations`, `Memberships` tables.
-*   **Boundary:** This layer is accessed globally. It acts as the routing layer to find "which tenant schema" a user is trying to access.
+### System Overview
 
-### 2. Tenant Layer (Isolated Schemas)
-*   **Responsibilities:** All business logic, customer data, dynamic roles, and tenant-specific settings.
-*   **Components:** `tenant_xyz.roles`, `tenant_xyz.permissions`, `tenant_xyz.[business_data]`.
-*   **Boundary:** Code must explicitly establish a schema context (e.g. `db.withSchema('tenant_xyz')`) before querying this data.
+```
+┌─────────────────────────────────────────────────────────────┐
+│                       Next.js App / API Routes              │
+├─────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐  ┌───────────────┐  ┌──────────────────┐  │
+│  │ OAuth Routes │  │ Event Triggers│  │ Scheduled Crons  │  │
+│  │  (Slack/MS)  │  │  (workflows)  │  │  (QStash/Resend) │  │
+│  └──────┬───────┘  └───────┬───────┘  └────────┬─────────┘  │
+│         │                  │                   │            │
+├─────────┼──────────────────┼───────────────────┼────────────┤
+│         ▼                  ▼                   ▼            │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │               getTenantDb (Tenant Isolation)           │ │
+│  └─────────────────────────┬──────────────────────────────┘ │
+├────────────────────────────┼────────────────────────────────┤
+│                            ▼                                │
+│                   PostgreSQL Database                       │
+│  ┌─────────────────────────┐  ┌──────────────────────────┐  │
+│  │   Public Schema Table   │  │   Tenant Schema Tables   │  │
+│  │   (orgs, memberships)   │  │   (integrations, rules)  │  │
+│  └─────────────────────────┘  └──────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
 
-### 3. Front-end (Next.js App Router)
-*   **Public Site:** Landing pages, marketing, and pricing (Using Anime.js for hero section).
-*   **App Dashboard:** Secured routes behind `(app)` group. Data fetching is done securely in Server Components reading the session's current Tenant context.
+### Component Responsibilities
 
-## Data Flow
+| Component | Responsibility | Typical Implementation |
+|-----------|----------------|------------------------|
+| `OAuth Webhook Handlers` | Handles the redirection and secure token exchange for external marketplaces | Next.js API Routes (e.g. `/api/connectors/slack/callback`) |
+| `Rule Engine (json-rules-engine)` | Evaluates event payloads against user-defined JSON rules safely | Server-side JS logic mapping trigger inputs to rule outputs |
+| `Scheduled Cron Scheduler` | Invokes periodic telemetry compilation and report generation | Upstash QStash crons invoking authenticated HTTP routes |
+| `PDF compiler (pdfmake)` | Compiles clean, lightweight PDF buffers on the server | Pure Node.js module that does not require a browser |
 
-1.  **Authentication:** User hits Next.js Auth endpoint → Session gets established via Better-Auth in public schema.
-2.  **Organization Context:** User enters `/app/[orgSlug]`. Middleware or Layout verifies User has a `Membership` to `orgSlug` in the public schema.
-3.  **Data Hydration:** Server Component initializes Drizzle DB instance specifically pointing to `schema: "tenant_[orgSlug]"`.
-4.  **UI Render:** Data is passed to client components. Framer Motion handles dynamic state transitions for smooth UX.
+## Recommended Project Structure
 
-## Suggested Build Order
+```
+src/
+├── app/
+│   └── api/
+│       ├── connectors/
+│       │   ├── slack/
+│       │   │   ├── authorize/route.ts   # Redirects to Slack
+│       │   │   └── callback/route.ts    # OAuth code exchange
+│       │   └── teams/
+│       │       ├── authorize/route.ts
+│       │       └── callback/route.ts
+│       └── cron/
+│           └── telemetry/route.ts       # Cron triggered telemetry compiles
+├── lib/
+│   ├── db/
+│   │   └── schema.ts                    # Add tables for integrations/workflows
+│   ├── integrations/
+│   │   ├── slack.ts                     # Slack Client API functions
+│   │   └── teams.ts                     # Teams Microsoft Graph Client
+│   ├── reporting/
+│   │   └── pdf-generator.ts             # Compile pdfmake documents
+│   └── workflows/
+│       ├── engine.ts                    # evaluates json-rules-engine rules
+│       └── trigger.ts                   # emitEvent fan-out wrapper
+```
 
-1.  **Foundation:** Setup Next.js, Tailwind, Shadcn.
-2.  **Landing Page:** Build the marketing facade with Anime.js "wow" factor to establish design tokens.
-3.  **Database & Auth Schema:** Setup PostgreSQL, Drizzle ORM, and Better-Auth in the global `public` schema.
-4.  **Organization Logic:** Build API/Actions to Create Organization, leading to dynamic creation of PostgreSQL schemas.
-5.  **Multi-Tenant Gateway:** Build the middleware/routing to lock paths to `/org/[slug]` and bind DB context.
-6.  **RBAC & Invites:** Implement dynamic roles and invitation tokens bounded to a specific tenant.
+## Architectural Patterns
+
+### Pattern 1: Isolated Connector Token Storage (Rule 2 Compliant)
+
+Integration tokens and configurations are stored directly in the tenant-specific tables, keeping all enterprise customer tokens isolated at the database schema level.
+
+```typescript
+// src/lib/integrations/slack.ts
+import { getTenantDb } from "@/lib/db/tenant-db";
+import { integrations } from "@/lib/db/schema";
+
+export async function saveSlackToken(userId: string, orgId: string, botToken: string, teamName: string) {
+  return await getTenantDb(userId, orgId, async (tenantDb) => {
+    return await tenantDb.insert(integrations).values({
+      id: crypto.randomUUID(),
+      type: "SLACK",
+      credentials: { botToken, teamName },
+      isActive: true,
+    }).onConflictDoUpdate({
+      target: integrations.type,
+      set: { credentials: { botToken, teamName }, isActive: true }
+    });
+  });
+}
+```
+
+### Pattern 2: Multi-Action Workflow Pipeline (Observer Pattern)
+
+Trigger actions are decoupled from core server logic. Server actions emit lightweight events, and a separate workflow processor resolves rules and executes integrations.
+
+```typescript
+// src/lib/workflows/engine.ts
+import { Engine } from "json-rules-engine";
+
+export async function evaluateWorkflowRules(eventPayload: any, ruleDefinition: any) {
+  const engine = new Engine();
+  engine.addRule(ruleDefinition);
+  
+  const results = await engine.run(eventPayload);
+  return results.events.length > 0;
+}
+```
+
+## Scaling Considerations
+
+| Scale | Architecture Adjustments |
+|-------|--------------------------|
+| 0-10k crons/mo | Direct HTTP invocations from QStash to Next.js route is fast and clean. |
+| 10k-100k crons/mo | Compile PDFs in edge functions or dispatch message cues to background queues to avoid blocking main Next.js thread. |
 
 ---
-*Architecture research for: B2B Multi-Tenant SaaS App*
+*Architecture research for: Enterprise Integrations & Workflow Automation*
+*Researched: 2026-05-26*
