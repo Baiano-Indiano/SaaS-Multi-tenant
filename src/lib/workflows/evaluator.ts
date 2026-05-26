@@ -1,3 +1,5 @@
+import { Engine, RuleProperties } from "json-rules-engine";
+
 export type FilterOperator = 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'exists' | 'not_exists';
 
 export interface FilterRule {
@@ -12,82 +14,96 @@ export interface FilterGroup {
 }
 
 /**
- * Safely extracts a nested value from a JSON object given a dot-separated path.
- * Supports accessing payload properties (e.g. "payload.name" or "actor.role").
+ * Instantiates a new json-rules-engine instance configured with custom operators
+ * to match exact filter-rule logic.
  */
-function getNestedValue(obj: any, path: string): any {
-  if (!obj || !path) return undefined;
-  return path.split(".").reduce((acc, part) => {
-    if (acc === null || acc === undefined) return undefined;
-    if (part === "__proto__" || part === "constructor" || part === "prototype") {
-      return undefined;
-    }
-    return Reflect.get(acc, part);
-  }, obj);
+function createEngineWithOperators(): Engine {
+  const engine = new Engine();
+  
+  engine.addOperator("equals", (factValue, jsonValue) => {
+    if (factValue === undefined || factValue === null) return false;
+    return String(factValue) === String(jsonValue);
+  });
+
+  engine.addOperator("not_equals", (factValue, jsonValue) => {
+    if (factValue === undefined || factValue === null) return false;
+    return String(factValue) !== String(jsonValue);
+  });
+
+  engine.addOperator("contains", (factValue, jsonValue) => {
+    if (factValue === undefined || factValue === null) return false;
+    return String(factValue).toLowerCase().includes(String(jsonValue).toLowerCase());
+  });
+
+  engine.addOperator("not_contains", (factValue, jsonValue) => {
+    if (factValue === undefined || factValue === null) return false;
+    return !String(factValue).toLowerCase().includes(String(jsonValue).toLowerCase());
+  });
+
+  engine.addOperator("exists", (factValue) => {
+    return factValue !== undefined && factValue !== null && factValue !== "";
+  });
+
+  engine.addOperator("not_exists", (factValue) => {
+    return factValue === undefined || factValue === null || factValue === "";
+  });
+  
+  return engine;
 }
 
 /**
- * Evaluates a single filter rule against the event payload.
+ * Translates our AST FilterGroup or FilterRule recursively into json-rules-engine conditions format.
  */
-function evaluateRule(rule: FilterRule, payload: any): boolean {
-  const { field, operator, value } = rule;
-  const actualValue = getNestedValue(payload, field);
-
-  // Strict Fail-Closed for missing/null fields
-  if (actualValue === undefined || actualValue === null) {
-    if (operator === "not_exists") return true;
-    return false; // All standard comparisons, including not_equals and not_contains, fail-closed
-  }
-
-  switch (operator) {
-    case "equals":
-      return String(actualValue) === String(value);
-    case "not_equals":
-      return String(actualValue) !== String(value);
-    case "contains":
-      return String(actualValue).toLowerCase().includes(String(value).toLowerCase());
-    case "not_contains":
-      return !String(actualValue).toLowerCase().includes(String(value).toLowerCase());
-    case "exists":
-      return actualValue !== "";
-    case "not_exists":
-      return actualValue === "";
-    default:
-      return false; // Unknown operator fails closed
+function buildConditions(ruleOrGroup: FilterRule | FilterGroup): any {
+  if ("combinator" in ruleOrGroup) {
+    const combinatorKey = ruleOrGroup.combinator === "or" ? "any" : "all";
+    return {
+      [combinatorKey]: ruleOrGroup.rules.map(r => buildConditions(r))
+    };
+  } else {
+    const rule = ruleOrGroup as FilterRule;
+    // json-rules-engine expects a value property even for unary operators like 'exists'
+    return {
+      fact: "payload",
+      path: `$.${rule.field}`,
+      operator: rule.operator,
+      value: rule.value || ""
+    };
   }
 }
 
 /**
- * Recursively evaluates a FilterGroup AST against the event payload.
+ * Evaluates a FilterGroup AST against the event payload facts using json-rules-engine.
  */
-export function evaluateWorkflowFilters(filtersJson: string | null | undefined, payload: any): boolean {
+export async function evaluateWorkflowFilters(filtersJson: string | null | undefined, payload: any): Promise<boolean> {
   if (!filtersJson) return true; // No filters means evaluate to true (always trigger)
   
   try {
-    const group = typeof filtersJson === "string" ? JSON.parse(filtersJson) as FilterGroup : filtersJson as FilterGroup;
+    const group = typeof filtersJson === "string" 
+      ? JSON.parse(filtersJson) as FilterGroup 
+      : filtersJson as FilterGroup;
+      
     if (!group || !group.rules || !Array.isArray(group.rules) || group.rules.length === 0) {
       return true;
     }
 
-    const results = group.rules.map((ruleOrGroup) => {
-      if ("combinator" in ruleOrGroup) {
-        // It's a nested group
-        const subGroupJson = JSON.stringify(ruleOrGroup);
-        return evaluateWorkflowFilters(subGroupJson, payload);
-      } else {
-        // It's a single rule
-        return evaluateRule(ruleOrGroup as FilterRule, payload);
+    const conditions = buildConditions(group);
+    
+    const ruleProperties: RuleProperties = {
+      conditions,
+      event: {
+        type: "workflow-match"
       }
-    });
-
-    if (group.combinator === "or") {
-      return results.some((r) => r === true);
-    } else {
-      // Default to "and"
-      return results.every((r) => r === true);
-    }
+    };
+    
+    const engine = createEngineWithOperators();
+    engine.addRule(ruleProperties);
+    
+    const results = await engine.run({ payload });
+    
+    return results.events.length > 0;
   } catch (error) {
-    console.error("[Workflow Evaluator] Failed to parse or evaluate filters:", error);
+    console.error("[Workflow Evaluator] Failed to evaluate filters with json-rules-engine:", error);
     return false; // Fail-closed on error for safety
   }
 }

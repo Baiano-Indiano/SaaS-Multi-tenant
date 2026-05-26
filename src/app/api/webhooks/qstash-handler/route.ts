@@ -22,6 +22,7 @@ interface QStashPayload {
   event: string;
   payload: Record<string, unknown>;
   secret: string; // Used for HMAC signing
+  depth?: number;
 }
 
 export async function POST(req: NextRequest) {
@@ -45,9 +46,9 @@ export async function POST(req: NextRequest) {
   }
 
   const data = JSON.parse(body) as QStashPayload;
-  const { orgId, deliveryId, connectorId, targetUrl, event, payload, secret } = data;
+  const { orgId, deliveryId, connectorId, targetUrl, event, payload, secret, depth = 0 } = data;
 
-  logger.info('webhook', `Processing QStash delivery ${deliveryId} for org ${orgId}, event ${event}`);
+  logger.info('webhook', `Processing QStash delivery ${deliveryId} for org ${orgId}, event ${event} (depth: ${depth})`);
 
   let finalUrl = targetUrl;
   let finalPayload = payload;

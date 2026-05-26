@@ -26,7 +26,7 @@ import {
   FolderPlus,
   PlusCircle
 } from "lucide-react";
-import { SlackIcon, DiscordIcon } from "@/components/icons";
+import { SlackIcon, DiscordIcon, TeamsIcon } from "@/components/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { 
@@ -617,7 +617,10 @@ export function WorkflowBuilder({ orgId, orgSlug, initialConnectors = [] }: Work
                         {initialConnectors.map((c) => (
                           <SelectItem key={c.id} value={c.id}>
                             <div className="flex items-center gap-2">
-                              {c.type === "slack" ? <SlackIcon className="w-4 h-4 text-emerald-500" /> : <DiscordIcon className="w-4 h-4 text-indigo-500" />}
+                              {c.type === "slack" && <SlackIcon className="w-4 h-4 text-emerald-500" />}
+                              {c.type === "teams" && <TeamsIcon className="w-4 h-4 text-blue-500" />}
+                              {c.type === "discord" && <DiscordIcon className="w-4 h-4 text-indigo-500" />}
+                              {c.type === "webhook" && <Globe className="w-4 h-4 text-zinc-400" />}
                               <span>{c.name} ({c.type})</span>
                             </div>
                           </SelectItem>

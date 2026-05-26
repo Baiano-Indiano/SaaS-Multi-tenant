@@ -89,8 +89,13 @@ function getInternalWebhookSecret(): string {
  * Central hub for system events. Triggers matching workflows (internal integrations)
  * and standard webhooks (external consumers), publishing to QStash for background delivery.
  */
-export async function emitEvent(orgId: string, event: string, payload: Record<string, unknown>) {
-  console.log(`[Event Hub] Emitting event "${event}" for org "${orgId}"`);
+export async function emitEvent(orgId: string, event: string, payload: Record<string, unknown>, depth: number = 0) {
+  console.log(`[Event Hub] Emitting event "${event}" for org "${orgId}" (depth: ${depth})`);
+  
+  if (depth >= 5) {
+    console.warn(`[Event Hub] Aborting event execution for "${event}" due to excessive cascade depth (depth: ${depth})`);
+    return;
+  }
 
   const qstash = getQStashClient();
   if (!qstash) {
@@ -122,7 +127,7 @@ export async function emitEvent(orgId: string, event: string, payload: Record<st
     for (const workflow of activeWorkflows) {
       // Evaluate filters if configured
       if (workflow.filters) {
-        const matches = evaluateWorkflowFilters(workflow.filters, payload);
+        const matches = await evaluateWorkflowFilters(workflow.filters, payload);
         if (!matches) {
           console.log(`[Event Hub] Workflow "${workflow.name}" (${workflow.id}) conditions did not match payload. Skipping delivery.`);
           continue;
@@ -154,11 +159,13 @@ export async function emitEvent(orgId: string, event: string, payload: Record<st
             event,
             payload,
             secret: internalWebhookSecret,
+            depth: depth + 1,
           },
           headers: {
             "x-gravity-org-id": orgId,
             "x-gravity-workflow-id": workflow.id,
             "x-gravity-delivery-id": deliveryId,
+            "x-gravity-depth": String(depth + 1),
           },
         });
       }
@@ -189,11 +196,13 @@ export async function emitEvent(orgId: string, event: string, payload: Record<st
           event,
           payload,
           secret: webhook.secret,
+          depth: depth + 1,
         },
         headers: {
           "x-gravity-org-id": orgId,
           "x-gravity-webhook-id": webhook.id,
           "x-gravity-delivery-id": deliveryId,
+          "x-gravity-depth": String(depth + 1),
         },
       });
     }
