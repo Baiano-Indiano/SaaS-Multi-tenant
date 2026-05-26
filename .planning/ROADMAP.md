@@ -15,19 +15,27 @@ This roadmap tracks the evolution of the **Multi-Tenant SaaS Starter**.
 
 ### Phase 39: OAuth Integrations & Marketplace (Slack/Teams)
 **Goal:** Transition from basic webhooks to first-class OAuth-based apps.
-- Implement "Add to Slack" OAuth handshake.
-- Add support for Microsoft Teams OAuth connector.
-- Allow tenants to toggle pre-packaged messaging integrations.
+**Requirements:** INT-01, INT-02
+**Success Criteria:**
+1. Tenant admin can initiate "Add to Slack" flow, complete the authorization handshake, and see the integration status update to "Connected" on the dashboard.
+2. Tenant admin can configure Microsoft Teams connector via Microsoft Graph OIDC flow.
+3. Bot access tokens and credentials are encrypted (AES-256-GCM) at rest and physically isolated within the respective tenant's database schema.
 
 ### Phase 40: Advanced Workflow Branching
 **Goal:** Make the workflow builder more dynamic and conditional.
-- Implement conditional filters (e.g., only trigger Slack alert if user role is "admin").
-- Build multi-action execution chains inside the workflow processor.
+**Requirements:** WF-01
+**Success Criteria:**
+1. Tenant admin can create event workflows and specify rules (e.g. filter by event payload fields).
+2. Rule engine evaluates conditions securely using `json-rules-engine` without executing arbitrary code.
+3. Cascading workflow rules terminate safely if execution depth exceeds a limit of 5, preventing infinite loops.
 
 ### Phase 41: Email Digests & Automated Reporting
 **Goal:** Introduce scheduled telemetry and automated reporting.
-- Build weekly email digest generator using Resend.
-- Allow tenant admins to schedule custom PDF/JSON report delivery.
+**Requirements:** REP-01, REP-02
+**Success Criteria:**
+1. System runs a serverless cron job (via QStash) to compile weekly statistics and send them as an email digest via Resend.
+2. Tenant admin can compile and download PDF/JSON reports on-demand or schedule them for automated delivery.
+3. Report compilation runs asynchronously without blocking the Next.js API thread.
 
 ---
 
