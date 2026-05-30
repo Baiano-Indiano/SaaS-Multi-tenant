@@ -9,17 +9,17 @@ Requirements for Milestone v10.0. Each maps to roadmap phases.
 
 ### Integrations (INT)
 
-- [ ] **INT-01**: User can install Slack integration via OAuth "Add to Slack" flow with secure server-side bot token exchange and isolated storage in tenant database.
-- [ ] **INT-02**: User can install Microsoft Teams integration via MS Graph client, enabling message routing to selected channels.
+- [x] **INT-01**: User can install Slack integration via OAuth "Add to Slack" flow with secure server-side bot token exchange and isolated storage in tenant database.
+- [x] **INT-02**: User can install Microsoft Teams integration via MS Graph client, enabling message routing to selected channels.
 
 ### Workflows (WF)
 
-- [ ] **WF-01**: User can define conditional rules (e.g. status code, payload matching) for trigger actions using `json-rules-engine` to filter notification routing.
+- [x] **WF-01**: User can define conditional rules (e.g. status code, payload matching) for trigger actions using `json-rules-engine` to filter notification routing.
 
 ### Reporting (REP)
 
-- [ ] **REP-01**: System dispatches weekly email digests summarizing tenant activity using Resend.
-- [ ] **REP-02**: System compiles data statistics into PDF/JSON report buffers on the server and delivers them on-demand or on schedule.
+- [x] **REP-01**: System dispatches weekly email digests summarizing tenant activity using Resend.
+- [x] **REP-02**: System compiles data statistics into PDF/JSON report buffers on the server and delivers them on-demand or on schedule.
 
 ## Future Requirements (Deferred)
 
@@ -37,11 +37,11 @@ Requirements for Milestone v10.0. Each maps to roadmap phases.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INT-01 | Phase 39 | Pending |
-| INT-02 | Phase 39 | Pending |
-| WF-01 | Phase 40 | Pending |
-| REP-01 | Phase 41 | Pending |
-| REP-02 | Phase 41 | Pending |
+| INT-01 | Phase 39 | Complete |
+| INT-02 | Phase 39 | Complete |
+| WF-01 | Phase 40 | Complete |
+| REP-01 | Phase 41 | Complete |
+| REP-02 | Phase 41 | Complete |
 
 **Coverage:**
 - v1 requirements: 5 total
