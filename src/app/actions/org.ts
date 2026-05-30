@@ -184,7 +184,7 @@ export async function createOrganizationAction(name: string, slug: string): Prom
     logger.info('action', `createOrganizationAction completed successfully. Org ID: ${org.id}`);
 
     // Write-through caching to Redis and L1 Cache for MFA policy checks
-    const orgCacheData = { require2FA: false, id: org.id };
+    const orgCacheData = { require2FA: false, id: org.id, plan: "free" };
     await redis.set(`org:${org.id}`, orgCacheData);
     await redis.set(`org:${org.slug}`, orgCacheData);
     l1Cache.set(`org:${org.id}`, orgCacheData);
@@ -227,7 +227,7 @@ export async function updateOrganizationAction(orgId: string, name: string, slug
 
     // Fetch old organization details to get the old slug for cache invalidation
     const [oldOrg] = await db
-      .select({ slug: organizations.slug, require2FA: organizations.require2FA })
+      .select({ slug: organizations.slug, require2FA: organizations.require2FA, plan: organizations.plan })
       .from(organizations)
       .where(eq(organizations.id, orgId));
 
@@ -245,7 +245,7 @@ export async function updateOrganizationAction(orgId: string, name: string, slug
         await redis.del(`org:${oldOrg.slug}`);
         l1Cache.delete(`org:${oldOrg.slug}`);
       }
-      const orgCacheData = { require2FA: oldOrg.require2FA, id: orgId };
+      const orgCacheData = { require2FA: oldOrg.require2FA, id: orgId, plan: oldOrg.plan || "free" };
       await redis.set(`org:${orgId}`, orgCacheData);
       await redis.set(`org:${slug}`, orgCacheData);
       l1Cache.set(`org:${orgId}`, orgCacheData);
