@@ -9,9 +9,9 @@ Requirements for Milestone v11.0. Each maps to roadmap phases.
 
 ### FinOps & Dynamic Rate Limiting (FIN)
 
-- [ ] **FIN-01**: System dynamically fetches request rate limits based on the organization's Stripe subscription plan.
-- [ ] **FIN-02**: System enforces a hard limit of 10 requests per second for Free tier organizations in proxy.ts using Upstash Redis.
-- [ ] **FIN-03**: System scales request limits up to 500 requests per second for Enterprise tier organizations.
+- [x] **FIN-01**: System dynamically fetches request rate limits based on the organization's Stripe subscription plan.
+- [x] **FIN-02**: System enforces a hard limit of 10 requests per second for Free tier organizations in proxy.ts using Upstash Redis.
+- [x] **FIN-03**: System scales request limits up to 500 requests per second for Enterprise tier organizations.
 
 ### Data Governance & Retention (SEC)
 
@@ -40,9 +40,9 @@ Requirements for Milestone v11.0. Each maps to roadmap phases.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FIN-01 | Phase 42 | Pending |
-| FIN-02 | Phase 42 | Pending |
-| FIN-03 | Phase 42 | Pending |
+| FIN-01 | Phase 42 | Complete |
+| FIN-02 | Phase 42 | Complete |
+| FIN-03 | Phase 42 | Complete |
 | SEC-01 | Phase 43 | Pending |
 | SEC-02 | Phase 43 | Pending |
 | AI-01 | Phase 44 | Pending |

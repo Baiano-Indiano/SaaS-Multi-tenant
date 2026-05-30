@@ -7,7 +7,7 @@ This roadmap tracks the evolution of the **Multi-Tenant SaaS Starter**.
 ## 🏁 Milestone v11.0 (Hybrid Enterprise) - [Active]
 **Goal:** Implement dynamic tier-based rate limiting, automatic data retention policies for GDPR compliance, and smart anomaly detection with proactive alerting.
 
-- [ ] **Phase 42: Rate Limiting Dinâmico Baseado em Tier**
+- [x] **Phase 42: Rate Limiting Dinâmico Baseado em Tier** (completed 2026-05-30)
 - [ ] **Phase 43: Políticas de Retenção de Dados Automáticas (GDPR/LGPD)**
 - [ ] **Phase 44: Smart Anomaly Detection & Alertas**
 
