@@ -52,10 +52,10 @@ A B2B SaaS starter boilerplate focusing on deep organization isolation and premi
 - [x] Conditional filters for trigger workflow actions [Phase 40]
 - [x] Weekly email digest with Resend [Phase 41]
 - [x] PDF/JSON report generation service [Phase 41]
+- [x] FIN-01: Dynamic tier-based rate limiting in proxy.ts using Upstash Redis linked to Stripe subscription plans [Phase 42]
 
 ### Active
 
-- [ ] **FIN-01**: Dynamic tier-based rate limiting in proxy.ts using Upstash Redis linked to Stripe subscription plans.
 - [ ] **SEC-01**: Automated data retention policy engine (GDPR/LGPD audit log cleanup/anonymization) via QStash.
 - [ ] **AI-01**: Lightweight event anomaly detection (MFA failures, webhook surges) with email alerts.
 
@@ -95,4 +95,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-26 — Milestone v10.0 started*
+*Last updated: 2026-05-30 — Phase 42 complete*
