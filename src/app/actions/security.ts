@@ -7,7 +7,7 @@ import { organizations, users, sessions } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { recordAuditLog } from "@/lib/audit";
 import { can } from "@/lib/auth/rbac-utils";
-import { toggle2FAEnforcementSchema, check2FAComplianceSchema } from "@/lib/validations";
+import { toggle2FAEnforcementSchema, check2FAComplianceSchema, updateDataRetentionSchema } from "@/lib/validations";
 import { securityActionRateLimit, enforceRateLimit } from "@/lib/rate-limit";
 import { redis } from "@/lib/redis";
 import { l1Cache } from "@/lib/cache/l1-cache";
@@ -254,5 +254,80 @@ export async function revokeMemberSessionAction(
   } catch (error) {
     console.error("Failed to revoke member session:", error);
     return { success: false, error: "Falha ao revogar sessão do membro." };
+  }
+}
+
+/**
+ * Updates data retention settings for an organization.
+ * Requires 'security:manage' permission.
+ */
+export async function updateDataRetentionAction(
+  organizationId: string,
+  enabled: boolean,
+  days: number | null
+): Promise<SecurityActionResponse> {
+  const session = await auth.api.getSession({ headers: await headers() });
+  
+  if (!session?.user) {
+    return { success: false, error: "Sessão expirada. Faça login novamente." };
+  }
+
+  try {
+    // Input Validation
+    const validated = updateDataRetentionSchema.parse({ organizationId, enabled, days });
+    organizationId = validated.organizationId;
+    const finalDays = validated.enabled ? validated.days ?? null : null;
+
+    // Rate Limiting
+    await enforceRateLimit(securityActionRateLimit, session.user.id);
+
+    // 1. Verify Permission
+    const allowed = await can(session.user.id, organizationId, "security:manage");
+    if (!allowed) {
+      return { success: false, error: "Você não tem permissão para gerenciar a segurança desta organização." };
+    }
+
+    // Fetch organization details to get current fields (require2FA, plan, slug) for cache
+    const org = await db.query.organizations.findFirst({
+      where: eq(organizations.id, organizationId),
+    });
+
+    if (!org) {
+      return { success: false, error: "Organização não encontrada." };
+    }
+
+    // 2. Update organization
+    await db.update(organizations)
+      .set({ dataRetentionDays: finalDays })
+      .where(eq(organizations.id, organizationId));
+
+    // Cache write-through
+    const cacheData = { 
+      require2FA: org.require2FA, 
+      id: organizationId, 
+      plan: org.plan 
+    };
+    await redis.set(`org:${organizationId}`, cacheData);
+    l1Cache.set(`org:${organizationId}`, cacheData);
+    if (org.slug) {
+      await redis.set(`org:${org.slug}`, cacheData);
+      l1Cache.set(`org:${org.slug}`, cacheData);
+    }
+
+    // 3. Record Audit Log
+    await recordAuditLog({
+      organizationId,
+      action: finalDays !== null ? "DATA_RETENTION_UPDATED" : "DATA_RETENTION_DISABLED",
+      entityType: "ORGANIZATION",
+      entityId: organizationId,
+      details: finalDays !== null 
+        ? `Atualizou a política de retenção de dados para ${finalDays} dias.` 
+        : "Desativou a política de retenção de dados (retenção indefinita).",
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to update data retention:", error);
+    return { success: false, error: "Falha ao atualizar configuração de retenção de dados." };
   }
 }

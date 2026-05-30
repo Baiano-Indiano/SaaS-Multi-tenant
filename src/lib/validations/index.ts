@@ -301,3 +301,20 @@ export const deleteApiKeySchema = z.object({
   orgSlug: slugSchema,
 });
 
+export const updateDataRetentionSchema = z.object({
+  organizationId: uuidSchema,
+  enabled: z.boolean(),
+  days: z.number().int().nullable().optional(),
+}).refine(
+  (data) => {
+    if (data.enabled) {
+      return typeof data.days === "number" && data.days >= 7;
+    }
+    return true;
+  },
+  {
+    message: "Retention period must be at least 7 days when enabled",
+    path: ["days"],
+  }
+);
+

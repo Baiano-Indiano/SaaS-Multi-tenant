@@ -501,8 +501,20 @@
       "require2faLabel": "Exigir 2FA para todos os membros",
       "require2faHelp": "Quando ativado, os membros sem 2FA serão bloqueados de acessar qualquer parte desta organização até que configurem um dispositivo TOTP.",
       "enforceEnabledToast": "Imposição de 2FA ativada para a organização.",
-      "enforceDisabledToast": "Imposição de 2FA desativada.",
-      "enforceErrorToast": "Falha ao atualizar a política de segurança."
+      "enforceErrorToast": "Falha ao atualizar a política de segurança.",
+      "dataRetentionTitle": "Política de Retenção de Dados",
+      "dataRetentionDesc": "Configure por quanto tempo os logs de auditoria são mantidos antes de serem permanentemente excluídos.",
+      "dataRetentionLabel": "Ativar política de retenção de logs",
+      "dataRetentionHelp": "Quando ativado, os logs de auditoria mais antigos que o período especificado serão automaticamente excluídos de forma física diariamente. O período mínimo de retenção é de 7 dias.",
+      "retentionDaysLabel": "Período de Retenção (dias)",
+      "retentionDaysHelp": "Insira a quantidade de dias para manter os logs. Deve ser 7 ou mais.",
+      "saveRetention": "Salvar Configurações de Retenção",
+      "savingRetention": "Salvando...",
+      "retentionSavedToast": "Política de retenção de dados atualizada com sucesso.",
+      "retentionErrorToast": "Falha ao atualizar a política de retenção de dados.",
+      "retentionLimitError": "O período de retenção deve ser de pelo menos 7 dias.",
+      "retentionStatusInfinite": "Retenção infinita",
+      "retentionStatusDays": "Excluir logs após {days} dias"
     },
     "nav": {
       "general": "Geral",

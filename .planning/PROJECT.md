@@ -4,24 +4,22 @@
 
 A B2B SaaS starter boilerplate focusing on deep organization isolation and premium user experience.
 
-## Current State: v10.0 (Enterprise Integrations & Workflow Automation) - [Shipped]
+## Current State: v11.0 (Hybrid Enterprise) - [Shipped]
 
-**Goal Accomplished:** Expanded the connectivity ecosystem with pre-built Slack/Teams OAuth marketplace integrations, conditional notification routing, and automated activity digests with serverless telemetry.
+**Goal Accomplished:** Implemented billing-aware dynamic API rate limiting in proxy gateway, GDPR/LGPD compliance data retention configurations with daily hard-delete cron sweeps, and real-time security anomaly tracking (MFA fail windows, webhook spikes) with proactive Resend alerting and support fallback.
 
 ### Shipped Features
-- **Marketplace OAuth**: Connectors for Slack and Microsoft Teams with AES-256-GCM secure token encryption.
-- **Conditional Workflows**: Event triggers matching payload fields using safe rules engine evaluations.
-- **Scheduled Telemetry**: Serverless QStash-driven weekly email digests and PDF report compiler service.
-
-## Current Milestone: v11.0 (Hybrid Enterprise)
-
-**Goal:** Implement dynamic tier-based rate limiting, automatic data retention policies for GDPR compliance, and smart anomaly detection with proactive alerting.
-
-**Target features:**
 - **Dynamic Rate Limiting**: Tier-based rate limiting (proxy.ts + Upstash Redis) reading the customer's Stripe plan/tier.
 - **Data Retention Policies**: Automated database cleanup/anonymization of audit logs (GDPR/LGPD) triggered by Upstash QStash.
-- **Smart Anomaly Detection**: Lightweight event anomaly scanner (MFA spikes, webhook surges) with email alerting.
+- **Smart Anomaly Detection**: Lightweight event anomaly scanner (MFA spikes, webhook surges) with email alerting and orphan tenant fallback.
 
+## Current Milestone: v12.0 (Enterprise Scaling & Customization)
+
+**Goal:** Define and scale custom integrations, authorization structures, and enterprise configuration capabilities.
+
+**Target features:**
+- **Custom Integration Connectors**: Custom API key configurations and webhook mapping.
+- **Role Customization Engine**: Define custom permissions schemas per tenant.
 
 ## Requirements
 
@@ -53,15 +51,16 @@ A B2B SaaS starter boilerplate focusing on deep organization isolation and premi
 - [x] Weekly email digest with Resend [Phase 41]
 - [x] PDF/JSON report generation service [Phase 41]
 - [x] FIN-01: Dynamic tier-based rate limiting in proxy.ts using Upstash Redis linked to Stripe subscription plans [Phase 42]
+- [x] SEC-01: Automated data retention policy engine (GDPR/LGPD audit log cleanup/anonymization) via QStash [Phase 43]
+- [x] AI-01: Lightweight event anomaly detection (MFA failures, webhook surges) with email alerts [Phase 44]
 
 ### Active
 
-- [ ] **SEC-01**: Automated data retention policy engine (GDPR/LGPD audit log cleanup/anonymization) via QStash.
-- [ ] **AI-01**: Lightweight event anomaly detection (MFA failures, webhook surges) with email alerts.
+- *No active requirements. Define next milestone in v12.0 requirements phase.*
 
 ## Constraints
 
-- **Tech Stack**: Next.js 15 (App Router), TypeScript, Tailwind CSS v4, shadcn/ui.
+- **Tech Stack**: Next.js 16 (App Router), TypeScript, Tailwind CSS v4, shadcn/ui.
 - **Database Architecture**: PostgreSQL with Drizzle ORM implementing Schema-per-tenant logic.
 - **Security**: Hardened security headers (HSTS, CSP, X-Frame-Options) via custom `proxy.ts`.
 - **Visual Design**: Premium aesthetic with GSAP for landing page/hero moments, and GSAP/Framer Motion for standard UI workflows.
@@ -95,4 +94,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-30 — Phase 42 complete*
+*Last updated: 2026-05-30 — Milestone v11.0 complete*

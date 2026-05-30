@@ -501,8 +501,20 @@
       "require2faLabel": "Require 2FA for all members",
       "require2faHelp": "When enabled, members without 2FA will be blocked from accessing any part of this organization until they set up a TOTP device.",
       "enforceEnabledToast": "2FA enforcement enabled for the organization.",
-      "enforceDisabledToast": "2FA enforcement disabled.",
-      "enforceErrorToast": "Failed to update security policy."
+      "enforceErrorToast": "Failed to update security policy.",
+      "dataRetentionTitle": "Data Retention Policy",
+      "dataRetentionDesc": "Configure how long audit logs are kept before being permanently deleted.",
+      "dataRetentionLabel": "Enable log retention policy",
+      "dataRetentionHelp": "When enabled, audit logs older than the specified period will be automatically hard-deleted daily. The minimum retention period is 7 days.",
+      "retentionDaysLabel": "Retention Period (days)",
+      "retentionDaysHelp": "Enter the number of days to keep logs. Must be 7 or more.",
+      "saveRetention": "Save Retention Settings",
+      "savingRetention": "Saving...",
+      "retentionSavedToast": "Data retention policy updated successfully.",
+      "retentionErrorToast": "Failed to update data retention policy.",
+      "retentionLimitError": "Retention period must be at least 7 days.",
+      "retentionStatusInfinite": "Infinite retention",
+      "retentionStatusDays": "Delete logs after {days} days"
     },
     "nav": {
       "general": "General",
