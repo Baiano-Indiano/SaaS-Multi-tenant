@@ -56,7 +56,7 @@ export async function toggle2FAEnforcementAction(
       .where(eq(organizations.id, organizationId));
 
     // Cache write-through
-    const cacheData = { require2FA: enabled, id: organizationId };
+    const cacheData = { require2FA: enabled, id: organizationId, plan: org?.plan || "free" };
     await redis.set(`org:${organizationId}`, cacheData);
     l1Cache.set(`org:${organizationId}`, cacheData);
     if (org?.slug) {
