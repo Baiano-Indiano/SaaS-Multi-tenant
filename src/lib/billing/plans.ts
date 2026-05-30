@@ -54,6 +54,25 @@ export const PLANS = {
 			"Analytics avançado",
 			"Audit logs",
 		],
+	},
+	ENTERPRISE: {
+		id: "enterprise" as const,
+		name: "Enterprise",
+		description: "Ideal para grandes corporações e alta demanda.",
+		maxMembers: 9999,
+		maxProjects: 9999,
+		customRoles: true,
+		customDomains: true,
+		rateLimit: 30000, // 500 req/s (30000/min)
+		price: "Sob consulta",
+		priceId: "price_1TOSUenterpriseIdPlaceholder",
+		features: [
+			"Membros ilimitados",
+			"Roles customizadas ilimitadas",
+			"Domínios customizados",
+			"Suporte VIP dedicado",
+			"Rate limits avançados (500 req/s)",
+		],
 	}
 } as const;
 
