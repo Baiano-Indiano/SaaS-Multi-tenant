@@ -9,6 +9,8 @@ import { organizations } from "@/lib/db/schema";
 import { PLANS } from "@/lib/billing/plans";
 import { recordAuditLog } from "@/lib/audit";
 import { logger } from "@/lib/logger";
+import { redis } from "@/lib/redis";
+import { l1Cache } from "@/lib/cache/l1-cache";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 	// @ts-expect-error - Stripe type definitions mismatches in this specific version
@@ -58,6 +60,18 @@ export async function POST(req: Request) {
 					.where(eq(organizations.id, orgId));
                 
                 logger.info('webhook', `Organization ${orgId} upgraded to ${planId}`);
+
+				// Cache write-through
+				const orgResult = await db.query.organizations.findFirst({
+					where: eq(organizations.id, orgId)
+				});
+				if (orgResult) {
+					const orgCacheData = { require2FA: orgResult.require2FA, id: orgResult.id, plan: planId };
+					await redis.set(`org:${orgResult.id}`, orgCacheData);
+					await redis.set(`org:${orgResult.slug}`, orgCacheData);
+					l1Cache.set(`org:${orgResult.id}`, orgCacheData);
+					l1Cache.set(`org:${orgResult.slug}`, orgCacheData);
+				}
 
                 // Record Audit Log (Phase 11)
                 await recordAuditLog({
@@ -109,6 +123,12 @@ export async function POST(req: Request) {
 					.where(eq(organizations.stripeSubscriptionId, subscription.id));
                 
 				if (orgResult) {
+					const orgCacheData = { require2FA: orgResult.require2FA, id: orgResult.id, plan: "free" };
+					await redis.set(`org:${orgResult.id}`, orgCacheData);
+					await redis.set(`org:${orgResult.slug}`, orgCacheData);
+					l1Cache.set(`org:${orgResult.id}`, orgCacheData);
+					l1Cache.set(`org:${orgResult.slug}`, orgCacheData);
+
 					const member = await db.query.members.findFirst({
 						where: eq(members.organizationId, orgResult.id)
 					});
@@ -151,6 +171,12 @@ export async function POST(req: Request) {
                     .where(eq(organizations.stripeSubscriptionId, subscription.id));
                 
 				if (orgResult) {
+					const orgCacheData = { require2FA: orgResult.require2FA, id: orgResult.id, plan: newPlanId };
+					await redis.set(`org:${orgResult.id}`, orgCacheData);
+					await redis.set(`org:${orgResult.slug}`, orgCacheData);
+					l1Cache.set(`org:${orgResult.id}`, orgCacheData);
+					l1Cache.set(`org:${orgResult.slug}`, orgCacheData);
+
 					const member = await db.query.members.findFirst({
 						where: eq(members.organizationId, orgResult.id)
 					});
