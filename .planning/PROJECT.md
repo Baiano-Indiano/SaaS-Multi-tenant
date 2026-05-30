@@ -13,9 +13,14 @@ A B2B SaaS starter boilerplate focusing on deep organization isolation and premi
 - **Conditional Workflows**: Event triggers matching payload fields using safe rules engine evaluations.
 - **Scheduled Telemetry**: Serverless QStash-driven weekly email digests and PDF report compiler service.
 
-## Current Milestone: v11.0 (Planning Next Milestone)
+## Current Milestone: v11.0 (Hybrid Enterprise)
 
-**Goal:** Define and initialize the goals for the next phase of development.
+**Goal:** Implement dynamic tier-based rate limiting, automatic data retention policies for GDPR compliance, and smart anomaly detection with proactive alerting.
+
+**Target features:**
+- **Dynamic Rate Limiting**: Tier-based rate limiting (proxy.ts + Upstash Redis) reading the customer's Stripe plan/tier.
+- **Data Retention Policies**: Automated database cleanup/anonymization of audit logs (GDPR/LGPD) triggered by Upstash QStash.
+- **Smart Anomaly Detection**: Lightweight event anomaly scanner (MFA spikes, webhook surges) with email alerting.
 
 
 ## Requirements
@@ -50,7 +55,9 @@ A B2B SaaS starter boilerplate focusing on deep organization isolation and premi
 
 ### Active
 
-- *Nenhum (inicie a próxima milestone com `/gsd-new-milestone`)*
+- [ ] **FIN-01**: Dynamic tier-based rate limiting in proxy.ts using Upstash Redis linked to Stripe subscription plans.
+- [ ] **SEC-01**: Automated data retention policy engine (GDPR/LGPD audit log cleanup/anonymization) via QStash.
+- [ ] **AI-01**: Lightweight event anomaly detection (MFA failures, webhook surges) with email alerts.
 
 ## Constraints
 
