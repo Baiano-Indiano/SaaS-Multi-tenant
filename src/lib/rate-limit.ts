@@ -25,6 +25,12 @@ export const tierLimiters = {
     analytics: true,
     prefix: 'ratelimit:api:pro',
   }),
+  enterprise: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(PLANS.ENTERPRISE.rateLimit, '1 m'),
+    analytics: true,
+    prefix: 'ratelimit:api:enterprise',
+  }),
 };
 
 /**
