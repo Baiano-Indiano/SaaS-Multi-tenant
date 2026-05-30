@@ -4,6 +4,41 @@ This roadmap tracks the evolution of the **Multi-Tenant SaaS Starter**.
 
 ---
 
+## 🏁 Milestone v11.0 (Hybrid Enterprise) - [Active]
+**Goal:** Implement dynamic tier-based rate limiting, automatic data retention policies for GDPR compliance, and smart anomaly detection with proactive alerting.
+
+- [ ] **Phase 42: Rate Limiting Dinâmico Baseado em Tier**
+- [ ] **Phase 43: Políticas de Retenção de Dados Automáticas (GDPR/LGPD)**
+- [ ] **Phase 44: Smart Anomaly Detection & Alertas**
+
+---
+
+### Phase 42: Rate Limiting Dinâmico Baseado em Tier
+**Goal:** Set up dynamic tier-based rate limiting using Stripe subscription plans and Upstash Redis.
+**Requirements:** FIN-01, FIN-02, FIN-03
+**Success Criteria:**
+1. System resolves client tier from active Stripe subscription during the request lifecycle.
+2. Request limit of 10 req/s is enforced for Free tier in `proxy.ts` using Upstash Redis.
+3. Request limit scales up to 500 req/s for Enterprise tier, rejecting requests exceeding limit with standard HTTP 429.
+
+### Phase 43: Políticas de Retenção de Dados Automáticas (GDPR/LGPD)
+**Goal:** Build the data retention policy configuration interface and background cleaning job.
+**Requirements:** SEC-01, SEC-02
+**Success Criteria:**
+1. Tenant admin can define audit log retention period in days (e.g., 90 days) in settings UI.
+2. Scheduled QStash cron trigger initiates background task executing SQL deletion/anonymization of logs older than retention period.
+3. Compliance sweeps run securely and log execution outcomes to system audit trail.
+
+### Phase 44: Smart Anomaly Detection & Alertas
+**Goal:** Develop lightweight heuristic anomaly scanner and proactive email alerts.
+**Requirements:** AI-01, AI-02
+**Success Criteria:**
+1. System monitors event streams to flag anomaly patterns (MFA failures spikes, webhook consumption surges >300%/hr).
+2. Flagged anomalies trigger warning dispatch logic, formatting email alerts with details of the event.
+3. Admins receive proactive warning alerts via Resend when anomalies are identified.
+
+---
+
 ## 🏁 Milestone v10.0 (Enterprise Integrations & Workflow Automation) - [Complete]
 **Status:** Shipped 2026-05-26
 **Archive:** [v10.0 Roadmap](file:///c:/Users/Bernardo/Desktop/SaaS%20Multi-tenant/.planning/milestones/v10.0-ROADMAP.md)
