@@ -1,0 +1,60 @@
+# Requirements: Multi-Tenant SaaS Starter
+
+**Defined:** 2026-05-30
+**Core Value:** Secure, tenant-isolated data architecture with flexible organization management that accelerates the launch of enterprise-ready B2B applications.
+
+## v1 Requirements
+
+Requirements for Milestone v11.0. Each maps to roadmap phases.
+
+### FinOps & Dynamic Rate Limiting (FIN)
+
+- [ ] **FIN-01**: System dynamically fetches request rate limits based on the organization's Stripe subscription plan.
+- [ ] **FIN-02**: System enforces a hard limit of 10 requests per second for Free tier organizations in proxy.ts using Upstash Redis.
+- [ ] **FIN-03**: System scales request limits up to 500 requests per second for Enterprise tier organizations.
+
+### Data Governance & Retention (SEC)
+
+- [ ] **SEC-01**: Tenant administrators can define and configure automatic data retention rules (e.g., delete or anonymize audit logs older than a configurable number of days).
+- [ ] **SEC-02**: Background cleanups are securely scheduled and run via Upstash QStash sweeps to reduce storage and ensure compliance.
+
+### Anomaly Detection & Alerts (AI)
+
+- [ ] **AI-01**: Heuristic monitoring service scans the event stream to detect activity anomalies (e.g., mass MFA failures or webhook rate surges of >300%/hour).
+- [ ] **AI-02**: System dispatches proactive warning email alerts to organization administrators via Resend upon anomaly detection.
+
+## Future Requirements (Deferred)
+
+- **FIN-04**: Custom paywall configurations and custom rate limits per individual API keys.
+- **SEC-03**: Fine-grained data masking settings per role for specific database schemas.
+- **AI-03**: Real-time interactive dashboard visualizing anomaly patterns with automated mitigation suggestions.
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| Machine learning model hosting | Heavy GPU/ML container hosting is too expensive and complex for local/serverless edge execution. Heuristic/statistical triggers are much faster and more cost-effective. |
+| Automatic IP blocking | Automated blocking of IPs can lead to self-denial of service for corporate NAT setups. Warning alerts are safer. |
+
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| FIN-01 | Phase 42 | Pending |
+| FIN-02 | Phase 42 | Pending |
+| FIN-03 | Phase 42 | Pending |
+| SEC-01 | Phase 43 | Pending |
+| SEC-02 | Phase 43 | Pending |
+| AI-01 | Phase 44 | Pending |
+| AI-02 | Phase 44 | Pending |
+
+**Coverage:**
+- v1 requirements: 7 total
+- Mapped to phases: 7
+- Unmapped: 0 ✓
+
+---
+*Requirements defined: 2026-05-30*
+*Last updated: 2026-05-30 after initial definition*
+*Archive: [v10.0 Requirements](file:///c:/Users/Bernardo/Desktop/SaaS-Multi-tenant/.planning/milestones/v10.0-REQUIREMENTS.md)*
+*Archive: [v9.0 Requirements](file:///c:/Users/Bernardo/Desktop/SaaS-Multi-tenant/.planning/milestones/v9.0-REQUIREMENTS.md)*
