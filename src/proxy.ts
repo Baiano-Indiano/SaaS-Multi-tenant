@@ -159,9 +159,30 @@ export async function proxy(request: NextRequest) {
             );
           }
 
+          // Fetch Organization Data (MFA and Billing/Plan context)
+          let orgData: { require2FA: boolean; id: string; plan?: string } | null = null;
+          try {
+            const orgCacheKey = `org:${keyData.orgId}`;
+            const cachedOrg = l1Cache.get<{ require2FA: boolean; id: string; plan?: string } | null>(orgCacheKey);
+            if (cachedOrg !== undefined) {
+              orgData = cachedOrg;
+            } else {
+              orgData = await redis.get<{ require2FA: boolean; id: string; plan?: string }>(orgCacheKey);
+              l1Cache.set(orgCacheKey, orgData);
+            }
+          } catch (e) {
+            Sentry.captureException(e as Error, { tags: { 'proxy.flow': 'api-org-redis-failure' } });
+            console.error('[Proxy] Redis org fetch failed during proxy API auth check:', e);
+            return NextResponse.json(
+              { error: 'Service Unavailable', message: 'Security check unavailable (Redis down)' },
+              { status: 503 }
+            );
+          }
+
           // Tenant-Aware API Rate Limiting (Billing-Aware)
           const identifier = `org_${keyData.orgId}`;
-          const limiter = getApiRateLimiter(keyData.plan);
+          const resolvedPlan = orgData?.plan || keyData.plan || 'free';
+          const limiter = getApiRateLimiter(resolvedPlan);
           const { success, limit, remaining, reset } = await limiter.limit(identifier);
 
           if (!success) {
@@ -175,26 +196,6 @@ export async function proxy(request: NextRequest) {
                   'X-RateLimit-Reset': reset.toString(),
                 },
               }
-            );
-          }
-
-          // Industrial MFA Enforcement for API (W5)
-          let orgData: { require2FA: boolean; id: string } | null = null;
-          try {
-            const orgCacheKey = `org:${keyData.orgId}`;
-            const cachedOrg = l1Cache.get<{ require2FA: boolean; id: string } | null>(orgCacheKey);
-            if (cachedOrg !== undefined) {
-              orgData = cachedOrg;
-            } else {
-              orgData = await redis.get<{ require2FA: boolean; id: string }>(orgCacheKey);
-              l1Cache.set(orgCacheKey, orgData);
-            }
-          } catch (e) {
-            Sentry.captureException(e as Error, { tags: { 'proxy.flow': 'api-mfa-org-redis-failure' } });
-            console.error('[Proxy] Redis org fetch failed during MFA check:', e);
-            return NextResponse.json(
-              { error: 'Service Unavailable', message: 'Security check unavailable (Redis down)' },
-              { status: 503 }
             );
           }
 
