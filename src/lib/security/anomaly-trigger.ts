@@ -63,6 +63,10 @@ export async function triggerAnomalyAlert(
     // 5. Set 30 minutes cooldown (1800 seconds) in Redis
     await redis.set(cooldownKey, "1", { ex: 1800 });
 
+    // 5.1 Trigger auto-throttling on proxy: Set org:${organizationId}:throttled for 1 hour (3600s)
+    const throttleKey = `org:${organizationId}:throttled`;
+    await redis.set(throttleKey, "1", { ex: 3600 });
+
     // 6. Send emails
     for (const recipient of recipients) {
       await sendAnomalyAlertEmail({

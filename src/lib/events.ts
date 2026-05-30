@@ -5,6 +5,7 @@ import { workflows, webhooks, webhookDeliveries } from "./db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { evaluateWorkflowFilters } from "./workflows/evaluator";
+import { trackWebhookDelivery } from "./security/webhook-tracker";
 
 const devInternalWebhookFallback = randomBytes(32).toString("hex");
 let warnedAboutDevFallback = false;
@@ -147,6 +148,9 @@ export async function emitEvent(orgId: string, event: string, payload: Record<st
             status: "processing",
           });
         });
+
+        // Track delivery for anomaly detection
+        trackWebhookDelivery(orgId).catch((e) => console.error("Failed to track webhook anomaly stats:", e));
         
         await qstash.publishJSON({
           url: `${appUrl}/api/webhooks/qstash-handler`,
@@ -185,6 +189,9 @@ export async function emitEvent(orgId: string, event: string, payload: Record<st
           status: "processing",
         });
       });
+
+      // Track delivery for anomaly detection
+      trackWebhookDelivery(orgId).catch((e) => console.error("Failed to track webhook anomaly stats:", e));
 
       await qstash.publishJSON({
         url: `${appUrl}/api/webhooks/qstash-handler`,

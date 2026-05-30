@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { notifications } from "./db/schema";
-import { redis } from "./upstash";
+import { pusherServer } from "./pusher";
 import { v4 as uuidv4 } from "uuid";
 
 interface SendNotificationParams {
@@ -36,22 +36,21 @@ export async function sendNotification({
 	// 1. Persist to Database
 	await db.insert(notifications).values(notificationData);
 
-	// 2. Add to Redis Stream for Real-time
-	// We use Redis Streams (XADD) instead of Publish because it works better with Upstash REST
-	const userStream = `stream:user:${userId}`;
-	await redis.xadd(userStream, "*", { 
-		payload: JSON.stringify(notificationData) 
-	}, { 
-		trim: { type: "MAXLEN", threshold: 100, comparison: "~" } 
+	// 2. Trigger Pusher Event for Real-time user notification
+	const userChannel = `user-${userId}`;
+	pusherServer.trigger(userChannel, "notification", {
+		payload: notificationData
+	}).catch((e) => {
+		console.error("[Pusher] User notification failed:", e);
 	});
  
-	// 3. If it's an organization event, add to org stream too
+	// 3. Trigger Pusher Event for Real-time organization notifications
 	if (organizationId) {
-		const orgStream = `stream:org:${organizationId}`;
-		await redis.xadd(orgStream, "*", { 
-			payload: JSON.stringify(notificationData) 
-		}, { 
-			trim: { type: "MAXLEN", threshold: 100, comparison: "~" } 
+		const orgChannel = `org-${organizationId}`;
+		pusherServer.trigger(orgChannel, "notification", {
+			payload: notificationData
+		}).catch((e) => {
+			console.error("[Pusher] Org notification failed:", e);
 		});
 	}
 

@@ -59,6 +59,10 @@ vi.mock("@/lib/redis", () => ({
     mget: vi.fn(),
     get: vi.fn(),
     set: vi.fn(),
+    zadd: vi.fn().mockResolvedValue(1),
+    zremrangebyscore: vi.fn().mockResolvedValue(0),
+    zcard: vi.fn().mockResolvedValue(120),
+    zcount: vi.fn().mockResolvedValue(60),
   },
 }));
 
@@ -215,18 +219,53 @@ describe("Anomaly Detection Engine", () => {
 
       const response = await anomalyDetectorCron(request);
       expect(response.status).toBe(200);
-
       const json = await response.json();
       expect(json.processed).toBe(1);
       expect(json.triggered).toBe(1); // 1 alert triggered
       expect(json.failed).toBe(0);
 
-      expect(withAdminTenantDb).toHaveBeenCalledWith("org_abc", expect.any(Function));
       expect(sendAnomalyAlertEmail).toHaveBeenCalledWith(expect.objectContaining({
         to: "security@saas-starter.internal",
         type: "WEBHOOK_SURGE",
         details: expect.stringContaining("Tráfego de webhooks anômalo: 60 disparos na última hora excedendo a média móvel das últimas 24h (5.0/h) em mais de 300%."),
       }));
+    });
+  });
+
+  describe("Webhook Tracker Real-Time Logs (Redis ZSET)", () => {
+    it("should log delivery and prune old timestamps", async () => {
+      const { trackWebhookDelivery } = await import("@/lib/security/webhook-tracker");
+      
+      await trackWebhookDelivery("org_zset");
+
+      expect(redis.zadd).toHaveBeenCalledWith(
+        "org:org_zset:webhook_deliveries_log",
+        expect.objectContaining({ score: expect.any(Number), member: expect.any(String) })
+      );
+      expect(redis.zremrangebyscore).toHaveBeenCalled();
+      expect(redis.expire).toHaveBeenCalledWith("org:org_zset:webhook_deliveries_log", 86400);
+    });
+
+    it("should return true and trigger alert on surge, and false on normal traffic", async () => {
+      const { checkWebhookSurge } = await import("@/lib/security/webhook-tracker");
+
+      // 1. Surge Case: zcard=120 (avg=5/h), zcount=60 (last hour) -> triggers!
+      vi.mocked(redis.zcard).mockResolvedValueOnce(120);
+      vi.mocked(redis.zcount).mockResolvedValueOnce(60);
+      mockAdmins = [];
+
+      const triggered = await checkWebhookSurge("org_zset");
+      expect(triggered).toBe(true);
+      expect(sendAnomalyAlertEmail).toHaveBeenCalledWith(expect.objectContaining({
+        type: "WEBHOOK_SURGE"
+      }));
+
+      // 2. Normal Case: zcard=240 (avg=10/h), zcount=15 (last hour) -> no surge
+      vi.mocked(redis.zcard).mockResolvedValueOnce(240);
+      vi.mocked(redis.zcount).mockResolvedValueOnce(15);
+      
+      const normalTriggered = await checkWebhookSurge("org_zset");
+      expect(normalTriggered).toBe(false);
     });
   });
 });

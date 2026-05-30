@@ -3,6 +3,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Terminal } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useSession } from "@/lib/auth/client";
+import Pusher from "pusher-js";
 
 interface LogEntry {
   id: string;
@@ -19,88 +21,10 @@ export function LogStream() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const t = useTranslations("Dashboard");
+  const { data: session } = useSession();
 
   useEffect(() => {
-    // 1. Establish real-time SSE connection
-    let eventSource: EventSource | null = null;
-
-    try {
-      eventSource = new EventSource("/api/notifications/stream");
-
-      eventSource.onmessage = (event) => {
-        try {
-          const rawData = JSON.parse(event.data);
-
-          // Handle initial connection confirmation
-          if (rawData.type === "CONNECTED") {
-            const entry: LogEntry = {
-              id: `real-conn-${Math.random().toString(36).substring(2, 9)}`,
-              timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
-              method: "GET",
-              path: "/api/notifications/stream",
-              status: 200,
-              latency: "Connected",
-              isReal: true,
-              message: "Real-time socket stream established",
-            };
-            setLogs((prev) => [...prev.slice(-7), entry]);
-            return;
-          }
-
-          // Handle real system notification events
-          if (rawData.payload) {
-            const payload = typeof rawData.payload === "string"
-              ? JSON.parse(rawData.payload)
-              : rawData.payload;
-
-            let method = "POST";
-            let path = "/api/v1/events";
-            let status = 200;
-            let latency = "12ms";
-
-            if (payload.type === "PROJECT_CREATED") {
-              method = "POST";
-              path = "/api/v1/projects";
-              status = 201;
-              latency = "42ms";
-            } else if (payload.type?.includes("SECURITY") || payload.type?.includes("ANOMALY")) {
-              method = "ALERT";
-              path = "/api/v1/security/anomaly";
-              status = 403;
-              latency = "0ms";
-            } else if (payload.type?.includes("BILLING") || payload.type?.includes("STRIPE")) {
-              method = "POST";
-              path = "/api/v1/billing/webhook";
-              status = 200;
-              latency = "78ms";
-            }
-
-            const entry: LogEntry = {
-              id: `real-${payload.id || Math.random().toString(36).substring(2, 9)}`,
-              timestamp: new Date(payload.createdAt || Date.now()).toLocaleTimeString("en-GB", { hour12: false }),
-              method,
-              path,
-              status,
-              latency,
-              isReal: true,
-              message: payload.message || payload.title,
-            };
-
-            setLogs((prev) => [...prev.slice(-7), entry]);
-          }
-        } catch (err) {
-          console.error("[LogStream] Failed to parse SSE event data:", err);
-        }
-      };
-
-      eventSource.onerror = (err) => {
-        console.warn("[LogStream] EventSource connection lost. Attempting to reconnect...", err);
-      };
-    } catch (e) {
-      console.error("[LogStream] Failed to initialize EventSource:", e);
-    }
-
-    // 2. Setup background simulator to keep dashboard active
+    // 1. Setup background simulator to keep dashboard active
     const methods = ["GET", "POST", "PUT", "DELETE", "PATCH"];
     const paths = ["/api/v1/projects", "/api/v1/auth/session", "/api/v1/members", "/api/v1/webhooks", "/api/v1/stats"];
     const statuses = [200, 201, 204, 404, 500];
@@ -127,13 +51,111 @@ export function LogStream() {
     const interval = setInterval(generateLog, 4000); // 4s interval to reduce noise
     generateLog(); // Initial entry
 
-    return () => {
-      clearInterval(interval);
-      if (eventSource) {
-        eventSource.close();
+    // 2. Establish real-time Pusher connection
+    let pusher: Pusher | null = null;
+    let userChannelName = "";
+    let orgChannelName: string | null = null;
+    let userChannel: any = null;
+    let orgChannel: any = null;
+
+    const handleNotification = (data: any) => {
+      try {
+        if (data.payload) {
+          const payload = typeof data.payload === "string"
+            ? JSON.parse(data.payload)
+            : data.payload;
+
+          let method = "POST";
+          let path = "/api/v1/events";
+          let status = 200;
+          let latency = "12ms";
+
+          if (payload.type === "PROJECT_CREATED") {
+            method = "POST";
+            path = "/api/v1/projects";
+            status = 201;
+            latency = "42ms";
+          } else if (payload.type?.includes("SECURITY") || payload.type?.includes("ANOMALY")) {
+            method = "ALERT";
+            path = "/api/v1/security/anomaly";
+            status = 403;
+            latency = "0ms";
+          } else if (payload.type?.includes("BILLING") || payload.type?.includes("STRIPE")) {
+            method = "POST";
+            path = "/api/v1/billing/webhook";
+            status = 200;
+            latency = "78ms";
+          }
+
+          const entry: LogEntry = {
+            id: `real-${payload.id || Math.random().toString(36).substring(2, 9)}`,
+            timestamp: new Date(payload.createdAt || Date.now()).toLocaleTimeString("en-GB", { hour12: false }),
+            method,
+            path,
+            status,
+            latency,
+            isReal: true,
+            message: payload.message || payload.title,
+          };
+
+          setLogs((prev) => [...prev.slice(-7), entry]);
+        }
+      } catch (err) {
+        console.error("[LogStream] Failed to parse Pusher event data:", err);
       }
     };
-  }, []);
+
+    if (session?.user) {
+      try {
+        const appKey = process.env.NEXT_PUBLIC_PUSHER_APP_KEY || "pusher-app-key";
+        const cluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER || "us2";
+
+        pusher = new Pusher(appKey, {
+          cluster,
+        });
+
+        const entry: LogEntry = {
+          id: `real-conn-${Math.random().toString(36).substring(2, 9)}`,
+          timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
+          method: "GET",
+          path: "/api/notifications/pusher",
+          status: 200,
+          latency: "Connected",
+          isReal: true,
+          message: "Real-time Pusher socket established",
+        };
+        setLogs((prev) => [...prev.slice(-7), entry]);
+
+        userChannelName = `user-${session.user.id}`;
+        userChannel = pusher.subscribe(userChannelName);
+        userChannel.bind("notification", handleNotification);
+
+        const activeOrgId = session.session?.activeOrganizationId;
+        if (activeOrgId) {
+          orgChannelName = `org-${activeOrgId}`;
+          orgChannel = pusher.subscribe(orgChannelName);
+          orgChannel.bind("notification", handleNotification);
+        }
+      } catch (e) {
+        console.error("[LogStream] Failed to initialize Pusher:", e);
+      }
+    }
+
+    return () => {
+      clearInterval(interval);
+      if (pusher) {
+        if (userChannelName) {
+          userChannel?.unbind("notification", handleNotification);
+          pusher.unsubscribe(userChannelName);
+        }
+        if (orgChannel && orgChannelName) {
+          orgChannel.unbind("notification", handleNotification);
+          pusher.unsubscribe(orgChannelName);
+        }
+        pusher.disconnect();
+      }
+    };
+  }, [session?.user, session?.session?.activeOrganizationId]);
 
   useEffect(() => {
     if (scrollRef.current) {

@@ -13,6 +13,9 @@ import { incrementUsage } from './lib/billing/telemetry';
 
 const intlMiddleware = createMiddleware(routing);
 
+// Local stale fallback cache for extreme high availability / Redis downtime
+const staleFallbackCache = new Map<string, any>();
+
 const html503 = `
 <!DOCTYPE html>
 <html lang="en">
@@ -131,8 +134,17 @@ export async function proxy(request: NextRequest) {
           const cacheKey = `api_key:${hashedKey}`;
           let keyData = l1Cache.get<ApiKeyData | null>(cacheKey);
           if (keyData === undefined) {
-            keyData = await getApiKeyFromRedis(hashedKey);
-            l1Cache.set(cacheKey, keyData);
+            try {
+              keyData = await getApiKeyFromRedis(hashedKey);
+              l1Cache.set(cacheKey, keyData, 15000);
+              staleFallbackCache.set(cacheKey, keyData);
+            } catch (e) {
+              console.error('[Proxy] Redis API key fetch failed, attempting fallback to stale cache:', e);
+              keyData = staleFallbackCache.get(cacheKey);
+              if (keyData === undefined) {
+                throw e; // No fallback available, propagate error
+              }
+            }
           }
 
           if (!keyData) {
@@ -167,8 +179,19 @@ export async function proxy(request: NextRequest) {
             if (cachedOrg !== undefined) {
               orgData = cachedOrg;
             } else {
-              orgData = await redis.get<{ require2FA: boolean; id: string; plan?: string }>(orgCacheKey);
-              l1Cache.set(orgCacheKey, orgData);
+              try {
+                orgData = await redis.get<{ require2FA: boolean; id: string; plan?: string }>(orgCacheKey);
+                l1Cache.set(orgCacheKey, orgData, 15000);
+                staleFallbackCache.set(orgCacheKey, orgData);
+              } catch (e) {
+                console.error('[Proxy] Redis org fetch failed, attempting fallback to stale cache:', e);
+                if (staleFallbackCache.has(orgCacheKey)) {
+                  orgData = staleFallbackCache.get(orgCacheKey);
+                } else {
+                  // Safe fallback to prevent breaking requests
+                  orgData = { require2FA: false, id: keyData.orgId, plan: keyData.plan || 'free' };
+                }
+              }
             }
           } catch (e) {
             Sentry.captureException(e as Error, { tags: { 'proxy.flow': 'api-org-redis-failure' } });
@@ -179,15 +202,41 @@ export async function proxy(request: NextRequest) {
             );
           }
 
-          // Tenant-Aware API Rate Limiting (Billing-Aware)
+          // Check if organization is currently throttled due to an active security anomaly
+          let isThrottled = false;
+          try {
+            const throttleCacheKey = `org:${keyData.orgId}:throttled`;
+            const cachedThrottle = l1Cache.get<boolean>(throttleCacheKey);
+            if (cachedThrottle !== undefined) {
+              isThrottled = cachedThrottle;
+            } else {
+              try {
+                const throttledStatus = await redis.get<string>(throttleCacheKey);
+                isThrottled = throttledStatus === "1";
+                l1Cache.set(throttleCacheKey, isThrottled, 15000);
+                staleFallbackCache.set(throttleCacheKey, isThrottled);
+              } catch (e) {
+                console.error('[Proxy] Redis throttle fetch failed, fallback to stale cache:', e);
+                isThrottled = staleFallbackCache.get(throttleCacheKey) === true;
+              }
+            }
+          } catch (e) {
+            console.error('[Proxy] Error evaluating throttle status:', e);
+          }
+
+          // Tenant-Aware API Rate Limiting (Billing-Aware / Anomaly-Throttled)
           const identifier = `org_${keyData.orgId}`;
-          const resolvedPlan = orgData?.plan || keyData.plan || 'free';
+          const resolvedPlan = isThrottled ? 'free' : (orgData?.plan || keyData.plan || 'free');
           const limiter = getApiRateLimiter(resolvedPlan);
           const { success, limit, remaining, reset } = await limiter.limit(identifier);
 
           if (!success) {
+            const responseBody = isThrottled
+              ? { error: 'Rate limit exceeded', message: 'This organization is under temporary security throttling due to abnormal activity.' }
+              : { error: 'Rate limit exceeded' };
+
             return NextResponse.json(
-              { error: 'Rate limit exceeded' },
+              responseBody,
               {
                 status: 429,
                 headers: {
@@ -207,9 +256,20 @@ export async function proxy(request: NextRequest) {
               if (cachedMfa !== undefined) {
                 isUserMfaEnabled = cachedMfa || false;
               } else {
-                const fetchedMfa = await redis.get<boolean>(userMfaCacheKey);
-                isUserMfaEnabled = fetchedMfa || false;
-                l1Cache.set(userMfaCacheKey, fetchedMfa);
+                let fetchedMfa: boolean | null = null;
+                try {
+                  fetchedMfa = await redis.get<boolean>(userMfaCacheKey);
+                  isUserMfaEnabled = fetchedMfa || false;
+                  l1Cache.set(userMfaCacheKey, fetchedMfa, 15000);
+                  staleFallbackCache.set(userMfaCacheKey, fetchedMfa);
+                } catch (e) {
+                  console.error('[Proxy] Redis user MFA fetch failed, attempting fallback to stale cache:', e);
+                  if (staleFallbackCache.has(userMfaCacheKey)) {
+                    isUserMfaEnabled = staleFallbackCache.get(userMfaCacheKey) || false;
+                  } else {
+                    isUserMfaEnabled = false; // Safe fallback
+                  }
+                }
               }
             } catch (e) {
               Sentry.captureException(e as Error, { tags: { 'proxy.flow': 'api-mfa-user-redis-failure' } });
@@ -283,8 +343,14 @@ export async function proxy(request: NextRequest) {
             const domainCacheKey = `domain:${targetHostname}`;
             let domainData = l1Cache.get<{ slug: string; id: string } | null>(domainCacheKey);
             if (domainData === undefined) {
-              domainData = await redis.get<{ slug: string; id: string }>(domainCacheKey);
-              l1Cache.set(domainCacheKey, domainData);
+              try {
+                domainData = await redis.get<{ slug: string; id: string }>(domainCacheKey);
+                l1Cache.set(domainCacheKey, domainData, 15000);
+                staleFallbackCache.set(domainCacheKey, domainData);
+              } catch (e) {
+                console.error('[Proxy] Redis domain resolution failed, attempting fallback to stale cache:', e);
+                domainData = staleFallbackCache.get(domainCacheKey) || null;
+              }
             }
 
             if (domainData) {
@@ -348,8 +414,18 @@ export async function proxy(request: NextRequest) {
             if (cachedOrg !== undefined) {
               orgData = cachedOrg;
             } else {
-              orgData = await redis.get<{ require2FA: boolean; id: string }>(orgCacheKey);
-              l1Cache.set(orgCacheKey, orgData);
+              try {
+                orgData = await redis.get<{ require2FA: boolean; id: string }>(orgCacheKey);
+                l1Cache.set(orgCacheKey, orgData, 15000);
+                staleFallbackCache.set(orgCacheKey, orgData);
+              } catch (e) {
+                console.error('[Proxy] Redis org policy fetch failed, attempting fallback to stale cache:', e);
+                if (staleFallbackCache.has(orgCacheKey)) {
+                  orgData = staleFallbackCache.get(orgCacheKey);
+                } else {
+                  orgData = { require2FA: false, id: '' };
+                }
+              }
             }
           } catch (e) {
             Sentry.captureException(e as Error, { tags: { 'proxy.flow': 'web-mfa-org-redis-failure' } });

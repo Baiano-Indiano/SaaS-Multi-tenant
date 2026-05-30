@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useSession } from "@/lib/auth/client";
+import Pusher from "pusher-js";
 
 interface NotificationContextType {
 	unreadCount: number;
@@ -18,72 +19,59 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 	useEffect(() => {
 		if (!session?.user) return;
 
-		let eventSource: EventSource | null = null;
-		let retryCount = 0;
-		const maxRetries = 5;
-		let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-		let stopped = false;
+		const appKey = process.env.NEXT_PUBLIC_PUSHER_APP_KEY || "pusher-app-key";
+		const cluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER || "us2";
 
-		const connect = () => {
-			if (stopped) return;
-			if (eventSource) eventSource.close();
+		const pusher = new Pusher(appKey, {
+			cluster,
+		});
 
-			eventSource = new EventSource("/api/notifications/stream");
+		const userChannelName = `user-${session.user.id}`;
+		const userChannel = pusher.subscribe(userChannelName);
 
-			eventSource.onmessage = (event) => {
-				try {
-					const data = JSON.parse(event.data);
+		const handleNotification = (data: any) => {
+			try {
+				if (data.payload) {
+					const notification = typeof data.payload === 'string' 
+						? JSON.parse(data.payload) 
+						: data.payload;
+					
+					// Show Toast
+					toast(notification.title, {
+						description: notification.message,
+						action: notification.link ? {
+							label: "View",
+							onClick: () => window.location.href = notification.link!
+						} : undefined,
+					});
 
-					if (data.type === "CONNECTED") {
-						console.log("Real-time notifications connected:", data.userId);
-						retryCount = 0;
-						return;
-					}
-
-					if (data.payload) {
-						const notification = typeof data.payload === 'string' 
-							? JSON.parse(data.payload) 
-							: data.payload;
-						
-						// Show Toast
-						toast(notification.title, {
-							description: notification.message,
-							action: notification.link ? {
-								label: "View",
-								onClick: () => window.location.href = notification.link!
-							} : undefined,
-						});
-
-						// Update unread count (optimistic increment)
-						setUnreadCount(prev => prev + 1);
-					}
-				} catch (err) {
-					console.error("Error parsing notification:", err);
+					// Update unread count (optimistic increment)
+					setUnreadCount(prev => prev + 1);
 				}
-			};
-
-			eventSource.onerror = () => {
-				eventSource?.close();
-				eventSource = null;
-
-				if (stopped) return;
-				if (retryCount >= maxRetries) {
-					console.warn("Notifications stream paused after max retries.");
-					return;
-				}
-
-				retryCount += 1;
-				const delay = Math.min(3000 * retryCount, 15000);
-				reconnectTimer = setTimeout(connect, delay);
-			};
+			} catch (err) {
+				console.error("Error parsing notification:", err);
+			}
 		};
 
-		connect();
+		userChannel.bind("notification", handleNotification);
+
+		const activeOrgId = session.session?.activeOrganizationId;
+		const orgChannelName = activeOrgId ? `org-${activeOrgId}` : null;
+		let orgChannel: any = null;
+
+		if (orgChannelName) {
+			orgChannel = pusher.subscribe(orgChannelName);
+			orgChannel.bind("notification", handleNotification);
+		}
 
 		return () => {
-			stopped = true;
-			if (reconnectTimer) clearTimeout(reconnectTimer);
-			if (eventSource) eventSource.close();
+			userChannel.unbind("notification", handleNotification);
+			pusher.unsubscribe(userChannelName);
+			if (orgChannel && orgChannelName) {
+				orgChannel.unbind("notification", handleNotification);
+				pusher.unsubscribe(orgChannelName);
+			}
+			pusher.disconnect();
 		};
 	}, [session?.user, session?.session?.activeOrganizationId, setUnreadCount]);
 
