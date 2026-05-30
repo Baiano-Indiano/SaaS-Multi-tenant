@@ -4,24 +4,19 @@
 
 A B2B SaaS starter boilerplate focusing on deep organization isolation and premium user experience.
 
-## Current State: v9.0 (Developer Experience & Scalability) - [Shipped]
+## Current State: v10.0 (Enterprise Integrations & Workflow Automation) - [Shipped]
 
-**Goal Accomplished:** Optimized the local development workflow, unified database migration and tenant management tools, and finalized the public API gateway with a built-in interactive playground sandbox.
+**Goal Accomplished:** Expanded the connectivity ecosystem with pre-built Slack/Teams OAuth marketplace integrations, conditional notification routing, and automated activity digests with serverless telemetry.
 
 ### Shipped Features
-- **Interactive CLI Tools**: Unified `@clack/prompts` + `commander` terminal tool for tenant/member management.
-- **Robust Test Coverage**: Vitest unit testing for security proxy, and E2E onboarding tests with Playwright.
-- **SSO & DNS Verification**: Automated DNS TXT domain verification and OIDC configuration integration.
-- **Public API & Playground**: OpenAPI 3.1 schema auto-generation and dynamic in-app Sandbox UI console.
+- **Marketplace OAuth**: Connectors for Slack and Microsoft Teams with AES-256-GCM secure token encryption.
+- **Conditional Workflows**: Event triggers matching payload fields using safe rules engine evaluations.
+- **Scheduled Telemetry**: Serverless QStash-driven weekly email digests and PDF report compiler service.
 
-## Current Milestone: v10.0 (Enterprise Integrations & Workflow Automation)
+## Current Milestone: v11.0 (Planning Next Milestone)
 
-**Goal:** Expand the connectivity ecosystem with pre-built Slack/Teams OAuth marketplace integrations and customized scheduled reports.
+**Goal:** Define and initialize the goals for the next phase of development.
 
-**Target features:**
-- **Marketplace OAuth**: Integration flows for native Slack/Microsoft Teams connectors.
-- **Conditional Workflows**: Filter and rule engines for event triggers.
-- **Scheduled Telemetry**: Weekly email digests and custom telemetry exports.
 
 ## Requirements
 
@@ -47,14 +42,15 @@ A B2B SaaS starter boilerplate focusing on deep organization isolation and premi
 - [x] Dashboard API Playground [Phase 36]
 - [x] Enterprise Security & Scalability [Phase 37]
 - [x] Infrastructure Robustness Hardening [Phase 38]
+- [x] Slack OAuth App integration ("Add to Slack") [Phase 39]
+- [x] Microsoft Teams OAuth integration [Phase 39]
+- [x] Conditional filters for trigger workflow actions [Phase 40]
+- [x] Weekly email digest with Resend [Phase 41]
+- [x] PDF/JSON report generation service [Phase 41]
 
 ### Active
 
-- [ ] **INT-01**: Slack OAuth App integration ("Add to Slack")
-- [ ] **INT-02**: Microsoft Teams OAuth integration
-- [ ] **WF-01**: Conditional filters for trigger workflow actions
-- [ ] **REP-01**: Weekly email digest with Resend
-- [ ] **REP-02**: PDF/JSON report generation service
+- *Nenhum (inicie a próxima milestone com `/gsd-new-milestone`)*
 
 ## Constraints
 
