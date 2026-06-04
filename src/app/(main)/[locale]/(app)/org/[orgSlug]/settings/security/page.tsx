@@ -68,6 +68,7 @@ export default async function SecuritySettingsPage({
         <Org2FAEnforcement 
           organizationId={org.id} 
           initialEnabled={org.require2FA} 
+          initialGracePeriodDays={org.mfaGracePeriodDays}
         />
 
         <AuditLogExportSettings 

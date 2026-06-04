@@ -131,7 +131,7 @@ export function EventMappingDialog({
                 <DialogDescription className="text-zinc-500 text-xs">
                   {t.rich("notificationSettingsDesc", {
                     name: connectorName,
-                    highlight: (chunks: any) => <span className="text-zinc-300 font-medium">{chunks}</span>
+                    highlight: (chunks: React.ReactNode) => <span className="text-zinc-300 font-medium">{chunks}</span>
                   })}
                 </DialogDescription>
               </div>

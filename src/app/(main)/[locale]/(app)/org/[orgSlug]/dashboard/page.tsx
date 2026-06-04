@@ -10,6 +10,7 @@ import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import { DashboardContentClient } from "@/components/dashboard/dashboard-content-client";
 import { TechnicalHeader } from "@/components/dashboard/TechnicalHeader";
 import { AnalyticsWidgets } from '@/components/dashboard/AnalyticsWidgets';
+import { ApiPerformance } from "@/components/dashboard/ApiPerformance";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { MagneticCard } from "@/components/dashboard/MagneticCard";
 import { QuickActions } from "@/components/dashboard/QuickActions";
@@ -76,6 +77,10 @@ export default async function OrgDashboardPage({
 
             <section className="dashboard-section">
               <AnalyticsWidgets stats={stats} />
+            </section>
+
+            <section className="dashboard-section">
+              <ApiPerformance />
             </section>
 
             <section className="dashboard-section grid gap-8 md:grid-cols-2">

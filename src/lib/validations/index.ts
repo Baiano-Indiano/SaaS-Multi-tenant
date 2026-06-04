@@ -229,6 +229,7 @@ export const syncRolePermissionsSchema = z.object({
 export const toggle2FAEnforcementSchema = z.object({
   organizationId: uuidSchema,
   enabled: z.boolean(),
+  gracePeriodDays: z.number().int().min(0).max(30).nullable().optional(),
 });
 
 export const check2FAComplianceSchema = z.object({

@@ -22,7 +22,7 @@ interface ZipFile {
 /**
  * Converts an array of objects into a standard CSV string.
  */
-function convertToCSV(data: any[]): string {
+function convertToCSV(data: Record<string, unknown>[]): string {
   if (!data || data.length === 0) return "";
   
   // Extract all unique keys as headers
@@ -286,7 +286,7 @@ export async function GET(
     const duration = Date.now() - start;
     logger.info("api", `✓ GET /api/org/${orgSlug}/export | 200 | ${duration}ms`);
 
-    return new NextResponse(zipBuffer as any, {
+    return new NextResponse(zipBuffer as Uint8Array, {
       status: 200,
       headers: {
         "Content-Type": "application/zip",

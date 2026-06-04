@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Puzzle, Globe, Plus } from "lucide-react";
+import { Globe } from "lucide-react";
 import { SlackIcon, TeamsIcon } from "@/components/icons";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { Button } from "@/components/ui/button";

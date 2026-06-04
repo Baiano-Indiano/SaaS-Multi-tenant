@@ -7,6 +7,7 @@ import { ScrollReveal } from "@/components/marketing/scroll-reveal";
 import { ScrollDownIndicator } from "@/components/marketing/scroll-down-indicator";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/routing";
+import { MarketingPlayground } from "@/components/marketing/MarketingPlayground";
 
 export default async function LandingPage() {
   const t = await getTranslations("Marketing");
@@ -126,6 +127,8 @@ export default async function LandingPage() {
           </ScrollReveal>
         </div>
       </section>
+
+      <MarketingPlayground />
  
       {/* Pricing Section (NEW) */}
       <PricingSection />

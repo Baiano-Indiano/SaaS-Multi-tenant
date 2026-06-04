@@ -18,18 +18,25 @@ let mockAdmins = [{ email: "admin1@acme.com", name: "Admin 1" }];
 vi.mock("@/lib/db", () => {
   const mockDb = {
     select: vi.fn().mockImplementation(() => {
-      const chain: any = {};
-      chain.from = vi.fn().mockImplementation((table: any) => {
-        let result = mockAdmins;
+      const chain = {} as unknown as {
+        from: (table: unknown) => unknown;
+      };
+      chain.from = vi.fn().mockImplementation((table: unknown) => {
+        let result: unknown[] = mockAdmins;
         if (table === organizations) {
           result = mockOrgs;
         } else if (table === members) {
           result = mockMembers;
         }
 
-        const promise = Promise.resolve(result) as any;
+        const promise = Promise.resolve(result) as unknown as {
+          innerJoin: () => unknown;
+          where: () => unknown;
+        };
         promise.innerJoin = vi.fn().mockImplementation(() => {
-          const joinPromise = Promise.resolve(mockAdmins) as any;
+          const joinPromise = Promise.resolve(mockAdmins) as unknown as {
+            where: () => unknown;
+          };
           joinPromise.where = vi.fn().mockImplementation(() => Promise.resolve(mockAdmins));
           return joinPromise;
         });

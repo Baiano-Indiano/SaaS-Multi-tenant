@@ -24,7 +24,7 @@ const prefixes = {
 type LogCategory = 'proxy' | 'db' | 'webhook' | 'action' | 'api' | 'cron' | 'audit';
 
 export const logger = {
-  info(category: LogCategory, message: string, ...details: any[]) {
+  info(category: LogCategory, message: string, ...details: unknown[]) {
     const timestamp = new Date().toISOString();
     const prefix = prefixes[category] || `[${category.toUpperCase()}]`;
     console.log(
@@ -33,7 +33,7 @@ export const logger = {
     );
   },
   
-  warn(category: LogCategory, message: string, ...details: any[]) {
+  warn(category: LogCategory, message: string, ...details: unknown[]) {
     const timestamp = new Date().toISOString();
     const prefix = prefixes[category] || `[${category.toUpperCase()}]`;
     console.warn(
@@ -42,7 +42,7 @@ export const logger = {
     );
   },
 
-  error(category: LogCategory, message: string, error?: any, ...details: any[]) {
+  error(category: LogCategory, message: string, error?: unknown, ...details: unknown[]) {
     const timestamp = new Date().toISOString();
     const prefix = prefixes[category] || `[${category.toUpperCase()}]`;
     const errMsg = error instanceof Error ? error.message : String(error || '');
@@ -55,7 +55,7 @@ export const logger = {
     );
   },
 
-  db(queryName: string, schema: string, status: 'success' | 'failed' | 'pending', durationMs?: number, ...details: any[]) {
+  db(queryName: string, schema: string, status: 'success' | 'failed' | 'pending', durationMs?: number, ...details: unknown[]) {
     const timestamp = new Date().toISOString();
     const prefix = prefixes.db;
     const durationStr = durationMs !== undefined ? ` ${colors.cyan}(${durationMs}ms)${colors.reset}` : '';
@@ -66,7 +66,7 @@ export const logger = {
     );
   },
 
-  request(method: string, path: string, status: number, durationMs?: number, ...details: any[]) {
+  request(method: string, path: string, status: number, durationMs?: number, ...details: unknown[]) {
     const timestamp = new Date().toISOString();
     const prefix = prefixes.proxy;
     const durationStr = durationMs !== undefined ? ` ${colors.cyan}(${durationMs}ms)${colors.reset}` : '';

@@ -54,7 +54,7 @@ function createEngineWithOperators(): Engine {
 /**
  * Translates our AST FilterGroup or FilterRule recursively into json-rules-engine conditions format.
  */
-function buildConditions(ruleOrGroup: FilterRule | FilterGroup): any {
+function buildConditions(ruleOrGroup: FilterRule | FilterGroup): unknown {
   if ("combinator" in ruleOrGroup) {
     const combinatorKey = ruleOrGroup.combinator === "or" ? "any" : "all";
     return {
@@ -75,7 +75,7 @@ function buildConditions(ruleOrGroup: FilterRule | FilterGroup): any {
 /**
  * Evaluates a FilterGroup AST against the event payload facts using json-rules-engine.
  */
-export async function evaluateWorkflowFilters(filtersJson: string | null | undefined, payload: any): Promise<boolean> {
+export async function evaluateWorkflowFilters(filtersJson: string | null | undefined, payload: unknown): Promise<boolean> {
   if (!filtersJson) return true; // No filters means evaluate to true (always trigger)
   
   try {
@@ -90,7 +90,7 @@ export async function evaluateWorkflowFilters(filtersJson: string | null | undef
     const conditions = buildConditions(group);
     
     const ruleProperties: RuleProperties = {
-      conditions,
+      conditions: conditions as RuleProperties["conditions"],
       event: {
         type: "workflow-match"
       }

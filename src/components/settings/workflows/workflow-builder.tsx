@@ -104,7 +104,7 @@ interface FilterGroupBuilderProps {
   onChange: (updatedGroup: FilterGroup) => void;
   depth: number;
   trigger: string;
-  t: (key: string, values?: any) => string;
+  t: (key: string, values?: Record<string, unknown>) => string;
   onDelete?: () => void;
 }
 
@@ -306,7 +306,7 @@ function FilterGroupBuilder({ group, onChange, depth, trigger, t, onDelete }: Fi
                 <div className="w-[120px]">
                   <Select
                     value={ruleItem.operator}
-                    onValueChange={(val: any) => handleRuleChange(idx, { ...ruleItem, operator: val })}
+                    onValueChange={(val: FilterOperator) => handleRuleChange(idx, { ...ruleItem, operator: val })}
                   >
                     <SelectTrigger className="h-8 text-xs bg-secondary/20 border-primary/5">
                       <SelectValue placeholder={t("form.operatorLabel")} />

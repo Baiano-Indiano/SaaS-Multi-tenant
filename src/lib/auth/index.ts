@@ -64,7 +64,7 @@ export const auth = betterAuth({
             await detectSessionAnomaly(session.user.id, { ip, userAgent }, {
               name: session.user.name,
               email: session.user.email,
-              organizationId: session.session.activeOrganizationId
+              organizationId: session.session?.activeOrganizationId
             });
           }
         }

@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { DomainManagement } from "@/components/settings/DomainManagement";
-import { PLANS, PlanType } from "@/lib/billing/plans";
+import { PLANS } from "@/lib/billing/plans";
 import { getTranslations } from "next-intl/server";
 
 export default async function DomainSettingsPage({

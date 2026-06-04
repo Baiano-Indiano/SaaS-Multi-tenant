@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AnalyticsWidgets } from "@/components/dashboard/AnalyticsWidgets";
+import { ApiPerformance } from "@/components/dashboard/ApiPerformance";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { MagneticCard } from "@/components/dashboard/MagneticCard";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
@@ -83,6 +84,7 @@ export default async function DashboardPage() {
               <GlobalTrafficMap logs={advancedAnalytics.logs} />
               <SubsystemHealth />
               <AnalyticsWidgets stats={stats} />
+              <ApiPerformance />
             </section>
 
             <div className="grid gap-10 md:grid-cols-2">

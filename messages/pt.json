@@ -1156,6 +1156,18 @@
           "Analytics avançado",
           "Logs de auditoria"
         ]
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "price": "Sob consulta",
+        "description": "Ideal para grandes corporações e alta demanda.",
+        "features": [
+          "Membros ilimitados",
+          "Cargos customizados ilimitados",
+          "Domínios customizados",
+          "Suporte VIP dedicado",
+          "Rate limits avançados (500 req/s)"
+        ]
       }
     }
   },

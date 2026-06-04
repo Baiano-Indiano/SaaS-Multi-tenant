@@ -63,7 +63,9 @@ export const organizations = pgTable("organization", {
 	domainVerified: boolean("domainVerified").notNull().default(false),
 	verificationToken: text("verificationToken"),
 	require2FA: boolean("require2FA").notNull().default(false),
-	dataRetentionDays: integer("dataRetentionDays")
+	dataRetentionDays: integer("dataRetentionDays"),
+	mfaGracePeriodDays: integer("mfaGracePeriodDays"),
+	mfaEnforcedAt: timestamp("mfaEnforcedAt")
 });
 
 export const members = pgTable("member", {

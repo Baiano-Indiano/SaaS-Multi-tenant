@@ -9,7 +9,7 @@ import { addDomainToProject, removeDomainFromProject, getDomainConfig } from "@/
 import { Redis } from "@upstash/redis";
 import { l1Cache } from "@/lib/cache/l1-cache";
 import { revalidatePath } from "next/cache";
-import { PLANS, PlanType } from "@/lib/billing/plans";
+import { PLANS } from "@/lib/billing/plans";
 import { recordAuditLog } from "@/lib/audit";
 import { can } from "@/lib/auth/rbac-utils";
 import { 

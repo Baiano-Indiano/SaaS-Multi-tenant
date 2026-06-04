@@ -14,7 +14,7 @@ import { incrementUsage } from './lib/billing/telemetry';
 const intlMiddleware = createMiddleware(routing);
 
 // Local stale fallback cache for extreme high availability / Redis downtime
-const staleFallbackCache = new Map<string, any>();
+const staleFallbackCache = new Map<string, unknown>();
 
 const html503 = `
 <!DOCTYPE html>

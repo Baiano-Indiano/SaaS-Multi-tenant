@@ -4,7 +4,7 @@ interface CacheEntry<T> {
 }
 
 class L1Cache {
-  private cache = new Map<string, CacheEntry<any>>();
+  private cache = new Map<string, CacheEntry<unknown>>();
 
   /**
    * Retrieves a value from the cache.

@@ -107,7 +107,9 @@ export async function GET(request: Request) {
 
                 if (item) {
                   // Report the usage record to Stripe
-                  await (stripe.subscriptionItems as any).createUsageRecord(
+                  await (stripe.subscriptionItems as unknown as {
+                    createUsageRecord: (id: string, params: { quantity: number; timestamp: number; action: string }) => Promise<unknown>;
+                  }).createUsageRecord(
                     item.id,
                     {
                       quantity: pendingAmount,

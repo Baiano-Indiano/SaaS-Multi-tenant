@@ -19,7 +19,7 @@ export async function createWorkflowAction(data: {
   trigger: string;
   targetUrl?: string;
   connectorId?: string;
-  filters?: any;
+  filters?: unknown;
   orgId: string;
   orgSlug: string;
 }) {

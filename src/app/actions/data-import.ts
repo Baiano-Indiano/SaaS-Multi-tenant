@@ -14,7 +14,7 @@ import { recordAuditLog } from "@/lib/audit";
  * Parses a standard CSV string into an array of objects.
  * Handles double quotes, commas inside fields, and escaped quotes.
  */
-function parseCSV(csvText: string): any[] {
+function parseCSV(csvText: string): Record<string, string | null>[] {
   const lines = csvText.split(/\r?\n/);
   if (lines.length < 2) return [];
 
@@ -43,13 +43,13 @@ function parseCSV(csvText: string): any[] {
   }
 
   const headers = parseCSVLine(lines[0]);
-  const rows: any[] = [];
+  const rows: Record<string, string | null>[] = [];
 
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
     const values = parseCSVLine(line);
-    const row: any = {};
+    const row: Record<string, string | null> = {};
     headers.forEach((header, index) => {
       const key = header.trim();
       row[key] = values[index] !== undefined ? values[index] : null;
@@ -115,8 +115,8 @@ export async function importTenantDataAction(
       fileName.toLowerCase().endsWith(".csv") ||
       (!fileContent.trim().startsWith("{") && !fileContent.trim().startsWith("["));
 
-    let projectsToImport: any[] = [];
-    let membersToImport: any[] = [];
+    let projectsToImport: Record<string, unknown>[] = [];
+    let membersToImport: Record<string, unknown>[] = [];
 
     if (isCsv) {
       const parsedRows = parseCSV(fileContent);
@@ -182,15 +182,15 @@ export async function importTenantDataAction(
 
       // 2. Import Projects
       for (const proj of projectsToImport) {
-        const name = proj.name || proj.projectName;
+        const name = (proj["name"] || proj["projectName"]) as string | undefined;
         if (!name) continue;
 
-        const projectId = proj.id || crypto.randomUUID();
-        const description = proj.description || proj.desc || null;
-        const status = proj.status || "active";
-        const userId = proj.userId || session.user.id;
-        const createdAt = proj.createdAt ? new Date(proj.createdAt) : new Date();
-        const updatedAt = proj.updatedAt ? new Date(proj.updatedAt) : new Date();
+        const projectId = (proj["id"] || crypto.randomUUID()) as string;
+        const description = ((proj["description"] || proj["desc"]) as string | null) || null;
+        const status = (proj["status"] as string | undefined) || "active";
+        const userId = (proj["userId"] as string | undefined) || session.user.id;
+        const createdAt = proj["createdAt"] ? new Date(proj["createdAt"] as string | number) : new Date();
+        const updatedAt = proj["updatedAt"] ? new Date(proj["updatedAt"] as string | number) : new Date();
 
         // Check if project already exists
         const existing = await tx
@@ -228,10 +228,10 @@ export async function importTenantDataAction(
 
       // 3. Import Members
       for (const m of membersToImport) {
-        const email = m.email || m.userEmail || m.memberEmail;
+        const email = (m["email"] || m["userEmail"] || m["memberEmail"]) as string | undefined;
         if (!email) continue;
 
-        const roleSlug = String(m.role || "member").toLowerCase();
+        const roleSlug = String(m["role"] || "member").toLowerCase();
         const roleRecord = roleMap.get(roleSlug) || defaultRole;
         if (!roleRecord) continue;
 
@@ -241,12 +241,12 @@ export async function importTenantDataAction(
           .from(users)
           .where(eq(users.email, email))
           .limit(1);
-        let user = userRecords[0];
+        const user = userRecords[0];
 
         let userId = user?.id;
         if (!user) {
-          userId = m.userId || `user_${crypto.randomUUID()}`;
-          const name = m.userName || m.name || email.split("@")[0];
+          userId = (m["userId"] as string | undefined) || `user_${crypto.randomUUID()}`;
+          const name = ((m["userName"] || m["name"]) as string | undefined) || email.split("@")[0];
           await tx.insert(users).values({
             id: userId,
             name,
@@ -281,14 +281,14 @@ export async function importTenantDataAction(
             .where(eq(membersTable.id, existingMember.id));
         } else {
           // Insert new member connection
-          const memberId = m.id || `member_${crypto.randomUUID()}`;
+          const memberId = (m["id"] as string | undefined) || `member_${crypto.randomUUID()}`;
           await tx.insert(membersTable).values({
             id: memberId,
             organizationId: orgId,
             userId: userId!,
             role: roleRecord.slug,
             roleId: roleRecord.id,
-            createdAt: m.createdAt ? new Date(m.createdAt) : new Date(),
+            createdAt: m["createdAt"] ? new Date(m["createdAt"] as string | number) : new Date(),
           });
         }
         importedMembersCount++;

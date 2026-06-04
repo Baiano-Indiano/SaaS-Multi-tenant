@@ -35,11 +35,16 @@ export default function SelecionarOrgPage() {
   const tOrg = useTranslations("Organization");
   const router = useRouter();
   const { data: session, isPending: sessionPending } = useSession();
-  const { data: orgs, isPending } = useListOrganizations();
+  const { data: orgs, isPending, refetch } = useListOrganizations();
   const [newOrgName, setNewOrgName] = useState("");
   const [newOrgSlug, setNewOrgSlug] = useState("");
   const [loading, setLoading] = useState(false);
   const pageRef = useRef<HTMLDivElement>(null);
+
+  // Refetch organizations on mount to prevent stale client-side cache after redirecting from login
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   useGSAP(() => {
     if (isPending || !pageRef.current) return;

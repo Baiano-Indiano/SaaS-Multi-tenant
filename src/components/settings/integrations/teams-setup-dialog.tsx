@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TeamsIcon } from "@/components/icons";
-import { Link2, ShieldAlert, Loader2 } from "lucide-react";
+import { ShieldAlert, Loader2 } from "lucide-react";
 import { createConnectorAction } from "@/app/actions/connectors";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";

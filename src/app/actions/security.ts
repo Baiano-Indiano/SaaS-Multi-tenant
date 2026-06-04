@@ -11,6 +11,8 @@ import { toggle2FAEnforcementSchema, check2FAComplianceSchema, updateDataRetenti
 import { securityActionRateLimit, enforceRateLimit } from "@/lib/rate-limit";
 import { redis } from "@/lib/redis";
 import { l1Cache } from "@/lib/cache/l1-cache";
+import { cookies } from "next/headers";
+import { encrypt, decrypt } from "@/lib/security/crypto";
 
 type SecurityActionResponse =
   | { success: true }
@@ -20,21 +22,21 @@ type SecurityActionResponse =
  * Toggles 2FA enforcement for an organization.
  * Requires 'security:manage' permission.
  */
-export async function toggle2FAEnforcementAction(
-  organizationId: string,
-  enabled: boolean
-): Promise<SecurityActionResponse> {
-  const session = await auth.api.getSession({ headers: await headers() });
-  
-  if (!session?.user) {
+export async function toggle2FAEnforcementAction(organizationId: string, enabled: boolean, gracePeriodDays?: number | null) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
     return { success: false, error: "Sessão expirada. Faça login novamente." };
   }
 
   try {
     // Input Validation
-    const validated = toggle2FAEnforcementSchema.parse({ organizationId, enabled });
+    const validated = toggle2FAEnforcementSchema.parse({ organizationId, enabled, gracePeriodDays });
     organizationId = validated.organizationId;
     enabled = validated.enabled;
+    const graceDays = validated.gracePeriodDays ?? 0;
 
     // Rate Limiting
     await enforceRateLimit(securityActionRateLimit, session.user.id);
@@ -50,13 +52,25 @@ export async function toggle2FAEnforcementAction(
       where: eq(organizations.id, organizationId),
     });
 
+    const mfaEnforcedAtDate = enabled ? (org?.mfaEnforcedAt || new Date()) : null;
+
     // 2. Update organization
     await db.update(organizations)
-      .set({ require2FA: enabled })
+      .set({ 
+        require2FA: enabled,
+        mfaGracePeriodDays: enabled ? graceDays : null,
+        mfaEnforcedAt: mfaEnforcedAtDate,
+      })
       .where(eq(organizations.id, organizationId));
 
     // Cache write-through
-    const cacheData = { require2FA: enabled, id: organizationId, plan: org?.plan || "free" };
+    const cacheData = { 
+      require2FA: enabled, 
+      id: organizationId, 
+      plan: org?.plan || "free",
+      mfaGracePeriodDays: enabled ? graceDays : null,
+      mfaEnforcedAt: mfaEnforcedAtDate ? mfaEnforcedAtDate.toISOString() : null,
+    };
     await redis.set(`org:${organizationId}`, cacheData);
     l1Cache.set(`org:${organizationId}`, cacheData);
     if (org?.slug) {
@@ -70,7 +84,7 @@ export async function toggle2FAEnforcementAction(
       action: enabled ? "2FA_ENFORCED" : "2FA_ENFORCEMENT_REMOVED",
       entityType: "ORGANIZATION",
       entityId: organizationId,
-      details: `${enabled ? "Ativou" : "Desativou"} a obrigatoriedade de 2FA para a organização.`,
+      details: `${enabled ? "Ativou" : "Desativou"} a obrigatoriedade de 2FA para a organização. Grace period: ${graceDays} dias.`,
     });
 
     return { success: true };
@@ -330,4 +344,54 @@ export async function updateDataRetentionAction(
     console.error("Failed to update data retention:", error);
     return { success: false, error: "Falha ao atualizar configuração de retenção de dados." };
   }
+}
+
+export async function trustDeviceAction() {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      throw new Error("Unauthorized");
+    }
+
+    const userId = session.user.id;
+    const cookieStore = await cookies();
+    const expiry = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 dias
+    const payload = JSON.stringify({ userId, expiry });
+    const encryptedPayload = encrypt(payload);
+
+    cookieStore.set(`trusted-device-${userId}`, encryptedPayload, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 30 * 24 * 60 * 60, // 30 dias
+      path: "/",
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to trust device:", error);
+    return { success: false, error: "Falha ao registrar dispositivo confiável." };
+  }
+}
+
+export async function isDeviceTrustedAction(userId: string): Promise<boolean> {
+  try {
+    const cookieStore = await cookies();
+    const cookie = cookieStore.get(`trusted-device-${userId}`);
+    if (!cookie?.value) return false;
+
+    const decrypted = decrypt(cookie.value);
+    if (!decrypted) return false;
+
+    const data = JSON.parse(decrypted);
+    if (data.userId === userId && data.expiry > Date.now()) {
+      return true;
+    }
+  } catch {
+    return false;
+  }
+  return false;
 }

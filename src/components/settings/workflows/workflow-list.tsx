@@ -52,18 +52,22 @@ function getFiltersSummary(filtersJson: string | null | undefined): { rulesCount
     let rulesCount = 0;
     let groupsCount = 0;
 
-    function traverse(g: any) {
+    interface TraverseGroup {
+      rules: (TraverseGroup | Record<string, unknown>)[];
+    }
+
+    function traverse(g: TraverseGroup) {
       groupsCount++;
       for (const rule of g.rules) {
         if ("combinator" in rule) {
-          traverse(rule);
+          traverse(rule as TraverseGroup);
         } else {
           rulesCount++;
         }
       }
     }
 
-    traverse(group);
+    traverse(group as TraverseGroup);
     return { rulesCount, groupsCount };
   } catch {
     return null;

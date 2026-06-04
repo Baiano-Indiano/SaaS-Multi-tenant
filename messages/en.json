@@ -1156,6 +1156,18 @@
           "Advanced analytics",
           "Audit logs"
         ]
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "price": "Custom pricing",
+        "description": "Ideal for large corporations and high demand.",
+        "features": [
+          "Unlimited members",
+          "Unlimited custom roles",
+          "Custom domains",
+          "VIP dedicated support",
+          "Advanced rate limits (500 req/s)"
+        ]
       }
     }
   },

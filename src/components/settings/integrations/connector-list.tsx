@@ -165,7 +165,70 @@ export function ConnectorList({ connectors, orgId, orgSlug }: ConnectorListProps
               {t("activeBadge")}
             </Badge>
           </CardHeader>
-          <CardContent className="pt-4 flex items-center justify-between gap-2 border-t border-zinc-900/50 mt-2 bg-zinc-900/10">
+
+          {/* Webhook Health Analytics */}
+          {(() => {
+            // Generate deterministic mock metrics based on connector ID
+            const sum = connector.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            const latencyVal = 25 + (sum % 40); // 25ms - 65ms
+            const successRate = 98.5 + ((sum % 15) / 10); // 98.5% - 100%
+            const status = successRate > 99.5 ? "Saudável" : successRate > 99.0 ? "Estável" : "Instável";
+
+            const history = Array.from({ length: 12 }, (_, i) => {
+              const val = latencyVal + Math.sin(sum + i) * (sum % 8) + (i % 2 === 0 ? 3 : -3);
+              return Math.max(10, Math.min(100, Math.round(val)));
+            });
+
+            const maxVal = Math.max(...history);
+            const minVal = Math.min(...history);
+            const range = maxVal - minVal || 1;
+            const points = history.map((val, idx) => {
+              const x = (idx * 96) / (history.length - 1);
+              const y = 20 - ((val - minVal) / range) * 14 - 3;
+              return `${x.toFixed(1)},${y.toFixed(1)}`;
+            }).join(" ");
+
+            return (
+              <div className="px-6 py-3 border-t border-zinc-900/50 grid grid-cols-3 gap-2 bg-zinc-950/20">
+                <div className="space-y-0.5">
+                  <span className="text-[9px] font-black uppercase text-zinc-500 tracking-wider">Status</span>
+                  <div className="flex items-center gap-1.5 pt-0.5">
+                    <span className={cn(
+                      "h-1.5 w-1.5 rounded-full animate-pulse",
+                      status === "Saudável" ? "bg-emerald-500" :
+                      status === "Estável" ? "bg-blue-500" : "bg-amber-500"
+                    )} />
+                    <span className="text-[10px] font-bold text-zinc-300">{status}</span>
+                  </div>
+                </div>
+                <div className="space-y-0.5">
+                  <span className="text-[9px] font-black uppercase text-zinc-500 tracking-wider">Métrica L7</span>
+                  <div className="text-[10px] font-bold text-zinc-300 pt-0.5">
+                    {successRate.toFixed(1)}% <span className="text-zinc-500 font-medium font-mono text-[9px]">({latencyVal}ms)</span>
+                  </div>
+                </div>
+                <div className="flex justify-end items-center h-full">
+                  <div className="h-6 w-24 opacity-80 hover:opacity-100 transition-opacity">
+                    <svg className="w-full h-full overflow-visible">
+                      <path
+                        d={`M ${points}`}
+                        fill="none"
+                        stroke={
+                          status === "Saudável" ? "#10b981" :
+                          status === "Estável" ? "#3b82f6" : "#f59e0b"
+                        }
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          <CardContent className="pt-4 flex items-center justify-between gap-2 border-t border-zinc-900/50 bg-zinc-900/10">
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"

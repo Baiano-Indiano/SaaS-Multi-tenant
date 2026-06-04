@@ -29,7 +29,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 		const userChannelName = `user-${session.user.id}`;
 		const userChannel = pusher.subscribe(userChannelName);
 
-		const handleNotification = (data: any) => {
+		const handleNotification = (data: Record<string, unknown>) => {
 			try {
 				if (data.payload) {
 					const notification = typeof data.payload === 'string' 
@@ -57,7 +57,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
 		const activeOrgId = session.session?.activeOrganizationId;
 		const orgChannelName = activeOrgId ? `org-${activeOrgId}` : null;
-		let orgChannel: any = null;
+		let orgChannel: ReturnType<typeof pusher.subscribe> | null = null;
 
 		if (orgChannelName) {
 			orgChannel = pusher.subscribe(orgChannelName);
