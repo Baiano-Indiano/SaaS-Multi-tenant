@@ -26,7 +26,6 @@ export default function Verify2FAPage() {
       if (isBackup) {
         const { error } = await authClient.twoFactor.verifyBackupCode({
           code,
-          trustDevice,
         });
         if (error) {
           toast.error(error.message || "Invalid backup code");
