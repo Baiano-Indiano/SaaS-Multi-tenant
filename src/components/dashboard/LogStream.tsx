@@ -4,7 +4,8 @@ import React, { useEffect, useState, useRef } from "react";
 import { Terminal } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSession } from "@/lib/auth/client";
-import Pusher from "pusher-js";
+import Pusher, { Channel } from "pusher-js";
+import { cn } from "@/lib/utils";
 
 interface LogEntry {
   id: string;
@@ -19,9 +20,17 @@ interface LogEntry {
 
 export function LogStream() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [methodFilter, setMethodFilter] = useState<string>("ALL");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [isPaused, setIsPaused] = useState<boolean>(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const t = useTranslations("Dashboard");
   const { data: session } = useSession();
+
+  const isPausedRef = useRef(isPaused);
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
 
   useEffect(() => {
     // 1. Setup background simulator to keep dashboard active
@@ -30,6 +39,7 @@ export function LogStream() {
     const statuses = [200, 201, 204, 404, 500];
 
     const generateLog = () => {
+      if (isPausedRef.current) return;
       const entry: LogEntry = {
         id: Math.random().toString(36).substring(2, 9),
         timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
@@ -51,54 +61,66 @@ export function LogStream() {
     const interval = setInterval(generateLog, 4000); // 4s interval to reduce noise
     generateLog(); // Initial entry
 
+    interface NotificationPayload {
+      id?: string;
+      type?: string;
+      createdAt?: string;
+      message?: string;
+      title?: string;
+    }
+
     // 2. Establish real-time Pusher connection
     let pusher: Pusher | null = null;
     let userChannelName = "";
     let orgChannelName: string | null = null;
-    let userChannel: any = null;
-    let orgChannel: any = null;
+    let userChannel: Channel | null = null;
+    let orgChannel: Channel | null = null;
 
-    const handleNotification = (data: any) => {
+    const handleNotification = (data: unknown) => {
+      if (isPausedRef.current) return;
       try {
-        if (data.payload) {
-          const payload = typeof data.payload === "string"
-            ? JSON.parse(data.payload)
-            : data.payload;
+        if (data && typeof data === "object") {
+          const dataObj = data as Record<string, unknown>;
+          if (dataObj.payload) {
+            const payload = (typeof dataObj.payload === "string"
+              ? JSON.parse(dataObj.payload)
+              : dataObj.payload) as NotificationPayload;
 
-          let method = "POST";
-          let path = "/api/v1/events";
-          let status = 200;
-          let latency = "12ms";
+            let method = "POST";
+            let path = "/api/v1/events";
+            let status = 200;
+            let latency = "12ms";
 
-          if (payload.type === "PROJECT_CREATED") {
-            method = "POST";
-            path = "/api/v1/projects";
-            status = 201;
-            latency = "42ms";
-          } else if (payload.type?.includes("SECURITY") || payload.type?.includes("ANOMALY")) {
-            method = "ALERT";
-            path = "/api/v1/security/anomaly";
-            status = 403;
-            latency = "0ms";
-          } else if (payload.type?.includes("BILLING") || payload.type?.includes("STRIPE")) {
-            method = "POST";
-            path = "/api/v1/billing/webhook";
-            status = 200;
-            latency = "78ms";
+            if (payload.type === "PROJECT_CREATED") {
+              method = "POST";
+              path = "/api/v1/projects";
+              status = 201;
+              latency = "42ms";
+            } else if (payload.type?.includes("SECURITY") || payload.type?.includes("ANOMALY")) {
+              method = "ALERT";
+              path = "/api/v1/security/anomaly";
+              status = 403;
+              latency = "0ms";
+            } else if (payload.type?.includes("BILLING") || payload.type?.includes("STRIPE")) {
+              method = "POST";
+              path = "/api/v1/billing/webhook";
+              status = 200;
+              latency = "78ms";
+            }
+
+            const entry: LogEntry = {
+              id: `real-${payload.id || Math.random().toString(36).substring(2, 9)}`,
+              timestamp: new Date(payload.createdAt || Date.now()).toLocaleTimeString("en-GB", { hour12: false }),
+              method,
+              path,
+              status,
+              latency,
+              isReal: true,
+              message: payload.message || payload.title,
+            };
+
+            setLogs((prev) => [...prev.slice(-7), entry]);
           }
-
-          const entry: LogEntry = {
-            id: `real-${payload.id || Math.random().toString(36).substring(2, 9)}`,
-            timestamp: new Date(payload.createdAt || Date.now()).toLocaleTimeString("en-GB", { hour12: false }),
-            method,
-            path,
-            status,
-            latency,
-            isReal: true,
-            message: payload.message || payload.title,
-          };
-
-          setLogs((prev) => [...prev.slice(-7), entry]);
         }
       } catch (err) {
         console.error("[LogStream] Failed to parse Pusher event data:", err);
@@ -124,7 +146,9 @@ export function LogStream() {
           isReal: true,
           message: "Real-time Pusher socket established",
         };
-        setLogs((prev) => [...prev.slice(-7), entry]);
+        setTimeout(() => {
+          setLogs((prev) => [...prev.slice(-7), entry]);
+        }, 0);
 
         userChannelName = `user-${session.user.id}`;
         userChannel = pusher.subscribe(userChannelName);
@@ -163,22 +187,86 @@ export function LogStream() {
     }
   }, [logs]);
 
+  const filteredLogs = logs.filter((log) => {
+    if (methodFilter !== "ALL" && log.method !== methodFilter) return false;
+    if (statusFilter === "SUCCESS" && log.status >= 400) return false;
+    if (statusFilter === "ERROR" && log.status < 400) return false;
+    return true;
+  });
+
   return (
-    <div className="flex flex-col h-full min-h-[160px] bg-black/40 rounded-sm border border-zinc-800/50 overflow-hidden font-mono text-[10px]">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800/50 bg-zinc-900/40">
+    <div className="flex flex-col h-full min-h-[220px] bg-black/40 rounded-sm border border-zinc-800/50 overflow-hidden font-mono text-[10px]">
+      <div className="flex flex-col md:flex-row md:items-center justify-between px-3 py-2 gap-2 border-b border-zinc-800/50 bg-zinc-900/40">
         <div className="flex items-center gap-2">
-          <Terminal className="h-3 w-3 text-zinc-500" />
+          <Terminal className="h-3 w-3 text-zinc-500 animate-pulse" />
           <span className="text-zinc-500 font-bold uppercase tracking-widest">{t("logStream.systemEvents")}</span>
+          {isPaused && (
+            <span className="text-[8px] text-amber-500 bg-amber-500/10 px-1 py-0.5 rounded font-semibold animate-pulse ml-2">PAUSED</span>
+          )}
         </div>
-        <div className="flex gap-1">
-          <div className="h-1.5 w-1.5 rounded-full bg-zinc-800" />
-          <div className="h-1.5 w-1.5 rounded-full bg-zinc-800" />
-          <div className="h-1.5 w-1.5 rounded-full bg-zinc-800" />
+        
+        {/* Advanced Filters Toolbar */}
+        <div className="flex items-center gap-3 text-[9px] text-zinc-500 select-none">
+          <div className="flex items-center gap-1 bg-zinc-950/60 p-0.5 rounded border border-zinc-800/50">
+            {["ALL", "GET", "POST", "ALERT"].map((m) => (
+              <button
+                key={m}
+                onClick={() => setMethodFilter(m)}
+                className={cn(
+                  "px-1.5 py-0.5 rounded-xs transition-colors cursor-pointer",
+                  methodFilter === m 
+                    ? "bg-zinc-800 text-zinc-200 font-bold" 
+                    : "hover:text-zinc-300 text-zinc-500"
+                )}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-1 bg-zinc-950/60 p-0.5 rounded border border-zinc-800/50">
+            {["ALL", "SUCCESS", "ERROR"].map((s) => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={cn(
+                  "px-1.5 py-0.5 rounded-xs transition-colors cursor-pointer",
+                  statusFilter === s 
+                    ? "bg-zinc-800 text-zinc-200 font-bold" 
+                    : "hover:text-zinc-300 text-zinc-500"
+                )}
+              >
+                {s === "ALL" ? "ALL" : s === "SUCCESS" ? "2xx" : "4xx/5xx"}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-1.5 border-l border-zinc-800 pl-3">
+            <button
+              onClick={() => setIsPaused(!isPaused)}
+              className={cn(
+                "p-1 rounded transition-colors cursor-pointer text-xs",
+                isPaused 
+                  ? "text-emerald-500 hover:text-emerald-400 bg-emerald-500/10" 
+                  : "text-zinc-500 hover:text-zinc-300"
+              )}
+              title={isPaused ? "Play" : "Pause"}
+            >
+              {isPaused ? "▶" : "⏸"}
+            </button>
+            <button
+              onClick={() => setLogs([])}
+              className="text-zinc-500 hover:text-rose-400 p-1 rounded cursor-pointer text-xs"
+              title="Clear Console"
+            >
+              ✕
+            </button>
+          </div>
         </div>
       </div>
       
       <div ref={scrollRef} className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-hide">
-        {logs.map((log) => (
+        {filteredLogs.map((log) => (
           <div 
             key={log.id} 
             className={`flex items-center gap-3 animate-in fade-in slide-in-from-left-1 duration-500 py-0.5 px-1 rounded-xs transition-colors ${
@@ -199,7 +287,7 @@ export function LogStream() {
             <span className={`flex-1 truncate ${log.isReal ? "text-zinc-200 font-medium" : "text-zinc-400"}`}>
               {log.path}
               {log.isReal && log.message && (
-                <span className="text-[9px] text-zinc-500 ml-2 italic">({log.message})</span>
+                <span className="text-[9px] text-zinc-500 ml-2 italic">( {log.message} )</span>
               )}
             </span>
             <span className={log.status >= 400 ? "text-amber-500" : log.isReal ? "text-emerald-400 font-bold" : "text-zinc-500"}>
@@ -210,8 +298,8 @@ export function LogStream() {
             </span>
           </div>
         ))}
-        {logs.length === 0 && (
-          <div className="text-zinc-700 italic">{t("logStream.awaitingEvents")}</div>
+        {filteredLogs.length === 0 && (
+          <div className="text-zinc-700 italic py-2 text-center">Nenhum evento corresponde aos filtros ativos.</div>
         )}
       </div>
     </div>

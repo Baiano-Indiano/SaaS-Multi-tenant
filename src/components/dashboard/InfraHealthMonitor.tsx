@@ -1,7 +1,6 @@
 "use client";
 
 // Let's use the exact original imports:
-import { useRef } from "react";
 // wait, the original had:
 // import { motion } from "framer-motion";
 // import { MagneticCard } from "./MagneticCard";

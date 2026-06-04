@@ -46,12 +46,13 @@ export async function GET(request: Request) {
           orgId: org.id,
           status: "checked",
         });
-      } catch (err: any) {
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Unknown error";
         results.failed++;
         results.details.push({
           orgId: org.id,
           status: "error",
-          error: err?.message || "Unknown error",
+          error: errorMessage,
         });
       }
     }

@@ -57,14 +57,15 @@ export async function runSequentialMigrations(batchSize = 10): Promise<{
           schema: org.tenantSchemaName,
           status: "success"
         });
-      } catch (error: any) {
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
         logger.error("migration", `❌ Failed migration for ${org.name}:`, error);
         results.push({
           orgId: org.id,
           orgName: org.name,
           schema: org.tenantSchemaName,
           status: "failed",
-          error: error?.message || "Unknown error"
+          error: errorMessage
         });
       }
     }));

@@ -18,8 +18,14 @@ vi.mock("@/lib/auth", () => ({
   },
 }));
 
+const mockCookiesGet = vi.fn();
+const mockCookiesSet = vi.fn();
 vi.mock("next/headers", () => ({
   headers: vi.fn().mockResolvedValue(new Headers()),
+  cookies: vi.fn().mockImplementation(async () => ({
+    get: mockCookiesGet,
+    set: mockCookiesSet,
+  })),
 }));
 
 vi.mock("@/lib/auth/rbac-utils", () => ({
@@ -97,7 +103,7 @@ describe("Data Retention & Cleanup Sweep Logic", () => {
     it("should fail if user lacks security:manage permission", async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue({
         user: { id: "user_789" },
-      } as any);
+      } as never);
       vi.mocked(can).mockResolvedValue(false);
 
       const result = await updateDataRetentionAction(orgId, true, 30);
@@ -112,7 +118,7 @@ describe("Data Retention & Cleanup Sweep Logic", () => {
     it("should fail validation if enabled is true but days is less than 7", async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue({
         user: { id: "user_789" },
-      } as any);
+      } as never);
       vi.mocked(can).mockResolvedValue(true);
 
       const result = await updateDataRetentionAction(orgId, true, 5);
@@ -124,7 +130,7 @@ describe("Data Retention & Cleanup Sweep Logic", () => {
     it("should update database and write-through cache if input is valid", async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue({
         user: { id: "user_789" },
-      } as any);
+      } as never);
       vi.mocked(can).mockResolvedValue(true);
       
       // Mock db findFirst to return organization
@@ -133,7 +139,7 @@ describe("Data Retention & Cleanup Sweep Logic", () => {
         slug: "my-org",
         require2FA: true,
         plan: "enterprise",
-      } as any);
+      } as never);
 
       const result = await updateDataRetentionAction(orgId, true, 45);
 
@@ -161,7 +167,7 @@ describe("Data Retention & Cleanup Sweep Logic", () => {
     it("should allow disabling retention policies by setting days to null", async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue({
         user: { id: "user_789" },
-      } as any);
+      } as never);
       vi.mocked(can).mockResolvedValue(true);
       
       vi.mocked(db.query.organizations.findFirst).mockResolvedValue({
@@ -169,7 +175,7 @@ describe("Data Retention & Cleanup Sweep Logic", () => {
         slug: "my-org",
         require2FA: false,
         plan: "free",
-      } as any);
+      } as never);
 
       const result = await updateDataRetentionAction(orgId, false, null);
 
@@ -216,7 +222,7 @@ describe("Data Retention & Cleanup Sweep Logic", () => {
             },
           ]),
         }),
-      } as any);
+      } as never);
 
       const response = await cleanupLogsCron(request);
       expect(response.status).toBe(200);
@@ -236,6 +242,66 @@ describe("Data Retention & Cleanup Sweep Logic", () => {
           purgedCount: 2,
           retentionDays: 14,
         }),
+      }));
+    });
+  });
+
+  describe("trustDeviceAction() & isDeviceTrustedAction()", () => {
+    it("should successfully set trusted device cookie and verify it on subsequent calls", async () => {
+      vi.mocked(auth.api.getSession).mockResolvedValue({
+        user: { id: "user_trust_123" },
+      } as never);
+
+      // Local mock state for cookies
+      const cookieStore: Record<string, string> = {};
+      mockCookiesSet.mockImplementation((name, val) => {
+        cookieStore[name] = val;
+      });
+      mockCookiesGet.mockImplementation((name) => {
+        return cookieStore[name] ? { value: cookieStore[name] } : undefined;
+      });
+
+      const { trustDeviceAction, isDeviceTrustedAction } = await import("../security");
+
+      const res = await trustDeviceAction();
+      expect(res.success).toBe(true);
+      expect(mockCookiesSet).toHaveBeenCalledWith(
+        "trusted-device-user_trust_123",
+        expect.any(String),
+        expect.any(Object)
+      );
+
+      // Test validation of the trusted cookie
+      const isTrusted = await isDeviceTrustedAction("user_trust_123");
+      expect(isTrusted).toBe(true);
+
+      const isTrustedWrong = await isDeviceTrustedAction("wrong_user");
+      expect(isTrustedWrong).toBe(false);
+    });
+  });
+
+  describe("toggle2FAEnforcementAction() with grace period", () => {
+    it("should successfully set mfaGracePeriodDays in database and cache", async () => {
+      vi.mocked(auth.api.getSession).mockResolvedValue({
+        user: { id: "user_789" },
+      } as never);
+      vi.mocked(can).mockResolvedValue(true);
+      
+      vi.mocked(db.query.organizations.findFirst).mockResolvedValue({
+        id: "org_123",
+        slug: "my-org",
+        require2FA: false,
+        plan: "enterprise",
+      } as never);
+
+      const { toggle2FAEnforcementAction } = await import("../security");
+
+      const result = await toggle2FAEnforcementAction("org_123", true, 5);
+      expect(result.success).toBe(true);
+      expect(db.update).toHaveBeenCalled();
+      expect(redis.set).toHaveBeenCalledWith("org:org_123", expect.objectContaining({
+        require2FA: true,
+        mfaGracePeriodDays: 5,
       }));
     });
   });

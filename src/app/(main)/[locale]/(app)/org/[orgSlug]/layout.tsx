@@ -9,6 +9,8 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { PaywallProvider } from "@/components/billing/PaywallProvider";
 import { OrgRouteTransition } from "@/components/layout/org-route-transition";
+import { CommandMenuTrigger } from "@/components/layout/command-menu";
+import { ThrottlingBanner } from "@/components/dashboard/throttling-banner";
 
 export default async function OrgLayout({
   children,
@@ -59,8 +61,23 @@ export default async function OrgLayout({
     });
 
     if (!dbUser?.twoFactorEnabled) {
-      // Security: ensure no context leakage before redirect
-      redirect(`/org/${orgSlug}/setup-2fa`);
+      // Calculate Grace Period
+      let graceExpired = true;
+      if (org.mfaEnforcedAt) {
+        const graceDays = org.mfaGracePeriodDays ?? 0;
+        const enforcedTime = new Date(org.mfaEnforcedAt).getTime();
+        const graceExpiryTime = enforcedTime + graceDays * 24 * 60 * 60 * 1000;
+        
+        // eslint-disable-next-line react-hooks/purity
+        if (Date.now() < graceExpiryTime) {
+          graceExpired = false;
+        }
+      }
+
+      if (graceExpired) {
+        // Security: ensure no context leakage before redirect
+        redirect(`/org/${orgSlug}/setup-2fa`);
+      }
     }
   }
 
@@ -89,9 +106,11 @@ export default async function OrgLayout({
               <div className="font-medium text-zinc-100">{org.name}</div>
             </div>
             <div className="flex items-center gap-4">
+              <CommandMenuTrigger />
               <NotificationBell />
             </div>
           </header>
+          <ThrottlingBanner orgId={org.id} />
           <div className="flex-1 overflow-auto p-6">
             <OrgRouteTransition>{children}</OrgRouteTransition>
           </div>
