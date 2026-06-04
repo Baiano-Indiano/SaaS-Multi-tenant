@@ -13,8 +13,9 @@ const SALT_LENGTH = 16;
 
 // FAIL-CLOSED: No fallback key. App will not start without a valid key.
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
 
-if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 64) {
+if (!isBuildPhase && (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 64)) {
   // In production this is fatal. In dev/test, we allow a generated key with a loud warning.
   if (process.env.NODE_ENV === 'production') {
     throw new Error(
