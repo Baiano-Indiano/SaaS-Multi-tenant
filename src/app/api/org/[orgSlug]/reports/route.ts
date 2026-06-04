@@ -86,7 +86,7 @@ export async function GET(
       const duration = Date.now() - start;
       logger.info("api", `✓ GET /api/org/${orgSlug}/reports | PDF | 200 | ${duration}ms`);
 
-      return new NextResponse(pdfBuffer as Uint8Array, {
+      return new NextResponse(pdfBuffer as unknown as Blob, {
         status: 200,
         headers: {
           "Content-Type": "application/pdf",

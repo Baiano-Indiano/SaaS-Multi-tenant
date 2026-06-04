@@ -286,7 +286,7 @@ export async function GET(
     const duration = Date.now() - start;
     logger.info("api", `✓ GET /api/org/${orgSlug}/export | 200 | ${duration}ms`);
 
-    return new NextResponse(zipBuffer as Uint8Array, {
+    return new NextResponse(zipBuffer as unknown as Blob, {
       status: 200,
       headers: {
         "Content-Type": "application/zip",

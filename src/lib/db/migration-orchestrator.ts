@@ -20,7 +20,7 @@ export async function runSequentialMigrations(batchSize = 10): Promise<{
   processed: number;
   results: MigrationResult[];
 }> {
-  logger.info("migration", "🚀 Starting sequential tenant schema migration batch...");
+  logger.info("db", "🚀 Starting sequential tenant schema migration batch...");
   
   const allOrgs = await db.select({
     id: organizations.id,
@@ -49,7 +49,7 @@ export async function runSequentialMigrations(batchSize = 10): Promise<{
 
       processedCount++;
       try {
-        logger.info("migration", `Migrating schema for ${org.name} (${org.tenantSchemaName})...`);
+        logger.info("db", `Migrating schema for ${org.name} (${org.tenantSchemaName})...`);
         await createTenantSchema(org.tenantSchemaName);
         results.push({
           orgId: org.id,
@@ -59,7 +59,7 @@ export async function runSequentialMigrations(batchSize = 10): Promise<{
         });
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
-        logger.error("migration", `❌ Failed migration for ${org.name}:`, error);
+        logger.error("db", `❌ Failed migration for ${org.name}:`, error);
         results.push({
           orgId: org.id,
           orgName: org.name,
@@ -71,7 +71,7 @@ export async function runSequentialMigrations(batchSize = 10): Promise<{
     }));
   }
 
-  logger.info("migration", `🏁 Sequential migration complete. Processed ${processedCount}/${allOrgs.length} orgs.`);
+  logger.info("db", `🏁 Sequential migration complete. Processed ${processedCount}/${allOrgs.length} orgs.`);
   return {
     total: allOrgs.length,
     processed: processedCount,

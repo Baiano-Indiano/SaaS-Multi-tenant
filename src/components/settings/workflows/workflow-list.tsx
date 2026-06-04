@@ -60,7 +60,7 @@ function getFiltersSummary(filtersJson: string | null | undefined): { rulesCount
       groupsCount++;
       for (const rule of g.rules) {
         if ("combinator" in rule) {
-          traverse(rule as TraverseGroup);
+          traverse(rule as unknown as TraverseGroup);
         } else {
           rulesCount++;
         }

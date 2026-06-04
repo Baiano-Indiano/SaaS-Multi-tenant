@@ -98,7 +98,6 @@ export function MarketingPlayground() {
   const handleTrigger = () => {
     if (isTriggered) return;
     setIsTriggered(true);
-    setPulseCount((prev) => prev + 1);
     
     // Reset trigger after animation completes (2.5 seconds)
     setTimeout(() => {

@@ -140,7 +140,7 @@ export async function proxy(request: NextRequest) {
               staleFallbackCache.set(cacheKey, keyData);
             } catch (e) {
               console.error('[Proxy] Redis API key fetch failed, attempting fallback to stale cache:', e);
-              keyData = staleFallbackCache.get(cacheKey);
+              keyData = staleFallbackCache.get(cacheKey) as ApiKeyData | null;
               if (keyData === undefined) {
                 throw e; // No fallback available, propagate error
               }
@@ -186,7 +186,7 @@ export async function proxy(request: NextRequest) {
               } catch (e) {
                 console.error('[Proxy] Redis org fetch failed, attempting fallback to stale cache:', e);
                 if (staleFallbackCache.has(orgCacheKey)) {
-                  orgData = staleFallbackCache.get(orgCacheKey);
+                  orgData = staleFallbackCache.get(orgCacheKey) as { require2FA: boolean; id: string; plan?: string } | null;
                 } else {
                   // Safe fallback to prevent breaking requests
                   orgData = { require2FA: false, id: keyData.orgId, plan: keyData.plan || 'free' };
@@ -265,7 +265,7 @@ export async function proxy(request: NextRequest) {
                 } catch (e) {
                   console.error('[Proxy] Redis user MFA fetch failed, attempting fallback to stale cache:', e);
                   if (staleFallbackCache.has(userMfaCacheKey)) {
-                    isUserMfaEnabled = staleFallbackCache.get(userMfaCacheKey) || false;
+                    isUserMfaEnabled = (staleFallbackCache.get(userMfaCacheKey) as boolean | null) || false;
                   } else {
                     isUserMfaEnabled = false; // Safe fallback
                   }
@@ -349,7 +349,7 @@ export async function proxy(request: NextRequest) {
                 staleFallbackCache.set(domainCacheKey, domainData);
               } catch (e) {
                 console.error('[Proxy] Redis domain resolution failed, attempting fallback to stale cache:', e);
-                domainData = staleFallbackCache.get(domainCacheKey) || null;
+                domainData = (staleFallbackCache.get(domainCacheKey) as { slug: string; id: string } | null) || null;
               }
             }
 
@@ -421,7 +421,7 @@ export async function proxy(request: NextRequest) {
               } catch (e) {
                 console.error('[Proxy] Redis org policy fetch failed, attempting fallback to stale cache:', e);
                 if (staleFallbackCache.has(orgCacheKey)) {
-                  orgData = staleFallbackCache.get(orgCacheKey);
+                  orgData = staleFallbackCache.get(orgCacheKey) as { require2FA: boolean; id: string } | null;
                 } else {
                   orgData = { require2FA: false, id: '' };
                 }
