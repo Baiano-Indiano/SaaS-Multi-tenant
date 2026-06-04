@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   description: "Check the current status of our services.",
 };
 
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+
 export default function PublicLayout({
   children,
 }: {
@@ -29,6 +32,8 @@ export default function PublicLayout({
     >
       <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-50">
         {children}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
