@@ -54,8 +54,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR, enUS } from "date-fns/locale";
 import { motion } from "framer-motion";
+import { useLocale, useTranslations } from "next-intl";
 
 interface Component {
   id: string;
@@ -85,6 +86,9 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
   const [loading, setLoading] = useState(false);
   const [isComponentDialogOpen, setIsComponentDialogOpen] = useState(false);
   const [isIncidentDialogOpen, setIsIncidentDialogOpen] = useState(false);
+  const t = useTranslations("StatusSettings");
+  const locale = useLocale();
+  const dateLocale = locale === "pt" ? ptBR : enUS;
 
   // Form states
   const [editingComponent, setEditingComponent] = useState<Partial<Component> | null>(null);
@@ -120,11 +124,11 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
         status: editingComponent.status || "operational",
         isActive: editingComponent.isActive ?? true,
       });
-      toast.success(editingComponent.id ? "Componente atualizado" : "Componente criado");
+      toast.success(editingComponent.id ? t("toastComponentUpdated") : t("toastComponentCreated"));
       setIsComponentDialogOpen(false);
       setEditingComponent(null);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Erro ao salvar");
+      toast.error(err instanceof Error ? err.message : t("toastSaveError"));
     } finally {
       setLoading(false);
     }
@@ -134,10 +138,10 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
     setLoading(true);
     try {
       await deleteStatusComponentAction({ organizationId, id });
-      toast.success("Componente removido");
+      toast.success(t("toastComponentRemoved"));
       setComponentToDelete(null);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Erro ao remover");
+      toast.error(err instanceof Error ? err.message : t("toastRemoveError"));
     } finally {
       setLoading(false);
     }
@@ -154,19 +158,19 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
           status: editingIncident.status || "investigating",
           description: editingIncident.description || undefined,
         });
-        toast.success("Incidente atualizado");
+        toast.success(t("toastIncidentUpdated"));
       } else {
         await createStatusIncidentAction({
           organizationId,
           ...newIncident,
         });
-        toast.success("Incidente registrado");
+        toast.success(t("toastIncidentCreated"));
       }
       setIsIncidentDialogOpen(false);
       setEditingIncident(null);
       setNewIncident({ title: "", description: "", status: "investigating", severity: "minor" });
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Erro ao salvar");
+      toast.error(err instanceof Error ? err.message : t("toastSaveError"));
     } finally {
       setLoading(false);
     }
@@ -176,10 +180,10 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
     setLoading(true);
     try {
       await deleteStatusIncidentAction({ organizationId, id });
-      toast.success("Incidente removido");
+      toast.success(t("toastIncidentRemoved"));
       setIncidentToDelete(null);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Erro ao remover");
+      toast.error(err instanceof Error ? err.message : t("toastRemoveError"));
     } finally {
       setLoading(false);
     }
@@ -197,10 +201,29 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "operational": return "Operacional";
-      case "degraded": return "Performance Degradada";
-      case "partial_outage": return "Instabilidade Parcial";
-      case "major_outage": return "Instabilidade Crítica";
+      case "operational": return t("operational");
+      case "degraded": return t("degradedPerformance");
+      case "partial_outage": return t("partialOutage");
+      case "major_outage": return t("majorOutage");
+      default: return status;
+    }
+  };
+
+  const getSeverityLabel = (severity: string) => {
+    switch (severity) {
+      case "minor": return t("minorImpact");
+      case "major": return t("majorImpact");
+      case "critical": return t("criticalImpact");
+      default: return severity;
+    }
+  };
+
+  const getIncidentStatusLabel = (status: string) => {
+    switch (status) {
+      case "investigating": return t("investigating");
+      case "identified": return t("identified");
+      case "monitoring": return t("monitoring");
+      case "resolved": return t("resolved");
       default: return status;
     }
   };
@@ -231,11 +254,11 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-xl font-bold text-white tracking-tight">Página de Status</h3>
-                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[10px] uppercase tracking-widest font-bold px-2 py-0">Live</Badge>
+                <h3 className="text-xl font-bold text-white tracking-tight">{t("title")}</h3>
+                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[10px] uppercase tracking-widest font-bold px-2 py-0">{t("live")}</Badge>
               </div>
               <p className="text-zinc-400 text-sm max-w-md leading-relaxed">
-                Mantenha a transparência com seus clientes. Gerencie componentes do sistema e comunique incidentes em tempo real.
+                {t("description")}
               </p>
             </div>
           </div>
@@ -246,7 +269,7 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
               onClick={() => window.open(`/status/${orgSlug}`, '_blank')}
             >
               <ExternalLink className="w-4 h-4 mr-2 transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
-              Visualizar Portal
+              {t("viewPortal")}
             </Button>
           </div>
         </div>
@@ -258,14 +281,14 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
           <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-6 bg-primary rounded-full" />
-              <h4 className="text-sm font-bold uppercase tracking-[0.15em] text-zinc-500">Componentes</h4>
+              <h4 className="text-sm font-bold uppercase tracking-[0.15em] text-zinc-500">{t("components")}</h4>
             </div>
             <Dialog open={isComponentDialogOpen} onOpenChange={setIsComponentDialogOpen}>
               <DialogTrigger 
                 render={
                   <Button size="sm" className="h-9 px-4 rounded-lg bg-white text-black hover:bg-zinc-200 shadow-xl transition-all active:scale-95" onClick={() => setEditingComponent({})}>
                     <Plus className="w-4 h-4 mr-1.5" />
-                    Adicionar
+                    {t("addComponent")}
                   </Button>
                 }
               />
@@ -274,17 +297,17 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
                     <Sparkles className="w-6 h-6 text-primary" />
                   </div>
-                  <DialogTitle className="text-2xl font-bold">{editingComponent?.id ? "Ajustar Componente" : "Novo Componente"}</DialogTitle>
+                  <DialogTitle className="text-2xl font-bold">{editingComponent?.id ? t("editComponentTitle") : t("newComponentTitle")}</DialogTitle>
                   <DialogDescription className="text-zinc-400 text-base">
-                    Defina o nome e o estado inicial do componente do sistema.
+                    {t("componentDialogDesc")}
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={onUpsertComponent} className="space-y-6 py-6">
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label className="text-zinc-400 ml-1">Identificação</Label>
+                      <Label className="text-zinc-400 ml-1">{t("identification")}</Label>
                       <Input 
-                        placeholder="Ex: API Gateway, Dashboard, Pagamentos" 
+                        placeholder={t("componentNamePlaceholder")} 
                         className="h-12 bg-zinc-900/50 border-zinc-800 focus:ring-primary/20 transition-all rounded-xl"
                         value={editingComponent?.name || ""}
                         onChange={(e) => setEditingComponent(prev => ({ ...prev, name: e.target.value }))}
@@ -292,16 +315,16 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-zinc-400 ml-1">Descrição curta</Label>
+                      <Label className="text-zinc-400 ml-1">{t("shortDescription")}</Label>
                       <Input 
-                        placeholder="Ex: Responsável pelo processamento de requisições" 
+                        placeholder={t("componentDescPlaceholder")} 
                         className="h-12 bg-zinc-900/50 border-zinc-800 focus:ring-primary/20 transition-all rounded-xl"
                         value={editingComponent?.description || ""}
                         onChange={(e) => setEditingComponent(prev => ({ ...prev, description: e.target.value }))}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-zinc-400 ml-1">Status Atual</Label>
+                      <Label className="text-zinc-400 ml-1">{t("currentStatus")}</Label>
                       <Select 
                         value={editingComponent?.status || "operational"} 
                         onValueChange={(val: string | null) => val && setEditingComponent(prev => ({ ...prev, status: val as Component["status"] }))}
@@ -310,10 +333,10 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-zinc-950 border-zinc-800 text-white p-2">
-                          <SelectItem value="operational" className="rounded-lg focus:bg-emerald-500/10 focus:text-emerald-400">Operacional</SelectItem>
-                          <SelectItem value="degraded" className="rounded-lg focus:bg-yellow-500/10 focus:text-yellow-400">Performance Degradada</SelectItem>
-                          <SelectItem value="partial_outage" className="rounded-lg focus:bg-orange-500/10 focus:text-orange-400">Instabilidade Parcial</SelectItem>
-                          <SelectItem value="major_outage" className="rounded-lg focus:bg-red-500/10 focus:text-red-400">Instabilidade Crítica</SelectItem>
+                          <SelectItem value="operational" className="rounded-lg focus:bg-emerald-500/10 focus:text-emerald-400">{t("operational")}</SelectItem>
+                          <SelectItem value="degraded" className="rounded-lg focus:bg-yellow-500/10 focus:text-yellow-400">{t("degradedPerformance")}</SelectItem>
+                          <SelectItem value="partial_outage" className="rounded-lg focus:bg-orange-500/10 focus:text-orange-400">{t("partialOutage")}</SelectItem>
+                          <SelectItem value="major_outage" className="rounded-lg focus:bg-red-500/10 focus:text-red-400">{t("majorOutage")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -321,7 +344,7 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
                   <DialogFooter className="pt-2">
                     <Button type="submit" className="h-12 bg-primary text-primary-foreground hover:opacity-90 w-full rounded-xl font-bold shadow-lg" disabled={loading}>
                       {loading ? <Clock className="w-4 h-4 animate-spin mr-2" /> : null}
-                      Salvar Componente
+                      {t("saveComponent")}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -340,13 +363,13 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
                 <div className="w-16 h-16 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-6">
                   <Settings2 className="w-8 h-8 text-zinc-700" />
                 </div>
-                <h5 className="text-white font-semibold mb-2">Tudo em silêncio por aqui</h5>
-                <p className="text-zinc-500 text-sm max-w-xs">Adicione seu primeiro componente para começar a monitorar a saúde do seu sistema.</p>
+                <h5 className="text-white font-semibold mb-2">{t("everythingQuiet")}</h5>
+                <p className="text-zinc-500 text-sm max-w-xs">{t("addComponentInstruction")}</p>
               </div>
             ) : (
               components.map((comp) => (
                 <motion.div 
-                  key={comp.id} 
+                   key={comp.id} 
                   variants={itemVariants}
                   className="group relative overflow-hidden p-5 bg-zinc-900/10 border border-zinc-800/60 rounded-2xl flex items-center justify-between hover:border-zinc-700/50 hover:bg-zinc-900/30 transition-all duration-300"
                 >
@@ -362,7 +385,7 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
                       {comp.description ? (
                         <p className="text-xs text-zinc-500 leading-normal">{comp.description}</p>
                       ) : (
-                        <p className="text-xs text-zinc-600 italic">Sem descrição</p>
+                        <p className="text-xs text-zinc-600 italic">{t("noDescription")}</p>
                       )}
                     </div>
                   </div>
@@ -371,7 +394,7 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
                       <Badge variant="outline" className={cn("px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black tracking-widest border-none shadow-sm", getStatusColor(comp.status))}>
                         {getStatusLabel(comp.status)}
                       </Badge>
-                      <span className="text-[10px] text-zinc-600 font-medium px-1">Último check: agora</span>
+                      <span className="text-[10px] text-zinc-600 font-medium px-1">{t("lastCheckNow")}</span>
                     </div>
                     <div className="flex items-center gap-1.5 bg-zinc-950/40 border border-zinc-800 p-1 rounded-xl opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
                       <Button 
@@ -407,7 +430,7 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
           <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-6 bg-red-500 rounded-full" />
-              <h4 className="text-sm font-bold uppercase tracking-[0.15em] text-zinc-500">Incidentes</h4>
+              <h4 className="text-sm font-bold uppercase tracking-[0.15em] text-zinc-500">{t("incidents")}</h4>
             </div>
             <Dialog open={isIncidentDialogOpen} onOpenChange={setIsIncidentDialogOpen}>
               <DialogTrigger 
@@ -417,7 +440,7 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
                     setNewIncident({ title: "", description: "", status: "investigating", severity: "minor" });
                   }}>
                     <Plus className="w-4 h-4 mr-1.5" />
-                    Reportar
+                    {t("report")}
                   </Button>
                 }
               />
@@ -426,20 +449,20 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
                   <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center border border-red-500/20">
                     <AlertTriangle className="w-6 h-6 text-red-500" />
                   </div>
-                  <DialogTitle className="text-2xl font-bold">{editingIncident?.id ? "Atualizar Evento" : "Reportar Incidente"}</DialogTitle>
+                  <DialogTitle className="text-2xl font-bold">{editingIncident?.id ? t("updateEventTitle") : t("reportIncidentTitle")}</DialogTitle>
                   <DialogDescription className="text-zinc-400 text-base leading-relaxed">
                     {editingIncident?.id 
-                      ? "Forneça informações atualizadas sobre a evolução do incidente."
-                      : "Comunique rapidamente qualquer falha que afete a experiência do usuário."}
+                      ? t("updateIncidentDesc")
+                      : t("reportIncidentDesc")}
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={onSaveIncident} className="space-y-6 py-6">
                   <div className="space-y-4">
                     {!editingIncident?.id && (
                       <div className="space-y-2">
-                        <Label className="text-zinc-400 ml-1">O que está acontecendo?</Label>
+                        <Label className="text-zinc-400 ml-1">{t("whatIsHappening")}</Label>
                         <Input 
-                          placeholder="Ex: Instabilidade no banco de dados regional" 
+                          placeholder={t("incidentTitlePlaceholder")} 
                           className="h-12 bg-zinc-900/50 border-zinc-800 focus:ring-red-500/20 transition-all rounded-xl"
                           value={newIncident.title}
                           onChange={(e) => setNewIncident(prev => ({ ...prev, title: e.target.value }))}
@@ -448,9 +471,9 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
                       </div>
                     )}
                     <div className="space-y-2">
-                      <Label className="text-zinc-400 ml-1">{editingIncident?.id ? "Novo Update" : "Explicação Técnica"}</Label>
+                      <Label className="text-zinc-400 ml-1">{editingIncident?.id ? t("newUpdateLabel") : t("technicalExplanationLabel")}</Label>
                       <Textarea 
-                        placeholder="Descreva as ações tomadas e a situação atual..." 
+                        placeholder={t("incidentDescPlaceholder")} 
                         className="bg-zinc-900/50 border-zinc-800 min-h-[140px] focus:ring-red-500/20 transition-all rounded-xl resize-none p-4"
                         value={editingIncident?.id ? (editingIncident.description || "") : newIncident.description}
                         onChange={(e) => {
@@ -466,7 +489,7 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
                     <div className="grid grid-cols-2 gap-4">
                       {!editingIncident?.id && (
                         <div className="space-y-2">
-                          <Label className="text-zinc-400 ml-1">Impacto</Label>
+                          <Label className="text-zinc-400 ml-1">{t("impact")}</Label>
                           <Select 
                             value={newIncident.severity} 
                             onValueChange={(val) => val && setNewIncident(prev => ({ ...prev, severity: val as Incident["severity"] }))}
@@ -475,15 +498,15 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="bg-zinc-950 border-zinc-800 text-white">
-                              <SelectItem value="minor">Menor (Observação)</SelectItem>
-                              <SelectItem value="major">Maior (Parcial)</SelectItem>
-                              <SelectItem value="critical">Crítico (Total)</SelectItem>
+                              <SelectItem value="minor">{t("minorImpact")}</SelectItem>
+                              <SelectItem value="major">{t("majorImpact")}</SelectItem>
+                              <SelectItem value="critical">{t("criticalImpact")}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                       )}
                       <div className={cn("space-y-2", editingIncident?.id ? "col-span-2" : "")}>
-                        <Label className="text-zinc-400 ml-1">Fase Atual</Label>
+                        <Label className="text-zinc-400 ml-1">{t("currentPhase")}</Label>
                         <Select 
                           value={editingIncident?.id ? editingIncident.status : newIncident.status} 
                            onValueChange={(val: string | null) => {
@@ -498,10 +521,10 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="bg-zinc-950 border-zinc-800 text-white">
-                            <SelectItem value="investigating">Investigando</SelectItem>
-                            <SelectItem value="identified">Identificado</SelectItem>
-                            <SelectItem value="monitoring">Monitorando</SelectItem>
-                            <SelectItem value="resolved">Resolvido</SelectItem>
+                            <SelectItem value="investigating">{t("investigating")}</SelectItem>
+                            <SelectItem value="identified">{t("identified")}</SelectItem>
+                            <SelectItem value="monitoring">{t("monitoring")}</SelectItem>
+                            <SelectItem value="resolved">{t("resolved")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -510,7 +533,7 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
                   <DialogFooter className="pt-2">
                     <Button type="submit" className="h-12 bg-red-600 text-white hover:bg-red-700 w-full rounded-xl font-bold shadow-lg shadow-red-950/20" disabled={loading}>
                       {loading ? <Clock className="w-4 h-4 animate-spin mr-2" /> : null}
-                      {editingIncident?.id ? "Registrar Atualização" : "Notificar Clientes"}
+                      {editingIncident?.id ? t("registerUpdate") : t("notifyClients")}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -529,8 +552,8 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
                 <div className="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-6">
                   <CheckCircle2 className="w-7 h-7 text-emerald-500" />
                 </div>
-                <h5 className="text-white font-semibold mb-1">Céu limpo</h5>
-                <p className="text-zinc-500 text-xs px-6">Nenhum incidente ativo detectado. Todos os sistemas operando normalmente.</p>
+                <h5 className="text-white font-semibold mb-1">{t("clearSkyTitle")}</h5>
+                <p className="text-zinc-500 text-xs px-6">{t("noActiveIncidents")}</p>
               </div>
             ) : (
               incidents.map((incident) => (
@@ -547,20 +570,20 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
                           incident.severity === 'critical' ? "bg-red-500 text-white" : 
                           incident.severity === 'major' ? "bg-orange-500 text-white" : "bg-zinc-800 text-zinc-400"
                         )}>
-                          {incident.severity}
+                          {getSeverityLabel(incident.severity)}
                         </Badge>
                         <h5 className="text-sm font-bold text-white tracking-tight">{incident.title}</h5>
                       </div>
                       <div className="flex items-center gap-2 px-0.5">
                         <Clock className="w-3 h-3 text-zinc-600" />
                         <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-tighter">
-                          {formatDistanceToNow(new Date(incident.createdAt), { addSuffix: true, locale: ptBR })}
+                          {formatDistanceToNow(new Date(incident.createdAt), { addSuffix: true, locale: dateLocale })}
                         </span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary" className="px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-400 border-none text-[9px] uppercase font-bold tracking-wider">
-                        {incident.status}
+                        {getIncidentStatusLabel(incident.status)}
                       </Badge>
                     </div>
                   </div>
@@ -607,9 +630,9 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
             <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20 mx-auto">
               <Trash2 className="w-7 h-7 text-red-500" />
             </div>
-            <AlertDialogTitle className="text-2xl font-bold text-center">Remover Componente?</AlertDialogTitle>
+            <AlertDialogTitle className="text-2xl font-bold text-center">{t("removeComponent")}</AlertDialogTitle>
             <AlertDialogDescription className="text-zinc-400 text-center text-base leading-relaxed">
-              Esta ação não pode ser desfeita. O componente será removido permanentemente da sua página de status.
+              {t("removeComponentDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-8 flex flex-col gap-3 sm:flex-col">
@@ -618,10 +641,10 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
               className="w-full h-12 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold order-1 shadow-lg shadow-red-950/20"
               disabled={loading}
             >
-              Confirmar Remoção
+              {t("confirmRemoval")}
             </AlertDialogAction>
             <AlertDialogCancel className="w-full h-12 bg-transparent border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900 rounded-xl font-bold order-2">
-              Cancelar
+              {t("cancel")}
             </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -633,9 +656,9 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
             <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20 mx-auto">
               <Info className="w-7 h-7 text-red-500" />
             </div>
-            <AlertDialogTitle className="text-2xl font-bold text-center">Remover Incidente?</AlertDialogTitle>
+            <AlertDialogTitle className="text-2xl font-bold text-center">{t("removeIncident")}</AlertDialogTitle>
             <AlertDialogDescription className="text-zinc-400 text-center text-base leading-relaxed">
-              Esta ação removerá permanentemente o registro deste incidente do seu histórico público. Deseja continuar?
+              {t("removeIncidentDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-8 flex flex-col gap-3 sm:flex-col">
@@ -644,10 +667,10 @@ export function StatusSettings({ organizationId, orgSlug, components, incidents 
               className="w-full h-12 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold order-1 shadow-lg shadow-red-950/20"
               disabled={loading}
             >
-              Apagar Incidente
+              {t("deleteIncident")}
             </AlertDialogAction>
             <AlertDialogCancel className="w-full h-12 bg-transparent border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900 rounded-xl font-bold order-2">
-              Cancelar
+              {t("cancel")}
             </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>

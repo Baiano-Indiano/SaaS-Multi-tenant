@@ -36,3 +36,23 @@ export function DiscordIcon({ className, size = 24, ...props }: IconProps) {
     </svg>
   );
 }
+
+export function TeamsIcon({ className, size = 24, ...props }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 48 48"
+      width={size}
+      height={size}
+      className={cn(className)}
+      {...props}
+    >
+      <path fill="#5059C9" d="M38,42H16c-2.209,0-4-1.791-4-4V16c0-2.209,1.791-4,4-4h22c2.209,0,4,1.791,4,4v22C42,40.209,40.209,42,38,42z" />
+      <path fill="#7B83EB" d="M16 12H38V42H16z" />
+      <path fill="#fff" d="M22,18h10v3h-3.5v13h-3V21H22V18z" />
+      <path fill="#4B53BC" d="M17,35h-5c-2.761,0-5-2.239-5-5V13c0-2.761,2.239-5,5-5h5c2.761,0,5,2.239,5,5v17C22,32.761,19.761,35,17,35z" />
+      <circle cx="12" cy="18" r="3" fill="#fff" />
+      <path fill="#fff" d="M6,27c0-2.761,2.239-5,5-5h2c2.761,0,5,2.239,5,5v1h-12V27z" />
+    </svg>
+  );
+}

@@ -100,6 +100,7 @@ export async function createTenantSchema(tenantSchemaName: string): Promise<{ ad
         "actionType" TEXT NOT NULL DEFAULT 'webhook',
         "actionConfig" TEXT NOT NULL,
         "connectorId" TEXT,
+        "filters" TEXT,
         "isActive" BOOLEAN NOT NULL DEFAULT TRUE,
         "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
       );
@@ -108,8 +109,9 @@ export async function createTenantSchema(tenantSchemaName: string): Promise<{ ad
     // Ensure migration columns exist for workflow
     try {
       await sql`ALTER TABLE ${sql(schemaName)}.workflow ADD COLUMN IF NOT EXISTS "connectorId" TEXT`;
+      await sql`ALTER TABLE ${sql(schemaName)}.workflow ADD COLUMN IF NOT EXISTS "filters" TEXT`;
     } catch {
-      // Column might already exist
+      // Columns might already exist
     }
 
     await sql`
@@ -123,11 +125,21 @@ export async function createTenantSchema(tenantSchemaName: string): Promise<{ ad
         "secretAccessKey" TEXT,
         frequency TEXT NOT NULL DEFAULT 'daily',
         "isActive" BOOLEAN NOT NULL DEFAULT TRUE,
+        "exportStatus" TEXT NOT NULL DEFAULT 'idle',
+        "lastError" TEXT,
         "lastExportAt" TIMESTAMP,
         "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
         "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
       );
     `;
+
+    // Ensure migration columns exist for audit_export_config
+    try {
+      await sql`ALTER TABLE ${sql(schemaName)}.audit_export_config ADD COLUMN IF NOT EXISTS "exportStatus" TEXT NOT NULL DEFAULT 'idle'`;
+      await sql`ALTER TABLE ${sql(schemaName)}.audit_export_config ADD COLUMN IF NOT EXISTS "lastError" TEXT`;
+    } catch {
+      // Columns might already exist
+    }
 
     await sql`
       CREATE TABLE IF NOT EXISTS ${sql(schemaName)}.webhook_delivery (

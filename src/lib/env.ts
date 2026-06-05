@@ -36,6 +36,10 @@ const serverSchema = z.object({
   QSTASH_TOKEN: z.string().optional(),
   INTERNAL_WEBHOOK_SECRET: z.string().min(32, "INTERNAL_WEBHOOK_SECRET must be at least 32 characters").optional(),
 
+  // Slack OAuth
+  SLACK_CLIENT_ID: z.string().optional(),
+  SLACK_CLIENT_SECRET: z.string().optional(),
+
   // Vercel (optional)
   VERCEL_TOKEN: z.string().optional(),
   VERCEL_PROJECT_ID: z.string().optional(),

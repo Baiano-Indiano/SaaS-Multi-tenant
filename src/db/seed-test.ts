@@ -50,16 +50,20 @@ async function main() {
 	// 1.1 Setup 2FA record
 	console.log("- Setting up 2FA record for admin");
 	const totpSecret = "JBSWY3DPEHPK3PXP"; // "Hello world" in base32
+	const encryptedTotpSecret = await symmetricEncrypt({
+		key: BETTER_AUTH_SECRET,
+		data: totpSecret,
+	});
 	await db.insert(twoFactors).values({
 		id: "test-admin-2fa-id",
 		userId: userId,
-		secret: totpSecret,
+		secret: encryptedTotpSecret,
 		backupCodes: encryptedBackupCodes,
 		verified: true
 	}).onConflictDoUpdate({
 		target: twoFactors.id,
 		set: {
-			secret: totpSecret,
+			secret: encryptedTotpSecret,
 			backupCodes: encryptedBackupCodes,
 			verified: true
 		}

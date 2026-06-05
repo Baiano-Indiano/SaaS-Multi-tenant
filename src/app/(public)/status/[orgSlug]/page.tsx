@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Image from "next/image";
 import * as motion from "framer-motion/client";
+import { getTranslations } from "next-intl/server";
 
 import { Metadata } from "next";
 
@@ -67,6 +68,8 @@ export default async function PublicStatusPage({
   const allOperational = components.every(c => c.status === "operational");
   const hasMajorOutage = components.some(c => c.status === "major_outage");
 
+  const t = await getTranslations("StatusPage");
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "operational": return <CheckCircle2 className="w-5 h-5 text-emerald-500" />;
@@ -79,11 +82,11 @@ export default async function PublicStatusPage({
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case "operational": return "Operacional";
-      case "degraded": return "Performance Degradada";
-      case "partial_outage": return "Instabilidade Parcial";
-      case "major_outage": return "Instabilidade Crítica";
-      default: return "Desconhecido";
+      case "operational": return t("operational");
+      case "degraded": return t("degradedPerformance");
+      case "partial_outage": return t("partialOutage");
+      case "major_outage": return t("majorOutage");
+      default: return t("unknown");
     }
   };
 
@@ -109,7 +112,7 @@ export default async function PublicStatusPage({
             <h1 className="text-xl font-bold text-white tracking-tight">{org.name}</h1>
           </div>
           <Badge variant="outline" className="border-zinc-800 bg-zinc-900/50 text-zinc-400 font-medium px-3 py-1">
-            Status do Sistema
+            {t("systemStatus")}
           </Badge>
         </header>
 
@@ -136,15 +139,15 @@ export default async function PublicStatusPage({
             <div>
               <h2 className="text-2xl font-bold text-white tracking-tight">
                 {allOperational 
-                  ? "Todos os sistemas operacionais" 
+                  ? t("allSystemsOperational") 
                   : hasMajorOutage 
-                    ? "Instabilidade Crítica Detectada" 
-                    : "Instabilidade Parcial em Alguns Sistemas"}
+                    ? t("criticalInstability") 
+                    : t("partialInstability")}
               </h2>
               <p className="text-zinc-400 mt-1">
                 {allOperational 
-                  ? "Nenhum problema reportado nos últimos 30 dias." 
-                  : "Nossa equipe técnica já está ciente e trabalhando na resolução."}
+                  ? t("noIssues30Days") 
+                  : t("teamWorkingOnResolve")}
               </p>
             </div>
           </div>
@@ -153,13 +156,13 @@ export default async function PublicStatusPage({
         {/* Components Grid */}
         <section className="mb-16 space-y-6">
           <div className="flex items-center justify-between mb-4 px-2">
-            <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest">Componentes</h3>
-            <span className="text-xs text-zinc-600">Atualizado em tempo real</span>
+            <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest">{t("components")}</h3>
+            <span className="text-xs text-zinc-600">{t("updatedRealTime")}</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {components.length === 0 ? (
               <div className="col-span-full py-20 text-center border border-dashed border-zinc-800 rounded-3xl">
-                <p className="text-zinc-500 italic">Nenhum componente monitorado no momento.</p>
+                <p className="text-zinc-500 italic">{t("noComponents")}</p>
               </div>
             ) : (
               components.map((comp, idx) => (
@@ -191,11 +194,11 @@ export default async function PublicStatusPage({
 
         {/* Incidents Timeline */}
         <section className="space-y-10">
-          <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest px-2 mb-8">Histórico de Incidentes</h3>
+          <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest px-2 mb-8">{t("incidentHistory")}</h3>
           {incidents.length === 0 ? (
             <div className="p-12 text-center bg-zinc-900/20 border border-zinc-800 rounded-3xl">
               <CheckCircle2 className="w-10 h-10 text-emerald-500/20 mx-auto mb-4" />
-              <p className="text-zinc-500">Nenhum incidente registrado nos últimos 30 dias.</p>
+              <p className="text-zinc-500">{t("noIncidents")}</p>
             </div>
           ) : (
             <div className="relative pl-8 space-y-12 before:absolute before:left-[11px] before:top-2 before:bottom-0 before:w-[2px] before:bg-zinc-800">
@@ -241,8 +244,8 @@ export default async function PublicStatusPage({
             &copy; {new Date().getFullYear()} {org.name}. Todos os direitos reservados.
           </p>
           <div className="flex items-center gap-2 opacity-40 hover:opacity-100 transition-opacity">
-            <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">Powered by</span>
-            <span className="text-xs font-bold text-white tracking-tighter">ANTIGRAVITY</span>
+            <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">{t("poweredBy")}</span>
+            <span className="text-xs font-bold text-white tracking-tighter">{t("brandName")}</span>
           </div>
         </footer>
       </div>

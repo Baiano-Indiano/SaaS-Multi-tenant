@@ -5,6 +5,7 @@ import { MagneticCard } from "./MagneticCard";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 
 interface GlobalTrafficMapProps {
   logs: {
@@ -15,8 +16,11 @@ interface GlobalTrafficMapProps {
   }[];
 }
 
+const REGIONS = ["US-EAST", "EU-WEST", "SA-EAST", "AP-SOUTH"];
+
 export function GlobalTrafficMap({ logs }: GlobalTrafficMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const t = useTranslations("Dashboard");
   
   // Deterministic mapping of IP to coordinates (x, y as percentage)
   const pings = useMemo(() => {
@@ -63,18 +67,18 @@ export function GlobalTrafficMap({ logs }: GlobalTrafficMapProps) {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(24,24,27,0)_0%,rgba(9,9,11,1)_100%)] z-10" />
       
       <div className="absolute top-6 left-6 z-20">
-        <h3 className="text-xl font-bold text-white tracking-tight">Global Traffic</h3>
-        <p className="text-sm text-zinc-500 font-mono">LIVE_AUDIT_STREAM_v4</p>
+        <h3 className="text-xl font-bold text-white tracking-tight">{t("trafficMap.globalTraffic")}</h3>
+        <p className="text-sm text-zinc-500 font-mono">{t("trafficMap.liveAuditStream")}</p>
       </div>
 
       <div className="absolute top-6 right-6 z-20 flex items-center gap-4">
         <div className="flex flex-col items-end">
-          <span className="text-xs font-mono text-zinc-500 uppercase">Active Nodes</span>
+          <span className="text-xs font-mono text-zinc-500 uppercase">{t("trafficMap.activeNodes")}</span>
           <span className="text-lg font-mono text-emerald-500">14</span>
         </div>
         <div className="h-8 w-[1px] bg-zinc-800" />
         <div className="flex flex-col items-end">
-          <span className="text-xs font-mono text-zinc-500 uppercase">Requests/m</span>
+          <span className="text-xs font-mono text-zinc-500 uppercase">{t("trafficMap.requestsPerMinute")}</span>
           <span className="text-lg font-mono text-emerald-500">1.2k</span>
         </div>
       </div>
@@ -151,7 +155,7 @@ export function GlobalTrafficMap({ logs }: GlobalTrafficMapProps) {
               <div className="absolute top-4 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none group-hover:opacity-100 opacity-0 transition-opacity z-50">
                 <div className="bg-zinc-900/90 border border-emerald-500/30 px-2 py-1 rounded shadow-xl backdrop-blur-md">
                    <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">{ping.action}</p>
-                   <p className="text-[7px] text-zinc-500 font-mono">LATENCY: {ping.latency}ms</p>
+                   <p className="text-[7px] text-zinc-500 font-mono">{t("trafficMap.latency")}{ping.latency}ms</p>
                 </div>
               </div>
             </div>
@@ -160,7 +164,7 @@ export function GlobalTrafficMap({ logs }: GlobalTrafficMapProps) {
       </div>
 
       <div className="absolute bottom-6 left-6 z-20 flex gap-2">
-        {["US-EAST", "EU-WEST", "SA-EAST", "AP-SOUTH"].map(region => (
+        {REGIONS.map(region => (
           <span key={region} className="text-[10px] font-mono text-zinc-600 border border-zinc-800/50 px-1.5 py-0.5 rounded">
             {region}
           </span>

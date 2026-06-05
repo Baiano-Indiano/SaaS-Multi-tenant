@@ -10,10 +10,12 @@ import { generateApiKey, hashApiKey, getApiKeyDisplayPrefix } from "@/lib/auth/a
 import { recordAuditLog } from "@/lib/audit";
 import { requirePermission } from "@/lib/auth/rbac-utils";
 import { storeApiKeyInRedis, removeApiKeyFromRedis } from "@/lib/redis";
+import { l1Cache } from "@/lib/cache/l1-cache";
 import { organizations } from "@/lib/db/schema";
 import { db } from "@/lib/db";
 import { createApiKeySchema, deleteApiKeySchema } from "@/lib/validations";
 import { enforceRateLimit, apiKeyActionRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 /**
  * createApiKeyAction
@@ -30,6 +32,9 @@ export async function createApiKeyAction(data: {
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) throw new Error("Unauthorized");
+
+  const _start = Date.now();
+  logger.info('action', `➜ createApiKeyAction | user: ${session.user.id} | org: ${data.orgId}`);
 
   try {
     // Rate Limiting
@@ -72,14 +77,16 @@ export async function createApiKeyAction(data: {
     });
 
     if (org?.tenantSchemaName) {
-      await storeApiKeyInRedis(keyHash, {
+      const apiMetadata = {
         orgId: data.orgId,
         tenantSchemaName: org.tenantSchemaName,
         roleId: data.roleId,
         userId: session.user.id,
         scopes: ["read", "write"], // Default simplified scope
         plan: org.plan,            // Store current plan for tiered rate limiting
-      });
+      };
+      await storeApiKeyInRedis(keyHash, apiMetadata);
+      l1Cache.set(`api_key:${keyHash}`, apiMetadata);
     }
 
     // Record Audit Log
@@ -93,13 +100,15 @@ export async function createApiKeyAction(data: {
 
     revalidatePath(`/org/${data.orgSlug}/settings/api-keys`);
 
+    logger.info('action', `✓ createApiKeyAction completed | keyId: ${result.key.id} | ${Date.now() - _start}ms`);
+
     return { 
       success: true, 
       id: result.key.id,
       rawKey // The gold standard: returned only once
     };
   } catch (error) {
-    console.error("Failed to create API key:", error);
+    logger.error('action', `✗ createApiKeyAction failed | ${error instanceof Error ? error.message : 'Unknown error'} | ${Date.now() - _start}ms`, error);
     return { error: "Failed to create API key" };
   }
 }
@@ -114,6 +123,9 @@ export async function deleteApiKeyAction(data: {
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) throw new Error("Unauthorized");
+
+  const _start = Date.now();
+  logger.info('action', `➜ deleteApiKeyAction | user: ${session.user.id} | org: ${data.orgId}`);
 
   try {
     // Rate Limiting
@@ -133,9 +145,10 @@ export async function deleteApiKeyAction(data: {
       return deletedKey[0];
     });
 
-    // 2. Sync removal to Redis
+    // 2. Sync removal to Redis and evict from L1 cache
     if (result?.keyHash) {
       await removeApiKeyFromRedis(result.keyHash);
+      l1Cache.delete(`api_key:${result.keyHash}`);
     }
 
     // Record Audit Log
@@ -149,9 +162,11 @@ export async function deleteApiKeyAction(data: {
 
     revalidatePath(`/org/${data.orgSlug}/settings/api-keys`);
 
+    logger.info('action', `✓ deleteApiKeyAction completed | keyId: ${data.keyId} | ${Date.now() - _start}ms`);
+
     return { success: true };
   } catch (error) {
-    console.error("Failed to delete API key:", error);
+    logger.error('action', `✗ deleteApiKeyAction failed | ${error instanceof Error ? error.message : 'Unknown error'} | ${Date.now() - _start}ms`, error);
     return { error: "Failed to delete API key" };
   }
 }
@@ -163,15 +178,22 @@ export async function getApiKeysAction(orgId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) throw new Error("Unauthorized");
 
+  const _start = Date.now();
+  logger.info('action', `➜ getApiKeysAction | user: ${session.user.id} | org: ${orgId}`);
+
   try {
     // RBAC: Verify user has permission to view API keys
     await requirePermission(session.user.id, orgId, "org:update");
 
-    return await getTenantDb(session.user.id, orgId, async (tx) => {
+    const keys = await getTenantDb(session.user.id, orgId, async (tx) => {
       return await tx.select().from(apiKeys).orderBy(apiKeys.createdAt);
     }, { mode: 'reader' });
+
+    logger.info('action', `✓ getApiKeysAction completed | count: ${keys.length} | ${Date.now() - _start}ms`);
+
+    return keys;
   } catch (error) {
-    console.error("Failed to fetch API keys:", error);
+    logger.error('action', `✗ getApiKeysAction failed | ${error instanceof Error ? error.message : 'Unknown error'} | ${Date.now() - _start}ms`, error);
     return [];
   }
 }

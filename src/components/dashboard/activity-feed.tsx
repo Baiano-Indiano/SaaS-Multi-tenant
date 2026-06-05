@@ -4,6 +4,7 @@ import * as React from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 gsap.registerPlugin(useGSAP);
 
@@ -17,6 +18,7 @@ interface ActivityItem {
 
 export function ActivityFeed({ activities = [] }: { activities?: ActivityItem[] }) {
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const t = useTranslations("Dashboard");
 
   useGSAP(() => {
     if (!containerRef.current || activities.length === 0) return;
@@ -42,7 +44,7 @@ export function ActivityFeed({ activities = [] }: { activities?: ActivityItem[] 
         <div className="h-12 w-12 rounded-full bg-zinc-900 flex items-center justify-center mb-4 border border-zinc-800">
           <span className="text-zinc-600">∅</span>
         </div>
-        <p className="text-zinc-500 text-sm font-medium">No recent activity</p>
+        <p className="text-zinc-500 text-sm font-medium">{t("noRecentActivity")}</p>
       </div>
     );
   }

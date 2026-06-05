@@ -4,8 +4,10 @@ import { BenefitsSection } from "@/components/marketing/BenefitsSection";
 import { PricingSection } from "@/components/marketing/PricingSection";
 import { FAQSection } from "@/components/marketing/FAQSection";
 import { ScrollReveal } from "@/components/marketing/scroll-reveal";
+import { ScrollDownIndicator } from "@/components/marketing/scroll-down-indicator";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/routing";
+import { MarketingPlayground } from "@/components/marketing/MarketingPlayground";
 
 export default async function LandingPage() {
   const t = await getTranslations("Marketing");
@@ -33,12 +35,16 @@ export default async function LandingPage() {
             <Button size="lg" className="w-full sm:w-auto text-base" render={<Link href="/register" />} nativeButton={false}>
               {t('getStarted')}
             </Button>
-            <Button size="lg" variant="outline" className="w-full sm:w-auto text-base border-zinc-700 hover:bg-zinc-800 text-zinc-300">
+            <Button size="lg" variant="outline" className="w-full sm:w-auto text-base border-zinc-700 hover:bg-zinc-100 hover:text-zinc-950 text-zinc-300 transition-colors duration-300" render={<Link href="/register?plan=enterprise" />} nativeButton={false}>
               {t('talkToSales')}
             </Button>
           </div>
         </ScrollReveal>
+
       </section>
+
+      {/* Fixed Scroll Indicator */}
+      <ScrollDownIndicator />
  
       {/* Product Reveal Assembly */}
       <div className="w-full">
@@ -46,16 +52,16 @@ export default async function LandingPage() {
       </div>
  
       {/* Social Proof Section */}
-      <section className="w-full border-y border-zinc-800 bg-zinc-900/20 py-12">
+      <section data-section="social-proof" className="w-full border-y border-zinc-800 bg-zinc-900/20 py-12">
         <ScrollReveal>
           <div className="max-w-6xl mx-auto px-6 text-center">
             <p className="text-sm font-medium text-zinc-500 mb-8 uppercase tracking-widest">{t('trustedBy')}</p>
             <div className="flex flex-wrap justify-center gap-8 md:gap-16 opacity-50 grayscale">
-              <div className="text-2xl font-bold tracking-tighter">Acme Corp</div>
-              <div className="text-2xl font-bold tracking-tighter">Globex</div>
-              <div className="text-2xl font-bold tracking-tighter">Soylent</div>
-              <div className="text-2xl font-bold tracking-tighter">Initech</div>
-              <div className="text-2xl font-bold tracking-tighter">Umbrella</div>
+              <div className="text-2xl font-bold tracking-tighter">{t('companies.acme')}</div>
+              <div className="text-2xl font-bold tracking-tighter">{t('companies.globex')}</div>
+              <div className="text-2xl font-bold tracking-tighter">{t('companies.soylent')}</div>
+              <div className="text-2xl font-bold tracking-tighter">{t('companies.initech')}</div>
+              <div className="text-2xl font-bold tracking-tighter">{t('companies.umbrella')}</div>
             </div>
           </div>
         </ScrollReveal>
@@ -121,6 +127,8 @@ export default async function LandingPage() {
           </ScrollReveal>
         </div>
       </section>
+
+      <MarketingPlayground />
  
       {/* Pricing Section (NEW) */}
       <PricingSection />

@@ -67,15 +67,7 @@ export const inviteMemberSchema = z.object({
   orgSlug: slugSchema,
 });
 
-export const cancelInvitationSchema = z.object({
-  id: uuidSchema,
-  orgId: uuidSchema,
-  orgSlug: slugSchema,
-});
 
-export const acceptInvitationSchema = z.object({
-  invitationId: uuidSchema,
-});
 
 // ─── Project Actions ─────────────────────────────────────────────────────────
 
@@ -149,11 +141,43 @@ export const toggleConnectorEventSchema = z.object({
 
 // ─── Workflow Actions ────────────────────────────────────────────────────────
 
+export const filterRuleOperatorSchema = z.enum([
+  "equals",
+  "not_equals",
+  "contains",
+  "not_contains",
+  "exists",
+  "not_exists",
+]);
+
+export const filterRuleSchema = z.object({
+  field: z.string().min(1, "Field is required"),
+  operator: filterRuleOperatorSchema,
+  value: z.string().default(""),
+});
+
+// Enforce max 3 levels of nesting at schema validation layer
+const filterGroupLevel3Schema = z.object({
+  combinator: z.enum(["and", "or"]),
+  rules: z.array(filterRuleSchema),
+});
+
+const filterGroupLevel2Schema = z.object({
+  combinator: z.enum(["and", "or"]),
+  rules: z.array(z.union([filterRuleSchema, filterGroupLevel3Schema])),
+});
+
+export const filterGroupSchema = z.object({
+  combinator: z.enum(["and", "or"]),
+  rules: z.array(z.union([filterRuleSchema, filterGroupLevel2Schema])),
+});
+
 export const createWorkflowSchema = z.object({
   name: nameSchema,
   trigger: z.string().min(1),
   targetUrl: urlSchema.optional(),
   connectorId: uuidSchema.optional(),
+  filters: filterGroupSchema.optional().nullable(),
   orgId: uuidSchema,
   orgSlug: slugSchema,
 });
@@ -205,6 +229,7 @@ export const syncRolePermissionsSchema = z.object({
 export const toggle2FAEnforcementSchema = z.object({
   organizationId: uuidSchema,
   enabled: z.boolean(),
+  gracePeriodDays: z.number().int().min(0).max(30).nullable().optional(),
 });
 
 export const check2FAComplianceSchema = z.object({
@@ -212,23 +237,7 @@ export const check2FAComplianceSchema = z.object({
   organizationId: uuidSchema,
 });
 
-export const listMemberSessionsSchema = z.object({
-  organizationId: uuidSchema,
-  memberUserId: z.string().min(1),
-});
 
-export const revokeMemberSessionsSchema = z.object({
-  organizationId: uuidSchema,
-  memberUserId: z.string().min(1),
-  memberEmail: emailSchema,
-});
-
-export const revokeMemberSessionSchema = z.object({
-  organizationId: uuidSchema,
-  memberUserId: z.string().min(1),
-  sessionId: z.string().min(1),
-  memberEmail: emailSchema,
-});
 
 // ─── Domain Actions ──────────────────────────────────────────────────────────
 
@@ -292,4 +301,21 @@ export const deleteApiKeySchema = z.object({
   orgId: uuidSchema,
   orgSlug: slugSchema,
 });
+
+export const updateDataRetentionSchema = z.object({
+  organizationId: uuidSchema,
+  enabled: z.boolean(),
+  days: z.number().int().nullable().optional(),
+}).refine(
+  (data) => {
+    if (data.enabled) {
+      return typeof data.days === "number" && data.days >= 7;
+    }
+    return true;
+  },
+  {
+    message: "Retention period must be at least 7 days when enabled",
+    path: ["days"],
+  }
+);
 

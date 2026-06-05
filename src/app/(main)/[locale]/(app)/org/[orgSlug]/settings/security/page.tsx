@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Org2FAEnforcement } from "@/components/security/org-2fa-enforcement";
 import { can } from "@/lib/auth/rbac-utils";
 import { AuditLogExportSettings } from "@/components/security/audit-log-export-settings";
+import { DataRetentionSettings } from "@/components/security/data-retention-settings";
 import { getAuditExportConfig } from "@/lib/actions/audit-export";
 import { getTranslations } from "next-intl/server";
 
@@ -67,11 +68,17 @@ export default async function SecuritySettingsPage({
         <Org2FAEnforcement 
           organizationId={org.id} 
           initialEnabled={org.require2FA} 
+          initialGracePeriodDays={org.mfaGracePeriodDays}
         />
 
         <AuditLogExportSettings 
           organizationId={org.id} 
           initialConfig={auditExportConfig} 
+        />
+
+        <DataRetentionSettings 
+          organizationId={org.id}
+          initialDays={org.dataRetentionDays}
         />
 
         <div className="bg-zinc-950/20 border border-zinc-900 border-dashed rounded-xl p-8">

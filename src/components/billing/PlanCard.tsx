@@ -59,7 +59,7 @@ export function PlanCard({
           </div>
 
           <ul className="space-y-3">
-            {features.map((feature, i) => (
+            {(Array.isArray(features) ? features : []).map((feature, i) => (
               <li key={i} className="flex items-center gap-3 text-sm">
                 <div className="flex-shrink-0 w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center">
                   <Check className="w-3 h-3 text-primary" />

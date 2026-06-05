@@ -1,0 +1,5 @@
+- [x] Migrar `redis.publish` para `redis.xadd`
+- [x] Implementar loop `XREAD` na rota de stream
+- [x] Adicionar lógica de heartbeat (ping)
+- [x] Melhorar reconexão no `NotificationProvider`
+- [ ] Testar persistência de mensagens durante desconexão momentânea

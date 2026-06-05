@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { logger } from "@/lib/logger";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { auth } from "@/lib/auth";
@@ -14,6 +15,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 export async function POST(req: Request) {
+    const _start = Date.now();
+    logger.info('api', '➜ POST /api/stripe/checkout');
+
     try {
         const h = await headers();
         const session = await auth.api.getSession({ headers: h });
@@ -62,9 +66,10 @@ export async function POST(req: Request) {
             }
         });
 
+        logger.info('api', `✓ POST /api/stripe/checkout | 200 | ${Date.now() - _start}ms`);
         return NextResponse.json({ url: stripeSession.url });
     } catch (error) {
-        console.error("Stripe Checkout error:", error);
+        logger.error('api', '✗ POST /api/stripe/checkout | Internal Server Error', error);
         return new NextResponse("Internal Server Error", { status: 500 });
     }
 }

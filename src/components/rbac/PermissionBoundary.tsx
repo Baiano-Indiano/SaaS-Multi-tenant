@@ -68,7 +68,8 @@ function useCheckPermissions(requiredPerms: PermissionKey[], mode: 'any' | 'all'
   if (!sessionData?.session?.activeOrganizationId) return false;
   
   const sessionWithMeta = sessionData.session as typeof sessionData.session & { metadata?: Record<string, unknown> };
-  const userPerms = (sessionWithMeta.metadata?.[PERMISSIONS_METADATA_KEY] || []) as string[];
+  const metadata = sessionWithMeta.metadata;
+  const userPerms = ((metadata ? Reflect.get(metadata, PERMISSIONS_METADATA_KEY) : undefined) || []) as string[];
   
   if (mode === 'all') {
     return requiredPerms.every(p => userPerms.includes(p));

@@ -3,6 +3,8 @@ import { NextRequest } from 'next/server'
 import { proxy } from '../src/proxy'
 import { getApiRateLimiter, authRateLimit } from '../src/lib/rate-limit'
 import { getApiKeyFromRedis, redis } from '../src/lib/redis'
+import { incrementUsage } from '../src/lib/billing/telemetry'
+import { l1Cache } from '../src/lib/cache/l1-cache'
 import { Ratelimit } from '@upstash/ratelimit'
 
 type RateLimitResult = Awaited<ReturnType<Ratelimit['limit']>>
@@ -21,6 +23,11 @@ vi.mock('../src/lib/redis', () => ({
     get: vi.fn(),
   },
   API_KEY_REDIS_PREFIX: 'api_key:',
+}))
+
+// Mock Telemetry
+vi.mock('../src/lib/billing/telemetry', () => ({
+  incrementUsage: vi.fn().mockResolvedValue(1),
 }))
 
 vi.mock('../src/lib/auth/api-key', () => ({
@@ -70,6 +77,7 @@ function createReq(path: string, options: RequestInit & { headers?: Record<strin
 describe('Proxy Logic (src/proxy.ts)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    l1Cache.clear()
     
     // Default mock behaviors
     vi.mocked(getApiKeyFromRedis).mockResolvedValue(null)
@@ -162,6 +170,29 @@ describe('Proxy Logic (src/proxy.ts)', () => {
       expect(data.error).toBe('MFA Enforcement Active')
     })
 
+    it('should successfully authenticate API request and call incrementUsage telemetry', async () => {
+      vi.mocked(getApiKeyFromRedis).mockResolvedValue({
+        orgId: 'org_123',
+        tenantSchemaName: 'tenant_123',
+        roleId: 'admin',
+        userId: 'user_123',
+        scopes: ['read', 'write']
+      })
+      
+      vi.mocked(redis.get).mockImplementation(async (key: string) => {
+        if (key === 'org:org_123') return { require2FA: false, id: 'org_123' }
+        return null
+      })
+
+      const req = createReq('/api/v1/projects', {
+        headers: { authorization: 'Bearer some-key' }
+      })
+      
+      const res = await proxy(req)
+      expect(res.status).toBe(200)
+      expect(incrementUsage).toHaveBeenCalledWith('org_123', 'api_calls')
+    })
+
     it('should rate limit auth POST requests', async () => {
       vi.mocked(authRateLimit.limit).mockResolvedValue({
         success: false,
@@ -218,6 +249,84 @@ describe('Proxy Logic (src/proxy.ts)', () => {
       
       expect(res.headers.get('x-nonce')).toBeDefined()
       expect(res.headers.get('Content-Security-Policy')).toContain('nonce-test-nonce')
+    })
+  })
+
+  describe('Redis Downtime & Stale Fallback Resilience', () => {
+    it('should fall back to stale cache if Redis throws an error after a successful lookup', async () => {
+      // 1. First request succeeds, populating the stale fallback cache
+      vi.mocked(getApiKeyFromRedis).mockResolvedValue({
+        orgId: 'org_123',
+        tenantSchemaName: 'tenant_123',
+        roleId: 'admin',
+        userId: 'user_123',
+        scopes: ['read', 'write'],
+        plan: 'enterprise'
+      })
+      vi.mocked(redis.get).mockResolvedValue({ require2FA: false, id: 'org_123', plan: 'enterprise' })
+
+      const req1 = createReq('/api/v1/projects', {
+        headers: { authorization: 'Bearer some-key' }
+      })
+      const res1 = await proxy(req1)
+      expect(res1.status).toBe(200)
+
+      // Clear the standard L1 cache so it attempts to fetch from Redis again
+      l1Cache.clear()
+
+      // 2. Mock Redis downtime / throw error
+      vi.mocked(getApiKeyFromRedis).mockRejectedValue(new Error('Redis Connection Timeout'))
+      vi.mocked(redis.get).mockRejectedValue(new Error('Redis Connection Timeout'))
+
+      const req2 = createReq('/api/v1/projects', {
+        headers: { authorization: 'Bearer some-key' }
+      })
+      
+      // The second request should still succeed because it resolves from the staleFallbackCache
+      const res2 = await proxy(req2)
+      expect(res2.status).toBe(200)
+    })
+  })
+
+  describe('Dynamic Anomaly Throttling', () => {
+    it('should downgrade rate limits to free tier and return custom message if organization is throttled', async () => {
+      vi.mocked(getApiKeyFromRedis).mockResolvedValue({
+        orgId: 'org_123',
+        tenantSchemaName: 'tenant_123',
+        roleId: 'admin',
+        userId: 'user_123',
+        scopes: ['read', 'write'],
+        plan: 'enterprise'
+      })
+
+      // Mock Redis: org is throttled
+      vi.mocked(redis.get).mockImplementation(async (key: string) => {
+        if (key === 'org:org_123') return { require2FA: false, id: 'org_123', plan: 'enterprise' }
+        if (key === 'org:org_123:throttled') return '1'
+        return null
+      })
+
+      // Mock rate limiter failing for free tier
+      vi.mocked(getApiRateLimiter).mockImplementation((plan: string) => {
+        expect(plan).toBe('free') // Verify it forces free plan
+        return {
+          limit: vi.fn().mockResolvedValue({
+            success: false,
+            limit: 10,
+            remaining: 0,
+            reset: 123456
+          })
+        } as any
+      })
+
+      const req = createReq('/api/v1/projects', {
+        headers: { authorization: 'Bearer some-key' }
+      })
+
+      const res = await proxy(req)
+      expect(res.status).toBe(429)
+      const data = await res.json()
+      expect(data.message).toContain('temporary security throttling')
     })
   })
 })

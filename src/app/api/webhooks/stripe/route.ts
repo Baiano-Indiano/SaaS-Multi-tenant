@@ -8,6 +8,9 @@ import { db } from "@/lib/db";
 import { organizations } from "@/lib/db/schema";
 import { PLANS } from "@/lib/billing/plans";
 import { recordAuditLog } from "@/lib/audit";
+import { logger } from "@/lib/logger";
+import { redis } from "@/lib/redis";
+import { l1Cache } from "@/lib/cache/l1-cache";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 	// @ts-expect-error - Stripe type definitions mismatches in this specific version
@@ -21,6 +24,8 @@ export async function POST(req: Request) {
 	const body = await req.text();
 	const signature = (await headers()).get("Stripe-Signature") as string;
 
+	logger.info('webhook', 'Stripe webhook POST request received');
+
 	let event: Stripe.Event;
 
 	try {
@@ -31,11 +36,12 @@ export async function POST(req: Request) {
 		);
 	} catch (error: unknown) {
 		const message = error instanceof Error ? error.message : "Unknown error";
-		console.error("Webhook signature verification failed.", message);
+		logger.error('webhook', 'Webhook signature verification failed', error);
 		return new NextResponse(`Webhook Error: ${message}`, { status: 400 });
 	}
 
 	const session = event.data.object as Stripe.Checkout.Session;
+	logger.info('webhook', `Processing Stripe event: ${event.type} (ID: ${event.id})`);
 
 	switch (event.type) {
 		case "checkout.session.completed":
@@ -53,7 +59,19 @@ export async function POST(req: Request) {
 					})
 					.where(eq(organizations.id, orgId));
                 
-                console.log(`✅ Organization ${orgId} upgraded to ${planId}`);
+                logger.info('webhook', `Organization ${orgId} upgraded to ${planId}`);
+
+				// Cache write-through
+				const orgResult = await db.query.organizations.findFirst({
+					where: eq(organizations.id, orgId)
+				});
+				if (orgResult) {
+					const orgCacheData = { require2FA: orgResult.require2FA, id: orgResult.id, plan: planId };
+					await redis.set(`org:${orgResult.id}`, orgCacheData);
+					await redis.set(`org:${orgResult.slug}`, orgCacheData);
+					l1Cache.set(`org:${orgResult.id}`, orgCacheData);
+					l1Cache.set(`org:${orgResult.slug}`, orgCacheData);
+				}
 
                 // Record Audit Log (Phase 11)
                 await recordAuditLog({
@@ -81,6 +99,8 @@ export async function POST(req: Request) {
 						link: `/org/${orgId}/settings/billing`
 					});
 				}
+			} else {
+				logger.warn('webhook', `Checkout completed session missing client_reference_id for customer ${customerId}`);
 			}
 			break;
 
@@ -103,6 +123,12 @@ export async function POST(req: Request) {
 					.where(eq(organizations.stripeSubscriptionId, subscription.id));
                 
 				if (orgResult) {
+					const orgCacheData = { require2FA: orgResult.require2FA, id: orgResult.id, plan: "free" };
+					await redis.set(`org:${orgResult.id}`, orgCacheData);
+					await redis.set(`org:${orgResult.slug}`, orgCacheData);
+					l1Cache.set(`org:${orgResult.id}`, orgCacheData);
+					l1Cache.set(`org:${orgResult.slug}`, orgCacheData);
+
 					const member = await db.query.members.findFirst({
 						where: eq(members.organizationId, orgResult.id)
 					});
@@ -117,7 +143,7 @@ export async function POST(req: Request) {
 					}
 				}
 
-                console.log(`❌ Subscription ${subscription.id} downgraded to free`);
+                logger.info('webhook', `Subscription ${subscription.id} downgraded to free due to status: ${subscription.status}`);
 
                 if (orgResult) {
                     // Record Audit Log (Phase 11)
@@ -145,6 +171,12 @@ export async function POST(req: Request) {
                     .where(eq(organizations.stripeSubscriptionId, subscription.id));
                 
 				if (orgResult) {
+					const orgCacheData = { require2FA: orgResult.require2FA, id: orgResult.id, plan: newPlanId };
+					await redis.set(`org:${orgResult.id}`, orgCacheData);
+					await redis.set(`org:${orgResult.slug}`, orgCacheData);
+					l1Cache.set(`org:${orgResult.id}`, orgCacheData);
+					l1Cache.set(`org:${orgResult.slug}`, orgCacheData);
+
 					const member = await db.query.members.findFirst({
 						where: eq(members.organizationId, orgResult.id)
 					});
@@ -159,7 +191,7 @@ export async function POST(req: Request) {
 					}
 				}
 
-                console.log(`🔄 Subscription ${subscription.id} updated to ${newPlanId}`);
+                logger.info('webhook', `Subscription ${subscription.id} updated to ${newPlanId}`);
 
                 if (orgResult) {
                     // Record Audit Log (Phase 11)
@@ -175,7 +207,7 @@ export async function POST(req: Request) {
 			break;
             
 		default:
-			console.log(`Unhandled event type ${event.type}`);
+			logger.warn('webhook', `Unhandled event type ${event.type}`);
 	}
 
 	return new NextResponse(null, { status: 200 });

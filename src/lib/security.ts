@@ -29,6 +29,8 @@ export function generateNonce(): string {
  */
 export const CSP_DOMAINS = {
   scripts: [
+    'https://js.stripe.com',
+    'https://m.stripe.com',
     'https://*.stripe.com',
     'https://*.sentry.io',
     'https://challenges.cloudflare.com', // If using Turnstile
@@ -39,6 +41,7 @@ export const CSP_DOMAINS = {
   images: [
     'https://*.stripe.com',
     'https://*.sentry.io',
+    'https://o4511321072795648.ingest.us.sentry.io',
     'https://*.googleusercontent.com', // Avatars
     'https://avatars.githubusercontent.com', // Avatars
     'https://*.vercel-storage.com',
@@ -46,8 +49,11 @@ export const CSP_DOMAINS = {
     'blob:',
   ],
   connect: [
+    'https://js.stripe.com',
+    'https://m.stripe.com',
     'https://*.stripe.com',
     'https://*.sentry.io',
+    'https://o4511321072795648.ingest.us.sentry.io',
     'https://*.vercel-storage.com',
   ],
   frames: [
@@ -63,9 +69,8 @@ export const CSP_DOMAINS = {
 export const SENTRY_REPORT_URI = 'https://o4511321072795648.ingest.us.sentry.io/api/4511321076727808/securityreport/?sentry_key=587a2877abe839366aa96a2c87698b93';
 
 /**
- * Builds the CSP header string.
+ * Builds the CSP header string in Enforce mode.
  * @param nonce The unique nonce for this request
- * @param isReportOnly Whether to use Report-Only mode
  */
 export function buildCspHeader(nonce: string): string {
   const directives = [

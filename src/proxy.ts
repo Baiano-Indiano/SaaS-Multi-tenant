@@ -4,11 +4,17 @@ import createMiddleware from 'next-intl/middleware';
 import * as Sentry from '@sentry/nextjs';
 import { routing } from './i18n/routing';
 import { redis, getApiKeyFromRedis } from './lib/redis';
+import type { ApiKeyData } from './lib/redis';
 import { hashApiKey } from './lib/auth/api-key';
 import { getApiRateLimiter, authRateLimit } from './lib/rate-limit';
 import { generateNonce, buildCspHeader } from './lib/security';
+import { l1Cache } from './lib/cache/l1-cache';
+import { incrementUsage } from './lib/billing/telemetry';
 
 const intlMiddleware = createMiddleware(routing);
+
+// Local stale fallback cache for extreme high availability / Redis downtime
+const staleFallbackCache = new Map<string, unknown>();
 
 const html503 = `
 <!DOCTYPE html>
@@ -125,7 +131,21 @@ export async function proxy(request: NextRequest) {
         { name: 'proxy.api-key-auth', op: 'http.proxy', attributes: { 'proxy.flow': 'api-v1-auth' } },
         async () => {
           const hashedKey = await hashApiKey(rawKey);
-          const keyData = await getApiKeyFromRedis(hashedKey);
+          const cacheKey = `api_key:${hashedKey}`;
+          let keyData = l1Cache.get<ApiKeyData | null>(cacheKey);
+          if (keyData === undefined) {
+            try {
+              keyData = await getApiKeyFromRedis(hashedKey);
+              l1Cache.set(cacheKey, keyData, 15000);
+              staleFallbackCache.set(cacheKey, keyData);
+            } catch (e) {
+              console.error('[Proxy] Redis API key fetch failed, attempting fallback to stale cache:', e);
+              keyData = staleFallbackCache.get(cacheKey) as ApiKeyData | null;
+              if (keyData === undefined) {
+                throw e; // No fallback available, propagate error
+              }
+            }
+          }
 
           if (!keyData) {
             return NextResponse.json({ error: 'Invalid or expired API Key' }, { status: 401 });
@@ -151,14 +171,72 @@ export async function proxy(request: NextRequest) {
             );
           }
 
-          // Tenant-Aware API Rate Limiting (Billing-Aware)
+          // Fetch Organization Data (MFA and Billing/Plan context)
+          let orgData: { require2FA: boolean; id: string; plan?: string } | null = null;
+          try {
+            const orgCacheKey = `org:${keyData.orgId}`;
+            const cachedOrg = l1Cache.get<{ require2FA: boolean; id: string; plan?: string } | null>(orgCacheKey);
+            if (cachedOrg !== undefined) {
+              orgData = cachedOrg;
+            } else {
+              try {
+                orgData = await redis.get<{ require2FA: boolean; id: string; plan?: string }>(orgCacheKey);
+                l1Cache.set(orgCacheKey, orgData, 15000);
+                staleFallbackCache.set(orgCacheKey, orgData);
+              } catch (e) {
+                console.error('[Proxy] Redis org fetch failed, attempting fallback to stale cache:', e);
+                if (staleFallbackCache.has(orgCacheKey)) {
+                  orgData = staleFallbackCache.get(orgCacheKey) as { require2FA: boolean; id: string; plan?: string } | null;
+                } else {
+                  // Safe fallback to prevent breaking requests
+                  orgData = { require2FA: false, id: keyData.orgId, plan: keyData.plan || 'free' };
+                }
+              }
+            }
+          } catch (e) {
+            Sentry.captureException(e as Error, { tags: { 'proxy.flow': 'api-org-redis-failure' } });
+            console.error('[Proxy] Redis org fetch failed during proxy API auth check:', e);
+            return NextResponse.json(
+              { error: 'Service Unavailable', message: 'Security check unavailable (Redis down)' },
+              { status: 503 }
+            );
+          }
+
+          // Check if organization is currently throttled due to an active security anomaly
+          let isThrottled = false;
+          try {
+            const throttleCacheKey = `org:${keyData.orgId}:throttled`;
+            const cachedThrottle = l1Cache.get<boolean>(throttleCacheKey);
+            if (cachedThrottle !== undefined) {
+              isThrottled = cachedThrottle;
+            } else {
+              try {
+                const throttledStatus = await redis.get<string>(throttleCacheKey);
+                isThrottled = throttledStatus === "1";
+                l1Cache.set(throttleCacheKey, isThrottled, 15000);
+                staleFallbackCache.set(throttleCacheKey, isThrottled);
+              } catch (e) {
+                console.error('[Proxy] Redis throttle fetch failed, fallback to stale cache:', e);
+                isThrottled = staleFallbackCache.get(throttleCacheKey) === true;
+              }
+            }
+          } catch (e) {
+            console.error('[Proxy] Error evaluating throttle status:', e);
+          }
+
+          // Tenant-Aware API Rate Limiting (Billing-Aware / Anomaly-Throttled)
           const identifier = `org_${keyData.orgId}`;
-          const limiter = getApiRateLimiter(keyData.plan);
+          const resolvedPlan = isThrottled ? 'free' : (orgData?.plan || keyData.plan || 'free');
+          const limiter = getApiRateLimiter(resolvedPlan);
           const { success, limit, remaining, reset } = await limiter.limit(identifier);
 
           if (!success) {
+            const responseBody = isThrottled
+              ? { error: 'Rate limit exceeded', message: 'This organization is under temporary security throttling due to abnormal activity.' }
+              : { error: 'Rate limit exceeded' };
+
             return NextResponse.json(
-              { error: 'Rate limit exceeded' },
+              responseBody,
               {
                 status: 429,
                 headers: {
@@ -170,23 +248,29 @@ export async function proxy(request: NextRequest) {
             );
           }
 
-          // Industrial MFA Enforcement for API (W5)
-          let orgData = null;
-          try {
-            orgData = await redis.get<{ require2FA: boolean; id: string }>(`org:${keyData.orgId}`);
-          } catch (e) {
-            Sentry.captureException(e as Error, { tags: { 'proxy.flow': 'api-mfa-org-redis-failure' } });
-            console.error('[Proxy] Redis org fetch failed during MFA check:', e);
-            return NextResponse.json(
-              { error: 'Service Unavailable', message: 'Security check unavailable (Redis down)' },
-              { status: 503 }
-            );
-          }
-
+          let isUserMfaEnabled = false;
           if (orgData?.require2FA) {
-            let isUserMfaEnabled = false;
             try {
-              isUserMfaEnabled = await redis.get<boolean>(`user:${keyData.userId}:mfa`) || false;
+              const userMfaCacheKey = `user:${keyData.userId}:mfa`;
+              const cachedMfa = l1Cache.get<boolean>(userMfaCacheKey);
+              if (cachedMfa !== undefined) {
+                isUserMfaEnabled = cachedMfa || false;
+              } else {
+                let fetchedMfa: boolean | null = null;
+                try {
+                  fetchedMfa = await redis.get<boolean>(userMfaCacheKey);
+                  isUserMfaEnabled = fetchedMfa || false;
+                  l1Cache.set(userMfaCacheKey, fetchedMfa, 15000);
+                  staleFallbackCache.set(userMfaCacheKey, fetchedMfa);
+                } catch (e) {
+                  console.error('[Proxy] Redis user MFA fetch failed, attempting fallback to stale cache:', e);
+                  if (staleFallbackCache.has(userMfaCacheKey)) {
+                    isUserMfaEnabled = (staleFallbackCache.get(userMfaCacheKey) as boolean | null) || false;
+                  } else {
+                    isUserMfaEnabled = false; // Safe fallback
+                  }
+                }
+              }
             } catch (e) {
               Sentry.captureException(e as Error, { tags: { 'proxy.flow': 'api-mfa-user-redis-failure' } });
               console.error('[Proxy] Redis user MFA fetch failed during MFA check:', e);
@@ -214,6 +298,11 @@ export async function proxy(request: NextRequest) {
           requestHeaders.set('x-tenant-id', keyData.orgId);
           requestHeaders.set('x-tenant-schema', keyData.tenantSchemaName);
           requestHeaders.set('x-role-id', keyData.roleId);
+
+          // Track API usage asynchronously without blocking the request path
+          incrementUsage(keyData.orgId, 'api_calls').catch((err) => {
+            console.error('[Proxy] Telemetry tracking failed:', err);
+          });
 
           return NextResponse.next({
             request: {
@@ -251,11 +340,22 @@ export async function proxy(request: NextRequest) {
         const domainResponse = await Sentry.startSpan(
           { name: 'proxy.domain-resolution', op: 'http.proxy', attributes: { 'proxy.hostname': targetHostname } },
           async () => {
-            const domainData = await redis.get<{ slug: string; id: string }>(`domain:${targetHostname}`);
+            const domainCacheKey = `domain:${targetHostname}`;
+            let domainData = l1Cache.get<{ slug: string; id: string } | null>(domainCacheKey);
+            if (domainData === undefined) {
+              try {
+                domainData = await redis.get<{ slug: string; id: string }>(domainCacheKey);
+                l1Cache.set(domainCacheKey, domainData, 15000);
+                staleFallbackCache.set(domainCacheKey, domainData);
+              } catch (e) {
+                console.error('[Proxy] Redis domain resolution failed, attempting fallback to stale cache:', e);
+                domainData = (staleFallbackCache.get(domainCacheKey) as { slug: string; id: string } | null) || null;
+              }
+            }
 
             if (domainData) {
               Sentry.setTag('tenant.slug', domainData.slug);
-              return NextResponse.rewrite(
+              const rwResponse = NextResponse.rewrite(
                 new URL(`/org/${domainData.slug}${pathname}`, request.url),
                 {
                   request: {
@@ -263,6 +363,9 @@ export async function proxy(request: NextRequest) {
                   },
                 }
               );
+              rwResponse.headers.set('Content-Security-Policy', buildCspHeader(nonce));
+              rwResponse.headers.set('x-nonce', nonce);
+              return rwResponse;
             }
             return null;
           }
@@ -304,15 +407,36 @@ export async function proxy(request: NextRequest) {
 
         if (orgSlug) {
           // Check Redis for org policy (much faster than DB in proxy)
-          let orgData = null;
+          let orgData: { require2FA: boolean; id: string } | null = null;
           try {
-            orgData = await redis.get<{ require2FA: boolean; id: string }>(`org:${orgSlug}`);
+            const orgCacheKey = `org:${orgSlug}`;
+            const cachedOrg = l1Cache.get<{ require2FA: boolean; id: string } | null>(orgCacheKey);
+            if (cachedOrg !== undefined) {
+              orgData = cachedOrg;
+            } else {
+              try {
+                orgData = await redis.get<{ require2FA: boolean; id: string }>(orgCacheKey);
+                l1Cache.set(orgCacheKey, orgData, 15000);
+                staleFallbackCache.set(orgCacheKey, orgData);
+              } catch (e) {
+                console.error('[Proxy] Redis org policy fetch failed, attempting fallback to stale cache:', e);
+                if (staleFallbackCache.has(orgCacheKey)) {
+                  orgData = staleFallbackCache.get(orgCacheKey) as { require2FA: boolean; id: string } | null;
+                } else {
+                  orgData = { require2FA: false, id: '' };
+                }
+              }
+            }
           } catch (e) {
             Sentry.captureException(e as Error, { tags: { 'proxy.flow': 'web-mfa-org-redis-failure' } });
             console.error('[Proxy] Redis org policy fetch failed for slug:', orgSlug, e);
             return new NextResponse(html503, {
               status: 503,
-              headers: { 'Content-Type': 'text/html; charset=utf-8' }
+              headers: { 
+                'Content-Type': 'text/html; charset=utf-8',
+                'Content-Security-Policy': buildCspHeader(nonce),
+                'x-nonce': nonce
+              }
             });
           }
           
@@ -352,30 +476,32 @@ export async function proxy(request: NextRequest) {
       });
     }
 
-    // Optimization: Skip request cloning for auth routes to prevent internal Better Auth context loss
-    if (pathname.startsWith('/api/auth')) {
-      if (request.method === 'POST') {
-        const { success, limit, remaining, reset } = await authRateLimit.limit(`ip_${ip}`);
-        if (!success) {
-          return NextResponse.json(
-            { error: 'Too many login attempts' },
-            {
-              status: 429,
-              headers: {
-                'X-RateLimit-Limit': limit.toString(),
-                'X-RateLimit-Remaining': remaining.toString(),
-                'X-RateLimit-Reset': reset.toString(),
-              },
-            }
-          );
+    // Optimization: Skip request cloning for auth and connector routes to prevent internal context loss
+    if (pathname.startsWith('/api/auth') || pathname.startsWith('/api/connectors')) {
+      console.log(`[Proxy-Auth] ${request.method} ${pathname} Cookies:`, request.cookies.getAll().map(c => `${c.name}=${c.value.substring(0, 10)}...`));
+      if (pathname.startsWith('/api/auth') && request.method === 'POST') {
+        try {
+          const { success, limit, remaining, reset } = await authRateLimit.limit(`ip_${ip}`);
+          if (!success) {
+            return NextResponse.json(
+              { error: 'Too many login attempts' },
+              {
+                status: 429,
+                headers: {
+                  'X-RateLimit-Limit': limit.toString(),
+                  'X-RateLimit-Remaining': remaining.toString(),
+                  'X-RateLimit-Reset': reset.toString(),
+                },
+              }
+            );
+          }
+        } catch (e) {
+          console.error('[Proxy] Auth rate limiting error (Redis offline):', e);
+          // Fail-open to allow logins to proceed if Upstash Redis is unreachable
         }
       }
 
-      return NextResponse.next({
-        request: {
-          headers: requestHeaders,
-        },
-      });
+      return NextResponse.next();
     }
 
     return NextResponse.next({

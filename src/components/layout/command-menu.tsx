@@ -1,235 +1,447 @@
 "use client";
 
-import * as React from "react";
-import { Dialog } from "@base-ui/react/dialog";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
-import { 
-  Search, 
-  LayoutDashboard, 
-  Users, 
-  Settings, 
-  FolderKanban, 
-  Terminal,
-  Copy,
-  Moon,
-  ShieldCheck,
-  CreditCard,
-  ArrowRight
+import { useEffect, useState, useRef } from "react";
+import { useParams, useRouter, usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { useSession, useListOrganizations } from "@/lib/auth/client";
+import {
+  Search,
+  Shield,
+  Settings,
+  Globe,
+  Plus,
+  LogOut,
+  LayoutDashboard,
+  Keyboard,
 } from "lucide-react";
-import { usePathname, useRouter } from "@/i18n/routing";
-import { useTranslations } from "next-intl";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 
-gsap.registerPlugin(useGSAP);
-
-export function CommandMenu() {
-  const [open, setOpen] = React.useState(false);
-  const [search, setSearch] = React.useState("");
+export function CommandMenu({ hideTrigger = false }: { hideTrigger?: boolean }) {
+  const { data: session } = useSession();
+  const { data: orgs } = useListOrganizations();
   const pathname = usePathname();
+  const isAuthPage = pathname?.includes("/login") || pathname?.includes("/register") || pathname?.includes("/verify-2fa");
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const keyBufferRef = useRef<string>("");
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
-  const t = useTranslations("Navigation");
-  
-  const popupRef = React.useRef<HTMLDivElement>(null);
-  const backdropRef = React.useRef<HTMLDivElement>(null);
+  const params = useParams();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Extract org slug from pathname: /org/[slug]/...
-  const pathParts = pathname.split("/");
-  const isOrgContext = pathParts[1] === "org";
-  const orgSlug = isOrgContext ? pathParts[2] : null;
+  const orgSlug = params?.orgSlug as string | undefined;
 
-  // Keyboard shortcut listener
-  React.useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+  const items = [
+    {
+      icon: <LayoutDashboard className="h-4 w-4 text-emerald-500" />,
+      label: "Ir para o Painel",
+      subtitle: "Dashboard principal do inquilino",
+      shortcut: "G D",
+      action: () => {
+        if (orgSlug) {
+          router.push(`/org/${orgSlug}/dashboard`);
+        } else if (orgs && orgs.length > 0) {
+          const activeOrg = orgs.find((o) => o.id === session?.session?.activeOrganizationId);
+          if (activeOrg) {
+            router.push(`/org/${activeOrg.slug}/dashboard`);
+          } else if (orgs.length === 1) {
+            router.push(`/org/${orgs[0].slug}/dashboard`);
+          } else {
+            router.push("/selecionar-org");
+          }
+        } else {
+          router.push("/dashboard");
+        }
+      },
+    },
+    {
+      icon: <Shield className="h-4 w-4 text-amber-500" />,
+      label: "Configurações de Segurança (MFA)",
+      subtitle: "Configurar carência de TOTP e chaves de segurança",
+      shortcut: "G S",
+      action: () => {
+        if (orgSlug) router.push(`/org/${orgSlug}/settings/security`);
+      },
+    },
+    {
+      icon: <Settings className="h-4 w-4 text-blue-500" />,
+      label: "Gerenciar Integrações (Webhooks)",
+      subtitle: "Logs de webhooks externos e retentativas",
+      shortcut: "G I",
+      action: () => {
+        if (orgSlug) router.push(`/org/${orgSlug}/settings/integrations`);
+      },
+    },
+    {
+      icon: <Globe className="h-4 w-4 text-zinc-400" />,
+      label: "Alterar idioma para Inglês",
+      subtitle: "Mudar interface para EN",
+      shortcut: "L E",
+      action: () => {
+        const path = window.location.pathname.replace(/^\/(pt|en)/, "/en");
+        router.push(path);
+      },
+    },
+    {
+      icon: <Globe className="h-4 w-4 text-zinc-400" />,
+      label: "Alterar idioma para Português",
+      subtitle: "Mudar interface para PT",
+      shortcut: "L P",
+      action: () => {
+        const path = window.location.pathname.replace(/^\/(pt|en)/, "/pt");
+        router.push(path);
+      },
+    },
+    {
+      icon: <Plus className="h-4 w-4 text-zinc-400" />,
+      label: "Criar Nova Organização",
+      subtitle: "Adicionar outro inquilino B2B",
+      shortcut: "N O",
+      action: () => router.push("/org/create"),
+    },
+    {
+      icon: <LogOut className="h-4 w-4 text-rose-500" />,
+      label: "Sair",
+      subtitle: "Encerrar sessão de usuário",
+      shortcut: "⌥ L",
+      action: () => router.push("/logout"),
+    },
+  ].filter((item) => {
+    // Filter out tenant settings if not inside a tenant slug context
+    if (!orgSlug && (item.label.includes("MFA") || item.label.includes("Integrações"))) {
+      return false;
+    }
+    return true;
+  });
+
+  const filteredItems = items.filter((item) =>
+    item.label.toLowerCase().includes(search.toLowerCase()) ||
+    item.subtitle.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Global sequential hotkey listener
+  useEffect(() => {
+    if (!session?.user || isAuthPage) return;
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      
+      // Toggle menu with CMD+K / CTRL+K
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        setOpen((open) => !open);
+        setIsOpen((prev) => !prev);
+        return;
+      }
+
+      if (e.key === "Escape") {
+        setIsOpen(false);
+        return;
+      }
+
+      // Ignore text input fields for routing shortcuts
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      if (e.metaKey || e.ctrlKey || e.altKey) {
+        return;
+      }
+
+      const key = e.key.toLowerCase();
+      if (key.length !== 1 || !/[a-z0-9]/.test(key)) {
+        return;
+      }
+
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      
+      const newBuffer = (keyBufferRef.current + key).slice(-2); // keep last 2 chars
+      keyBufferRef.current = newBuffer;
+
+      let matched = false;
+      if (newBuffer === "gd") {
+        if (orgSlug) {
+          router.push(`/org/${orgSlug}/dashboard`);
+        } else if (orgs && orgs.length > 0) {
+          const activeOrg = orgs.find((o) => o.id === session?.session?.activeOrganizationId);
+          if (activeOrg) {
+            router.push(`/org/${activeOrg.slug}/dashboard`);
+          } else if (orgs.length === 1) {
+            router.push(`/org/${orgs[0].slug}/dashboard`);
+          } else {
+            router.push("/selecionar-org");
+          }
+        } else {
+          router.push("/dashboard");
+        }
+        matched = true;
+      } else if (newBuffer === "gs" && orgSlug) {
+        router.push(`/org/${orgSlug}/settings/security`);
+        matched = true;
+      } else if (newBuffer === "gi" && orgSlug) {
+        router.push(`/org/${orgSlug}/settings/integrations`);
+        matched = true;
+      } else if (newBuffer === "le") {
+        const path = window.location.pathname.replace(/^\/(pt|en)/, "/en");
+        router.push(path);
+        matched = true;
+      } else if (newBuffer === "lp") {
+        const path = window.location.pathname.replace(/^\/(pt|en)/, "/pt");
+        router.push(path);
+        matched = true;
+      } else if (newBuffer === "no") {
+        router.push("/org/create");
+        matched = true;
+      }
+
+      if (matched) {
+        keyBufferRef.current = "";
+      } else {
+        timeoutRef.current = setTimeout(() => {
+          keyBufferRef.current = "";
+        }, 1000);
       }
     };
 
-    document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleGlobalKeyDown);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [orgSlug, router, session?.user, isAuthPage, orgs, session?.session?.activeOrganizationId]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => {
+        setSearch("");
+        setSelectedIndex(0);
+        inputRef.current?.focus();
+      }, 100);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const handleToggle = () => {
+      setIsOpen((prev) => !prev);
+    };
+    window.addEventListener("toggle-command-menu", handleToggle);
+    return () => {
+      window.removeEventListener("toggle-command-menu", handleToggle);
+    };
   }, []);
 
-  // Animations
-  useGSAP(() => {
-    if (open) {
-      const mm = gsap.matchMedia();
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        // Backdrop animation
-        if (backdropRef.current) {
-          gsap.fromTo(backdropRef.current,
-            { opacity: 0 },
-            { opacity: 1, duration: 0.2, ease: "power2.out" }
-          );
-        }
-
-        // Popup animation (Raycast-style elastic)
-        if (popupRef.current) {
-          gsap.fromTo(popupRef.current,
-            { opacity: 0, scale: 0.96, y: -20 },
-            { 
-              opacity: 1, 
-              scale: 1, 
-              y: 0, 
-              duration: 0.3, 
-              ease: "back.out(1.2)",
-              delay: 0.05
-            }
-          );
-
-          // Stagger items
-          gsap.from(".cmd-item", {
-            opacity: 0,
-            x: -10,
-            duration: 0.2,
-            stagger: 0.03,
-            delay: 0.15,
-            ease: "power2.out"
-          });
-        }
-      });
-      return () => mm.revert();
-    }
-  }, [open]);
-
-  const navigate = (url: string) => {
-    setOpen(false);
-    router.push(url);
-  };
-
-  const copyOrgId = () => {
-    if (orgSlug) {
-      navigator.clipboard.writeText(orgSlug); // Using slug as ID for this mock
-      toast.success("Organization Slug copied to clipboard");
-      setOpen(false);
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev + 1) % filteredItems.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev - 1 + filteredItems.length) % filteredItems.length);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (filteredItems[selectedIndex]) {
+        filteredItems[selectedIndex].action();
+        setIsOpen(false);
+      }
     }
   };
 
-  interface BaseMenuItem {
-    icon: React.ElementType;
-    label: string;
-    disabled: boolean;
+  if (!session?.user || isAuthPage) {
+    return null;
   }
-
-  interface UrlMenuItem extends BaseMenuItem {
-    url: string;
-    action?: never;
-  }
-
-  interface ActionMenuItem extends BaseMenuItem {
-    action: () => void;
-    url?: never;
-  }
-
-  type MenuItem = UrlMenuItem | ActionMenuItem;
-
-  interface MenuGroup {
-    label: string;
-    items: MenuItem[];
-  }
-
-  const menuGroups: MenuGroup[] = [
-    {
-      label: "Navigation",
-      items: [
-        { icon: LayoutDashboard, label: t("dashboard"), url: `/org/${orgSlug}/dashboard`, disabled: !orgSlug },
-        { icon: FolderKanban, label: t("projects"), url: `/org/${orgSlug}/projects`, disabled: !orgSlug },
-        { icon: Users, label: t("members"), url: `/org/${orgSlug}/members`, disabled: !orgSlug },
-        { icon: Terminal, label: t("playground"), url: `/org/${orgSlug}/developers/playground`, disabled: !orgSlug },
-      ]
-    },
-    {
-      label: "Organization",
-      items: [
-        { icon: Settings, label: t("settings"), url: `/org/${orgSlug}/settings`, disabled: !orgSlug },
-        { icon: ShieldCheck, label: "Security", url: `/org/${orgSlug}/settings/security`, disabled: !orgSlug },
-        { icon: CreditCard, label: "Billing", url: `/org/${orgSlug}/settings/billing`, disabled: !orgSlug },
-      ]
-    },
-    {
-      label: "Actions",
-      items: [
-        { icon: Copy, label: "Copy Org ID", action: copyOrgId, disabled: !orgSlug },
-        { icon: Moon, label: "Toggle Theme", action: () => toast.info("Theme switching coming soon"), disabled: false },
-      ]
-    }
-  ];
 
   return (
-    <Dialog.Root open={open} onOpenChange={setOpen}>
-      <Dialog.Portal>
-        <Dialog.Backdrop 
-          ref={backdropRef}
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" 
-        />
-        <Dialog.Popup
-          ref={popupRef}
-          className="fixed top-[15%] left-1/2 z-50 w-full max-w-[640px] -translate-x-1/2 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 shadow-2xl outline-none ring-1 ring-white/10"
+    <>
+      {/* Visual Indicator Hint in UI */}
+      {!hideTrigger && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900/40 text-xs text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+          aria-label="Abrir menu de comando"
         >
-          <div className="flex items-center border-b border-zinc-800 px-4 py-3">
-            <Search className="mr-3 h-5 w-5 text-zinc-500" />
-            <input
-              autoFocus
-              placeholder="Type a command or search..."
-              className="flex-1 bg-transparent text-lg text-zinc-100 placeholder-zinc-500 outline-none"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <div className="rounded-md bg-zinc-800 px-2 py-1 text-[10px] font-bold text-zinc-400 uppercase tracking-widest border border-zinc-700">
-              ESC
-            </div>
-          </div>
+          <Search className="h-3 w-3" />
+          <span>Buscar comandos...</span>
+          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded border border-zinc-800 bg-zinc-950 px-1.5 font-mono text-[10px] font-medium text-zinc-500 opacity-100">
+            <span className="text-xs">⌘</span>K
+          </kbd>
+        </button>
+      )}
 
-        <div className="max-h-[400px] overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-zinc-800">
-          {menuGroups.map((group) => (
-            <div key={group.label} className="mb-4 last:mb-0">
-              <h3 className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
-                {group.label}
-              </h3>
-              <div className="space-y-1">
-                {group.items.map((item) => (
-                    <button
-                      key={item.label}
-                      disabled={item.disabled}
-                      onClick={() => ("url" in item && item.url ? navigate(item.url) : item.action?.())}
-                      className={cn(
-                        "cmd-item group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200",
-                        item.disabled 
-                          ? "opacity-50 cursor-not-allowed grayscale" 
-                          : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-50"
-                      )}
-                    >
-                      <div className="flex h-8 w-8 items-center justify-center rounded-md bg-zinc-800/50 group-hover:bg-zinc-700/50 transition-colors">
-                        <item.icon className="h-4 w-4" />
+      <AnimatePresence>
+        {isOpen && (
+          <div className="fixed inset-0 z-[999] flex items-start justify-center pt-[15vh]">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            />
+
+            {/* Menu Body */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -10 }}
+              transition={{ duration: 0.15 }}
+              ref={menuRef}
+              className="relative w-full max-w-lg overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/95 shadow-2xl backdrop-blur-md flex flex-col mx-4"
+            >
+              <div className="flex items-center border-b border-zinc-800/80 px-4 py-3 bg-zinc-950/40">
+                <Search className="h-4 w-4 text-zinc-500 mr-3" />
+                <input
+                  ref={inputRef}
+                  type="text"
+                  placeholder="Digite um comando para pesquisar..."
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setSelectedIndex(0);
+                  }}
+                  onKeyDown={handleKeyDown}
+                  className="w-full bg-transparent text-sm text-zinc-200 placeholder-zinc-500 outline-none border-none py-1"
+                />
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="text-[10px] text-zinc-500 hover:text-zinc-300 font-mono border border-zinc-800 bg-zinc-900 px-1.5 py-0.5 rounded cursor-pointer"
+                >
+                  ESC
+                </button>
+              </div>
+
+              <div className="max-h-[250px] overflow-y-auto p-2 space-y-1">
+                {filteredItems.length === 0 ? (
+                  <div className="text-center py-6 text-sm text-zinc-500">
+                    Nenhum comando encontrado para &ldquo;{search}&rdquo;.
+                  </div>
+                ) : (
+                  filteredItems.map((item, index) => {
+                    const isSelected = index === selectedIndex;
+                    return (
+                      <button
+                        key={item.label}
+                        onClick={() => {
+                          item.action();
+                          setIsOpen(false);
+                        }}
+                        onMouseEnter={() => setSelectedIndex(index)}
+                        className={`w-full text-left flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-100 cursor-pointer ${
+                          isSelected
+                            ? "bg-zinc-900 border border-zinc-800 text-zinc-100"
+                            : "bg-transparent border border-transparent text-zinc-400"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`p-1.5 rounded-md ${
+                            isSelected ? "bg-zinc-950 border border-zinc-800" : "bg-zinc-900/50"
+                          }`}>
+                            {item.icon}
+                          </div>
+                          <div>
+                            <div className="text-xs font-semibold">{item.label}</div>
+                            <div className="text-[10px] text-zinc-500 mt-0.5">{item.subtitle}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 font-mono text-[9px] text-zinc-500 bg-zinc-950 border border-zinc-800/80 px-1.5 py-0.5 rounded">
+                          <Keyboard className="h-2.5 w-2.5" />
+                          <span>{item.shortcut}</span>
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Sequential Keycaps Cheat Sheet Footer */}
+              <div className="border-t border-zinc-800/80 p-3 bg-zinc-950/80 flex flex-col gap-2">
+                <div className="text-[9px] font-black uppercase text-zinc-500 tracking-wider">
+                  Guia Rápido de Atalhos (G + Tecla)
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-2 text-[10px] text-zinc-400">
+                  <div className="flex items-center gap-1.5">
+                    <kbd className="bg-zinc-900 border border-zinc-800 rounded px-1.5 py-0.5 font-mono text-[9px] text-zinc-300 shadow-sm shadow-black/20">G</kbd>
+                    <span className="text-zinc-600 font-bold">+</span>
+                    <kbd className="bg-zinc-900 border border-zinc-800 rounded px-1.5 py-0.5 font-mono text-[9px] text-zinc-300 shadow-sm shadow-black/20">D</kbd>
+                    <span className="text-zinc-500 text-[9px]">Painel</span>
+                  </div>
+                  {orgSlug && (
+                    <>
+                      <div className="flex items-center gap-1.5">
+                        <kbd className="bg-zinc-900 border border-zinc-800 rounded px-1.5 py-0.5 font-mono text-[9px] text-zinc-300 shadow-sm shadow-black/20">G</kbd>
+                        <span className="text-zinc-600 font-bold">+</span>
+                        <kbd className="bg-zinc-900 border border-zinc-800 rounded px-1.5 py-0.5 font-mono text-[9px] text-zinc-300 shadow-sm shadow-black/20">S</kbd>
+                        <span className="text-zinc-500 text-[9px]">Segurança</span>
                       </div>
-                      <span className="flex-1 text-left font-medium">{item.label}</span>
-                      {!item.disabled && (
-                        <ArrowRight className="h-3 w-3 opacity-0 -translate-x-2 group-hover:opacity-40 group-hover:translate-x-0 transition-all duration-300" />
-                      )}
-                    </button>
-                  ))}
+                      <div className="flex items-center gap-1.5">
+                        <kbd className="bg-zinc-900 border border-zinc-800 rounded px-1.5 py-0.5 font-mono text-[9px] text-zinc-300 shadow-sm shadow-black/20">G</kbd>
+                        <span className="text-zinc-600 font-bold">+</span>
+                        <kbd className="bg-zinc-900 border border-zinc-800 rounded px-1.5 py-0.5 font-mono text-[9px] text-zinc-300 shadow-sm shadow-black/20">I</kbd>
+                        <span className="text-zinc-500 text-[9px]">Webhooks</span>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex items-center gap-1.5">
+                    <kbd className="bg-zinc-900 border border-zinc-800 rounded px-1.5 py-0.5 font-mono text-[9px] text-zinc-300 shadow-sm shadow-black/20">L</kbd>
+                    <span className="text-zinc-600 font-bold">+</span>
+                    <kbd className="bg-zinc-900 border border-zinc-800 rounded px-1.5 py-0.5 font-mono text-[9px] text-zinc-300 shadow-sm shadow-black/20">E</kbd>
+                    <span className="text-zinc-500 text-[9px]">EN</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <kbd className="bg-zinc-900 border border-zinc-800 rounded px-1.5 py-0.5 font-mono text-[9px] text-zinc-300 shadow-sm shadow-black/20">L</kbd>
+                    <span className="text-zinc-600 font-bold">+</span>
+                    <kbd className="bg-zinc-900 border border-zinc-800 rounded px-1.5 py-0.5 font-mono text-[9px] text-zinc-300 shadow-sm shadow-black/20">P</kbd>
+                    <span className="text-zinc-500 text-[9px]">PT</span>
+                  </div>
                 </div>
               </div>
-            ))}
+
+              <div className="flex items-center justify-between border-t border-zinc-800/80 px-4 py-2 text-[10px] text-zinc-500 bg-zinc-950/40">
+                <div className="flex gap-3">
+                  <span>↑↓ Navegar</span>
+                  <span>↵ Executar</span>
+                </div>
+                <span>Atalho Global: ⌘K / Ctrl+K</span>
+              </div>
+            </motion.div>
           </div>
-          
-          <div className="flex items-center justify-between border-t border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-500">
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1">
-                <kbd className="rounded bg-zinc-800 px-1 font-sans text-[10px]">↑↓</kbd> Navigate
-              </span>
-              <span className="flex items-center gap-1">
-                <kbd className="rounded bg-zinc-800 px-1 font-sans text-[10px]">↵</kbd> Select
-              </span>
-            </div>
-            <div className="font-medium text-zinc-600">
-              SaaS v0.1.0
-            </div>
-          </div>
-        </Dialog.Popup>
-      </Dialog.Portal>
-    </Dialog.Root>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+export function CommandMenuTrigger() {
+  const { data: session } = useSession();
+  const pathname = usePathname();
+  const isAuthPage = pathname?.includes("/login") || pathname?.includes("/register") || pathname?.includes("/verify-2fa");
+
+  if (!session?.user || isAuthPage) {
+    return null;
+  }
+
+  const handleClick = () => {
+    window.dispatchEvent(new Event("toggle-command-menu"));
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900/40 text-xs text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+      aria-label="Abrir menu de comando"
+    >
+      <Search className="h-3 w-3" />
+      <span>Buscar comandos...</span>
+      <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded border border-zinc-800 bg-zinc-950 px-1.5 font-mono text-[10px] font-medium text-zinc-500 opacity-100">
+        <span className="text-xs">⌘</span>K
+      </kbd>
+    </button>
   );
 }

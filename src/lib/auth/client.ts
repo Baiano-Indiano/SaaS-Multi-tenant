@@ -63,7 +63,7 @@ export function usePermission(permission: PermissionKey): boolean {
   if (!session?.session?.activeOrganizationId) return false;
   
   const metadata = session.session.metadata;
-  const permissions = (metadata?.[PERMISSIONS_METADATA_KEY] || []) as string[];
+  const permissions = ((metadata ? Reflect.get(metadata, PERMISSIONS_METADATA_KEY) : undefined) || []) as string[];
   
   return permissions.includes(permission);
 }

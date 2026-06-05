@@ -17,19 +17,51 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { executeDiagnosticAction } from "@/app/actions/system";
 
+import { useTranslations } from "next-intl";
+
 interface ApiPlaygroundProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
 const ENDPOINTS = [
-  { id: "ping", name: "System Ping", icon: Globe, description: "Check global edge latency" },
-  { id: "db_check", name: "Database Health", icon: Database, description: "Verify connection pool status" },
-  { id: "redis_check", name: "Cache Diagnostics", icon: Cpu, description: "Analyze memory and hit rate" },
+  { id: "ping", icon: Globe },
+  { id: "db_check", icon: Database },
+  { id: "redis_check", icon: Cpu },
 ];
 
 export function ApiPlayground({ isOpen, onClose }: ApiPlaygroundProps) {
-  const [selectedEndpoint, setSelectedEndpoint] = useState(ENDPOINTS[0]);
+  const t = useTranslations("Playground");
+
+  const endpoints = ENDPOINTS.map((ep) => {
+    switch (ep.id) {
+      case "ping":
+        return {
+          ...ep,
+          name: t("endpointPingName"),
+          description: t("endpointPingDesc"),
+        };
+      case "db_check":
+        return {
+          ...ep,
+          name: t("endpointDbName"),
+          description: t("endpointDbDesc"),
+        };
+      case "redis_check":
+        return {
+          ...ep,
+          name: t("endpointCacheName"),
+          description: t("endpointCacheDesc"),
+        };
+      default:
+        return { ...ep, name: "", description: "" };
+    }
+  });
+
+  const [selectedEndpointId, setSelectedEndpointId] = useState(ENDPOINTS[0].id);
+  const selectedEndpoint = endpoints.find(e => e.id === selectedEndpointId) || endpoints[0];
+  const apiPath = `GET /api/diagnostics/${selectedEndpoint.id}`;
+
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState<unknown>(null);
 
@@ -57,7 +89,7 @@ export function ApiPlayground({ isOpen, onClose }: ApiPlaygroundProps) {
                 <Code2 className="w-4 h-4 text-blue-400" />
               </div>
               <div>
-                <h3 className="text-xs font-black uppercase tracking-widest text-zinc-200">API Sandbox</h3>
+                <h3 className="text-xs font-black uppercase tracking-widest text-zinc-200">{t("sandbox")}</h3>
                 <p className="text-[10px] text-zinc-500 font-mono">v1.2.0-alpha</p>
               </div>
             </div>
@@ -72,16 +104,16 @@ export function ApiPlayground({ isOpen, onClose }: ApiPlaygroundProps) {
           <div className="flex flex-1 overflow-hidden">
             {/* Sidebar */}
             <div className="w-48 border-r border-zinc-900 p-2 space-y-1">
-              <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest px-2 py-1 mb-2">Endpoints</p>
-              {ENDPOINTS.map((ep) => {
+              <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest px-2 py-1 mb-2">{t("endpoints")}</p>
+              {endpoints.map((ep) => {
                 const Icon = ep.icon;
                 return (
                   <button
                     key={ep.id}
-                    onClick={() => setSelectedEndpoint(ep)}
+                    onClick={() => setSelectedEndpointId(ep.id)}
                     className={cn(
                       "w-full flex items-center gap-2 p-2 rounded text-[10px] font-bold transition-all",
-                      selectedEndpoint.id === ep.id 
+                      selectedEndpointId === ep.id 
                         ? "bg-blue-500/10 text-blue-400" 
                         : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300"
                     )}
@@ -99,10 +131,10 @@ export function ApiPlayground({ isOpen, onClose }: ApiPlaygroundProps) {
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-xs font-bold text-zinc-200">{selectedEndpoint.name}</h4>
-                    <span className="text-[10px] font-mono text-zinc-600">GET /api/diagnostics/{selectedEndpoint.id}</span>
+                    <span className="text-[10px] font-mono text-zinc-600">{apiPath}</span>
                   </div>
                   <p className="text-[11px] text-zinc-500 leading-relaxed">
-                    {selectedEndpoint.description}. This operation executes a real-time probe on the specified subsystem and returns a detailed telemetry payload.
+                    {selectedEndpoint.description}. {t("telemetryDescription")}
                   </p>
                 </div>
 
@@ -111,7 +143,7 @@ export function ApiPlayground({ isOpen, onClose }: ApiPlaygroundProps) {
                     <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800/50 bg-zinc-900/80">
                       <div className="flex items-center gap-2">
                         <Braces className="w-3.5 h-3.5 text-zinc-600" />
-                        <span className="text-[10px] font-mono text-zinc-500">RESPONSE_BODY</span>
+                        <span className="text-[10px] font-mono text-zinc-500">{t("responseBody")}</span>
                       </div>
                       {response !== null && (
                         <div className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-500">
@@ -126,7 +158,7 @@ export function ApiPlayground({ isOpen, onClose }: ApiPlaygroundProps) {
                         {isLoading ? (
                           <div className="flex flex-col items-center justify-center py-12 text-zinc-600 space-y-3">
                             <Loader2 className="w-5 h-5 animate-spin" />
-                            <span className="text-[10px] animate-pulse">EXECUTING_PROBE...</span>
+                            <span className="text-[10px] animate-pulse">{t("executingProbe")}</span>
                           </div>
                         ) : response !== null ? (
                           <pre className="text-blue-400/90 whitespace-pre-wrap break-all">
@@ -135,7 +167,7 @@ export function ApiPlayground({ isOpen, onClose }: ApiPlaygroundProps) {
                         ) : (
                           <div className="flex flex-col items-center justify-center py-12 text-zinc-700 space-y-2">
                             <Play className="w-6 h-6 opacity-20" />
-                            <span className="text-[10px] font-bold opacity-30">READY_FOR_EXECUTION</span>
+                            <span className="text-[10px] font-bold opacity-30">{t("readyForExecution")}</span>
                           </div>
                         )}
                       </div>
@@ -154,7 +186,7 @@ export function ApiPlayground({ isOpen, onClose }: ApiPlaygroundProps) {
                     ) : (
                       <Play className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
                     )}
-                    RUN DIAGNOSTIC
+                    {t("runDiagnostic")}
                   </button>
                 </div>
               </div>

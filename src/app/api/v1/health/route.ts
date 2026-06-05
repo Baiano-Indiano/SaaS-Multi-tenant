@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
 import { redis } from "@/lib/redis";
@@ -11,6 +12,8 @@ import { redis } from "@/lib/redis";
  * Optimized for status pages and monitoring tools.
  */
 export async function GET() {
+  const _start = Date.now();  
+  logger.info('api', '➜ GET /api/v1/health');
   const status = {
     database: "DOWN",
     cache: "DOWN",
@@ -30,15 +33,17 @@ export async function GET() {
     // Check if everything is UP
     const isHealthy = status.database === "UP" && status.cache === "UP";
 
+    const httpStatus = isHealthy ? 200 : 503;
+    logger.info('api', `✓ GET /api/v1/health | ${httpStatus} | ${Date.now() - _start}ms`);
     return NextResponse.json(
       { 
         status: isHealthy ? "UP" : "DEGRADED", 
         ...status
       }, 
-      { status: isHealthy ? 200 : 503 }
+      { status: httpStatus }
     );
   } catch (error) {
-    console.error("[Health Check] Infrastructure failure:", error);
+    logger.error('api', '✗ GET /api/v1/health | Infrastructure failure', error);
     
     return NextResponse.json(
       { 

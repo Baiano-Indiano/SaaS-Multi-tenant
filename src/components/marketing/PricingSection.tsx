@@ -9,6 +9,7 @@ import { Check } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { GsapCounter } from "@/components/ui/gsap-counter";
+import { Link } from "@/i18n/routing";
 
 const planKeys = [
   "starter",
@@ -139,7 +140,7 @@ export function PricingSection() {
                             prefix={currency}
                             duration={0.8}
                           />
-                          <span className={isPopular ? 'text-zinc-500' : 'text-zinc-500'}>
+                          <span className={isPopular ? 'text-zinc-500' : 'text-zinc-400'}>
                             {t("perMonth")}
                           </span>
                         </>
@@ -161,7 +162,16 @@ export function PricingSection() {
 
                   <Button 
                     size="lg" 
-                    className={`w-full text-sm font-bold rounded-xl transition-all duration-300 active:scale-95 ${isPopular ? 'bg-zinc-900 text-white hover:bg-zinc-800' : 'bg-zinc-100 text-zinc-900 hover:bg-zinc-200'}`}
+                    variant={key === "enterprise" ? "outline" : "default"}
+                    className={`w-full text-sm font-bold rounded-xl transition-all duration-300 active:scale-95 ${
+                      key === "starter"
+                        ? "!bg-zinc-100 !text-zinc-900 hover:!bg-zinc-200 hover:!text-zinc-950"
+                        : key === "professional"
+                        ? "!bg-zinc-900 !text-white hover:!bg-zinc-800 hover:!text-white"
+                        : "!border-zinc-700 bg-transparent !text-zinc-300 hover:!bg-zinc-100 hover:!text-zinc-950"
+                    }`}
+                    render={<Link href={key === "starter" ? "/register" : `/register?plan=${key}`} />}
+                    nativeButton={false}
                   >
                     {t(`plans.${key}.cta`)}
                   </Button>

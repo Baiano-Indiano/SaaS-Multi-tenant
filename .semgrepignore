@@ -1,0 +1,10 @@
+# Ignore build, cache, and third-party dependency directories
+.next/
+.vercel/
+node_modules/
+playwright-report/
+test-results/
+coverage/
+build/
+dist/
+out/

@@ -4,25 +4,22 @@
 
 A B2B SaaS starter boilerplate focusing on deep organization isolation and premium user experience.
 
-## Current State: v8.0 (Enterprise Reliability & Security Hardening) - [Shipped]
+## Current State: v11.0 (Hybrid Enterprise) - [Shipped]
 
-**Goal Accomplished:** Transformed the application into a production-resilient platform with deep observability (Sentry), tenant-aware rate limiting, PII sanitization, and strict security headers (CSP).
+**Goal Accomplished:** Implemented billing-aware dynamic API rate limiting in proxy gateway, GDPR/LGPD compliance data retention configurations with daily hard-delete cron sweeps, and real-time security anomaly tracking (MFA fail windows, webhook spikes) with proactive Resend alerting and support fallback.
 
 ### Shipped Features
-- **Sentry APM**: Full observability in `proxy.ts` with PII scrubbing.
-- **Rate Limiting**: Multi-tier protection (Auth/API) via Upstash/Redis.
-- **PII Sanitization**: Recursive scrubbing of sensitive data in logs and traces.
-- **Security Audit**: Automated OWASP scans and nonce-based CSP implementation.
+- **Dynamic Rate Limiting**: Tier-based rate limiting (proxy.ts + Upstash Redis) reading the customer's Stripe plan/tier.
+- **Data Retention Policies**: Automated database cleanup/anonymization of audit logs (GDPR/LGPD) triggered by Upstash QStash.
+- **Smart Anomaly Detection**: Lightweight event anomaly scanner (MFA spikes, webhook surges) with email alerting and orphan tenant fallback.
 
-## Current Milestone: v9.0 (Developer Experience & Scalability)
+## Current Milestone: v12.0 (Enterprise Scaling & Customization)
 
-**Goal:** Otimizar o workflow de desenvolvimento local e preparar a infraestrutura para escala multi-região e expansão de API programática.
+**Goal:** Define and scale custom integrations, authorization structures, and enterprise configuration capabilities.
 
 **Target features:**
-- **Testing Expansion**: Suíte E2E (Playwright) e Unitários (Vitest) para core infra.
-- **Tenant CLI**: Ferramentas para gestão de schemas e migrações.
-- **Public API & Webhooks**: Autenticação via API Key no Proxy e fundação de eventos.
-- **Scalability**: Estratégia de banco de dados multi-região.
+- **Custom Integration Connectors**: Custom API key configurations and webhook mapping.
+- **Role Customization Engine**: Define custom permissions schemas per tenant.
 
 ## Requirements
 
@@ -41,18 +38,29 @@ A B2B SaaS starter boilerplate focusing on deep organization isolation and premi
 - [x] Compliance Hardening (PII masking in Audit Logs) [Phase 29]
 - [x] GSAP Performance & Reduced Motion Logic [Phase 30]
 - [x] Security Audit (OWASP) & CSP Hardening [Phase 31]
+- [x] Quality Assurance & Core Testing [Phase 32]
+- [x] Infrastructure Tooling & CLI [Phase 33]
+- [x] Public API & Webhooks [Phase 34]
+- [x] Enterprise SSO & Domain Verification [Phase 35]
+- [x] Dashboard API Playground [Phase 36]
+- [x] Enterprise Security & Scalability [Phase 37]
+- [x] Infrastructure Robustness Hardening [Phase 38]
+- [x] Slack OAuth App integration ("Add to Slack") [Phase 39]
+- [x] Microsoft Teams OAuth integration [Phase 39]
+- [x] Conditional filters for trigger workflow actions [Phase 40]
+- [x] Weekly email digest with Resend [Phase 41]
+- [x] PDF/JSON report generation service [Phase 41]
+- [x] FIN-01: Dynamic tier-based rate limiting in proxy.ts using Upstash Redis linked to Stripe subscription plans [Phase 42]
+- [x] SEC-01: Automated data retention policy engine (GDPR/LGPD audit log cleanup/anonymization) via QStash [Phase 43]
+- [x] AI-01: Lightweight event anomaly detection (MFA failures, webhook surges) with email alerts [Phase 44]
 
 ### Active
 
-- [ ] **TEST-01**: Unit tests for proxy security logic (CSP/Nonce)
-- [ ] **TEST-02**: E2E tests for tenant onboarding flows
-- [ ] **TOOL-01**: CLI utility for schema management & migrations
-- [ ] **API-03**: Proxy-based API Key Authentication with Rate Limiting
-- [ ] **API-02**: Webhooks infrastructure (Event dispatcher)
+- *No active requirements. Define next milestone in v12.0 requirements phase.*
 
 ## Constraints
 
-- **Tech Stack**: Next.js 15 (App Router), TypeScript, Tailwind CSS v4, shadcn/ui.
+- **Tech Stack**: Next.js 16 (App Router), TypeScript, Tailwind CSS v4, shadcn/ui.
 - **Database Architecture**: PostgreSQL with Drizzle ORM implementing Schema-per-tenant logic.
 - **Security**: Hardened security headers (HSTS, CSP, X-Frame-Options) via custom `proxy.ts`.
 - **Visual Design**: Premium aesthetic with GSAP for landing page/hero moments, and GSAP/Framer Motion for standard UI workflows.
@@ -86,4 +94,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-03 — Milestone v9.0 started*
+*Last updated: 2026-05-30 — Milestone v11.0 complete*

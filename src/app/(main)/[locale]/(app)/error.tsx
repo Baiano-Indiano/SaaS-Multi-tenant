@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { AlertCircle, RefreshCcw } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export default function AppError({
   error,
@@ -10,6 +11,8 @@ export default function AppError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations("Errors");
+
   useEffect(() => {
     // Log the error to an error reporting service
     console.error("App Error Boundary caught:", error);
@@ -23,9 +26,9 @@ export default function AppError({
         </div>
         
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-red-500">Failed to load content</h2>
+          <h2 className="text-lg font-semibold text-red-500">{t("failedToLoad")}</h2>
           <p className="text-zinc-400 text-sm">
-            We encountered a problem loading this section.
+            {t("encounterProblem")}
           </p>
         </div>
 
@@ -34,7 +37,7 @@ export default function AppError({
           className="mt-4 flex items-center justify-center gap-2 mx-auto bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-zinc-50 hover:bg-zinc-800 transition-colors py-2 px-4 rounded-lg font-medium text-sm"
         >
           <RefreshCcw className="w-4 h-4" />
-          Try again
+          {t("tryAgain")}
         </button>
       </div>
     </div>

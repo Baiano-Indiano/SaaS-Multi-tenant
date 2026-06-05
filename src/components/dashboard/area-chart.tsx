@@ -34,11 +34,11 @@ export function AreaChart({ data }: AreaChartProps) {
 
   const linePath = data.length > 1
     ? `M ${points.map(p => `${p.x},${p.y}`).join(" L ")}`
-    : `M ${padding},${points[0]?.y ?? 0} L ${width - padding},${points[0]?.y ?? 0}`;
+    : `M ${padding},${points.at(0)?.y ?? 0} L ${width - padding},${points.at(0)?.y ?? 0}`;
 
   const areaPath = data.length > 1
-    ? `${linePath} L ${points[points.length - 1].x},${height} L ${points[0].x},${height} Z`
-    : `M ${padding},${points[0]?.y ?? 0} L ${width - padding},${points[0]?.y ?? 0} L ${width - padding},${height} L ${padding},${height} Z`;
+    ? `${linePath} L ${points.at(-1)?.x ?? 0},${height} L ${points.at(0)?.x ?? 0},${height} Z`
+    : `M ${padding},${points.at(0)?.y ?? 0} L ${width - padding},${points.at(0)?.y ?? 0} L ${width - padding},${height} L ${padding},${height} Z`;
 
   useGSAP(() => {
     if (!pathRef.current || !areaRef.current || data.length === 0) return;
@@ -129,7 +129,7 @@ export function AreaChart({ data }: AreaChartProps) {
             r="4"
             className="fill-zinc-950 stroke-emerald-500 stroke-2 hover:r-6 transition-all duration-200 cursor-pointer"
           >
-            <title>{data[i]?.date}: {data[i]?.value}</title>
+            <title>{data.at(i)?.date}: {data.at(i)?.value}</title>
           </circle>
         ))}
       </svg>

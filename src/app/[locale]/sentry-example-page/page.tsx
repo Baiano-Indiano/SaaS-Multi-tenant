@@ -3,6 +3,7 @@
 import * as Sentry from "@sentry/nextjs";
 import Head from "next/head";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 class SentryExampleFrontendError extends Error {
   constructor(message: string | undefined) {
@@ -14,6 +15,7 @@ class SentryExampleFrontendError extends Error {
 export default function Page() {
   const [hasSentError, setHasSentError] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
+  const t = useTranslations("SentryExample");
 
   useEffect(() => {
     Sentry.logger.info("Sentry example page loaded");
@@ -27,7 +29,7 @@ export default function Page() {
   return (
     <div>
       <Head>
-        <title>sentry-example-page</title>
+        <title>{t("title")}</title>
         <meta name="description" content="Test Sentry for your Next.js app!" />
       </Head>
 
@@ -46,7 +48,7 @@ export default function Page() {
             fill="currentcolor"
           />
         </svg>
-        <h1>sentry-example-page</h1>
+        <h1>{t("title")}</h1>
 
         <p className="description">
           Click the button below, and view the sample error on the Sentry{" "}
@@ -90,11 +92,11 @@ export default function Page() {
           }}
           disabled={!isConnected}
         >
-          <span>Throw Sample Error</span>
+          <span>{t("throwError")}</span>
         </button>
 
         {hasSentError ? (
-          <p className="success">Error sent to Sentry.</p>
+          <p className="success">{t("errorSent")}</p>
         ) : !isConnected ? (
           <div className="connectivity-error">
             <p>

@@ -4,6 +4,8 @@ import { withAdminTenantDb } from "./db/tenant-db";
 import { workflows, webhooks, webhookDeliveries } from "./db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
+import { evaluateWorkflowFilters } from "./workflows/evaluator";
+import { trackWebhookDelivery } from "./security/webhook-tracker";
 
 const devInternalWebhookFallback = randomBytes(32).toString("hex");
 let warnedAboutDevFallback = false;
@@ -88,8 +90,13 @@ function getInternalWebhookSecret(): string {
  * Central hub for system events. Triggers matching workflows (internal integrations)
  * and standard webhooks (external consumers), publishing to QStash for background delivery.
  */
-export async function emitEvent(orgId: string, event: string, payload: Record<string, unknown>) {
-  console.log(`[Event Hub] Emitting event "${event}" for org "${orgId}"`);
+export async function emitEvent(orgId: string, event: string, payload: Record<string, unknown>, depth: number = 0) {
+  console.log(`[Event Hub] Emitting event "${event}" for org "${orgId}" (depth: ${depth})`);
+  
+  if (depth >= 5) {
+    console.warn(`[Event Hub] Aborting event execution for "${event}" due to excessive cascade depth (depth: ${depth})`);
+    return;
+  }
 
   const qstash = getQStashClient();
   if (!qstash) {
@@ -119,6 +126,14 @@ export async function emitEvent(orgId: string, event: string, payload: Record<st
 
     // 1. Process Internal Workflows (Connectors like Slack/Discord)
     for (const workflow of activeWorkflows) {
+      // Evaluate filters if configured
+      if (workflow.filters) {
+        const matches = await evaluateWorkflowFilters(workflow.filters, payload);
+        if (!matches) {
+          console.log(`[Event Hub] Workflow "${workflow.name}" (${workflow.id}) conditions did not match payload. Skipping delivery.`);
+          continue;
+        }
+      }
       if (workflow.actionType === "webhook") {
         const config = JSON.parse(workflow.actionConfig);
         const deliveryId = `wd_wf_${uuidv4()}`;
@@ -133,6 +148,9 @@ export async function emitEvent(orgId: string, event: string, payload: Record<st
             status: "processing",
           });
         });
+
+        // Track delivery for anomaly detection
+        trackWebhookDelivery(orgId).catch((e) => console.error("Failed to track webhook anomaly stats:", e));
         
         await qstash.publishJSON({
           url: `${appUrl}/api/webhooks/qstash-handler`,
@@ -145,11 +163,13 @@ export async function emitEvent(orgId: string, event: string, payload: Record<st
             event,
             payload,
             secret: internalWebhookSecret,
+            depth: depth + 1,
           },
           headers: {
             "x-gravity-org-id": orgId,
             "x-gravity-workflow-id": workflow.id,
             "x-gravity-delivery-id": deliveryId,
+            "x-gravity-depth": String(depth + 1),
           },
         });
       }
@@ -170,6 +190,9 @@ export async function emitEvent(orgId: string, event: string, payload: Record<st
         });
       });
 
+      // Track delivery for anomaly detection
+      trackWebhookDelivery(orgId).catch((e) => console.error("Failed to track webhook anomaly stats:", e));
+
       await qstash.publishJSON({
         url: `${appUrl}/api/webhooks/qstash-handler`,
         body: {
@@ -180,11 +203,13 @@ export async function emitEvent(orgId: string, event: string, payload: Record<st
           event,
           payload,
           secret: webhook.secret,
+          depth: depth + 1,
         },
         headers: {
           "x-gravity-org-id": orgId,
           "x-gravity-webhook-id": webhook.id,
           "x-gravity-delivery-id": deliveryId,
+          "x-gravity-depth": String(depth + 1),
         },
       });
     }

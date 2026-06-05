@@ -54,69 +54,75 @@ export async function detectSessionAnomaly(
   env: EnvironmentFingerprint,
   userMetadata: { name: string; email: string; organizationId?: string }
 ) {
-  const fingerprint = getFingerprint(env);
-  const redisKey = `user:${userId}:envs`;
+  try {
+    const fingerprint = getFingerprint(env);
+    const redisKey = `user:${userId}:envs`;
 
-  // 1. Check if fingerprint is known
-  const isKnown = await redis.sismember(redisKey, fingerprint);
+    // 1. Check if fingerprint is known
+    const isKnown = await redis.sismember(redisKey, fingerprint);
 
-  if (!isKnown) {
-    console.log(`[Security] Anomaly detected for user ${userId}: New environment ${env.ip}`);
+    if (!isKnown) {
+      console.log(`[Security] Anomaly detected for user ${userId}: New environment ${env.ip}`);
 
-    // 2. Register new environment (after alert)
-    // We store it so we don't spam alerts for the same new device
-    await redis.sadd(redisKey, fingerprint);
-    
-    // 3. Record Audit Log (always fires — no cooldown)
-    if (userMetadata.organizationId) {
-      await recordAuditLog({
+      // 2. Register new environment (after alert)
+      // We store it so we don't spam alerts for the same new device
+      await redis.sadd(redisKey, fingerprint);
+      
+      // 3. Record Audit Log (always fires — no cooldown)
+      if (userMetadata.organizationId) {
+        await recordAuditLog({
+          organizationId: userMetadata.organizationId,
+          action: "SECURITY_ANOMALY_DETECTED",
+          entityType: "USER",
+          entityId: userId,
+          details: `Novo ambiente de login detectado: IP ${env.ip}, User-Agent: ${env.userAgent.substring(0, 100)}...`,
+          ip: env.ip,
+          userAgent: env.userAgent,
+          actor: {
+            id: userId,
+            name: userMetadata.name,
+            email: userMetadata.email,
+          }
+        });
+      }
+
+      // 4. Trigger In-App Notification (always fires — no cooldown)
+      await sendNotification({
+        userId,
         organizationId: userMetadata.organizationId,
-        action: "SECURITY_ANOMALY_DETECTED",
-        entityType: "USER",
-        entityId: userId,
-        details: `Novo ambiente de login detectado: IP ${env.ip}, User-Agent: ${env.userAgent.substring(0, 100)}...`,
-        ip: env.ip,
-        userAgent: env.userAgent,
-        actor: {
-          id: userId,
-          name: userMetadata.name,
-          email: userMetadata.email,
-        }
-      });
-    }
-
-    // 4. Trigger In-App Notification (always fires — no cooldown)
-    await sendNotification({
-      userId,
-      organizationId: userMetadata.organizationId,
-      type: "SECURITY_ANOMALY",
-      title: "Novo Login Detectado",
-      message: `Um novo login foi realizado a partir de um ambiente não reconhecido (IP: ${env.ip}). Se não foi você, mude sua senha imediatamente.`,
-    });
-
-    // 5. Send Email Alert (rate-limited per user)
-    const emailCooldownKey = `user:${userId}:anomaly_email_cooldown`;
-    const isOnCooldown = await redis.get(emailCooldownKey);
-
-    if (!isOnCooldown) {
-      const location = getMockLocation(env.ip);
-      await sendSecurityAlertEmail({
-        to: userMetadata.email,
-        userName: userMetadata.name,
-        ip: env.ip,
-        userAgent: env.userAgent,
-        location,
+        type: "SECURITY_ANOMALY",
+        title: "Novo Login Detectado",
+        message: `Um novo login foi realizado a partir de um ambiente não reconhecido (IP: ${env.ip}). Se não foi você, mude sua senha imediatamente.`,
       });
 
-      // Set cooldown: no more emails for this user for 30 minutes
-      await redis.set(emailCooldownKey, "1", { ex: EMAIL_COOLDOWN_SECONDS });
-    } else {
-      console.log(`[Security] Email alert suppressed for user ${userId} (cooldown active)`);
+      // 5. Send Email Alert (rate-limited per user)
+      const emailCooldownKey = `user:${userId}:anomaly_email_cooldown`;
+      const isOnCooldown = await redis.get(emailCooldownKey);
+
+      if (!isOnCooldown) {
+        const location = getMockLocation(env.ip);
+        await sendSecurityAlertEmail({
+          to: userMetadata.email,
+          userName: userMetadata.name,
+          ip: env.ip,
+          userAgent: env.userAgent,
+          location,
+        });
+
+        // Set cooldown: no more emails for this user for 30 minutes
+        await redis.set(emailCooldownKey, "1", { ex: EMAIL_COOLDOWN_SECONDS });
+      } else {
+        console.log(`[Security] Email alert suppressed for user ${userId} (cooldown active)`);
+      }
+      
+      return { anomaly: true, fingerprint };
     }
-    
-    return { anomaly: true, fingerprint };
+
+    return { anomaly: false, fingerprint };
+  } catch (error) {
+    console.error("[Security] Error in detectSessionAnomaly (Redis offline):", error);
+    // Return safe default: assume not anomaly to allow login to proceed
+    return { anomaly: false, fingerprint: "" };
   }
-
-  return { anomaly: false, fingerprint };
 }
 

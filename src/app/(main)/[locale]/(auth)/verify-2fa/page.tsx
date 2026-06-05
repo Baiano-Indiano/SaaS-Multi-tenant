@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
+import { trustDeviceAction } from "@/app/actions/security";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +16,7 @@ export default function Verify2FAPage() {
   const [code, setCode] = useState("");
   const [isBackup, setIsBackup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [trustDevice, setTrustDevice] = useState(false);
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +34,7 @@ export default function Verify2FAPage() {
       } else {
         const { error } = await authClient.twoFactor.verifyTotp({
           code,
+          trustDevice,
         });
         if (error) {
           toast.error(error.message || "Invalid verification code");
@@ -40,6 +43,13 @@ export default function Verify2FAPage() {
       }
 
       toast.success("Identity verified!");
+
+      if (trustDevice) {
+        await trustDeviceAction().catch((err) =>
+          console.error("Failed to establish device trust:", err)
+        );
+      }
+
       router.push("/selecionar-org");
       router.refresh();
     } catch {
@@ -91,6 +101,19 @@ export default function Verify2FAPage() {
                   required
                   autoFocus
                 />
+              </div>
+
+              <div className="flex items-center space-x-2 py-1">
+                <input
+                  id="trust-device"
+                  type="checkbox"
+                  checked={trustDevice}
+                  onChange={(e) => setTrustDevice(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded border-zinc-800 bg-zinc-950 text-emerald-500 focus:ring-emerald-500/20"
+                />
+                <label htmlFor="trust-device" className="text-xs text-zinc-400 cursor-pointer select-none font-medium">
+                  Lembrar deste dispositivo por 30 dias
+                </label>
               </div>
 
               <Button 

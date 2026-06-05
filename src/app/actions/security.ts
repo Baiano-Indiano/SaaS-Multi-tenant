@@ -7,8 +7,12 @@ import { organizations, users, sessions } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { recordAuditLog } from "@/lib/audit";
 import { can } from "@/lib/auth/rbac-utils";
-import { toggle2FAEnforcementSchema, check2FAComplianceSchema } from "@/lib/validations";
+import { toggle2FAEnforcementSchema, check2FAComplianceSchema, updateDataRetentionSchema } from "@/lib/validations";
 import { securityActionRateLimit, enforceRateLimit } from "@/lib/rate-limit";
+import { redis } from "@/lib/redis";
+import { l1Cache } from "@/lib/cache/l1-cache";
+import { cookies } from "next/headers";
+import { encrypt, decrypt } from "@/lib/security/crypto";
 
 type SecurityActionResponse =
   | { success: true }
@@ -18,21 +22,21 @@ type SecurityActionResponse =
  * Toggles 2FA enforcement for an organization.
  * Requires 'security:manage' permission.
  */
-export async function toggle2FAEnforcementAction(
-  organizationId: string,
-  enabled: boolean
-): Promise<SecurityActionResponse> {
-  const session = await auth.api.getSession({ headers: await headers() });
-  
-  if (!session?.user) {
+export async function toggle2FAEnforcementAction(organizationId: string, enabled: boolean, gracePeriodDays?: number | null) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
     return { success: false, error: "Sessão expirada. Faça login novamente." };
   }
 
   try {
     // Input Validation
-    const validated = toggle2FAEnforcementSchema.parse({ organizationId, enabled });
+    const validated = toggle2FAEnforcementSchema.parse({ organizationId, enabled, gracePeriodDays });
     organizationId = validated.organizationId;
     enabled = validated.enabled;
+    const graceDays = validated.gracePeriodDays ?? 0;
 
     // Rate Limiting
     await enforceRateLimit(securityActionRateLimit, session.user.id);
@@ -43,10 +47,36 @@ export async function toggle2FAEnforcementAction(
       return { success: false, error: "Você não tem permissão para gerenciar a segurança desta organização." };
     }
 
+    // Fetch organization details to get the slug for cache updating/invalidation
+    const org = await db.query.organizations.findFirst({
+      where: eq(organizations.id, organizationId),
+    });
+
+    const mfaEnforcedAtDate = enabled ? (org?.mfaEnforcedAt || new Date()) : null;
+
     // 2. Update organization
     await db.update(organizations)
-      .set({ require2FA: enabled })
+      .set({ 
+        require2FA: enabled,
+        mfaGracePeriodDays: enabled ? graceDays : null,
+        mfaEnforcedAt: mfaEnforcedAtDate,
+      })
       .where(eq(organizations.id, organizationId));
+
+    // Cache write-through
+    const cacheData = { 
+      require2FA: enabled, 
+      id: organizationId, 
+      plan: org?.plan || "free",
+      mfaGracePeriodDays: enabled ? graceDays : null,
+      mfaEnforcedAt: mfaEnforcedAtDate ? mfaEnforcedAtDate.toISOString() : null,
+    };
+    await redis.set(`org:${organizationId}`, cacheData);
+    l1Cache.set(`org:${organizationId}`, cacheData);
+    if (org?.slug) {
+      await redis.set(`org:${org.slug}`, cacheData);
+      l1Cache.set(`org:${org.slug}`, cacheData);
+    }
 
     // 3. Record Audit Log
     await recordAuditLog({
@@ -54,7 +84,7 @@ export async function toggle2FAEnforcementAction(
       action: enabled ? "2FA_ENFORCED" : "2FA_ENFORCEMENT_REMOVED",
       entityType: "ORGANIZATION",
       entityId: organizationId,
-      details: `${enabled ? "Ativou" : "Desativou"} a obrigatoriedade de 2FA para a organização.`,
+      details: `${enabled ? "Ativou" : "Desativou"} a obrigatoriedade de 2FA para a organização. Grace period: ${graceDays} dias.`,
     });
 
     return { success: true };
@@ -239,4 +269,129 @@ export async function revokeMemberSessionAction(
     console.error("Failed to revoke member session:", error);
     return { success: false, error: "Falha ao revogar sessão do membro." };
   }
+}
+
+/**
+ * Updates data retention settings for an organization.
+ * Requires 'security:manage' permission.
+ */
+export async function updateDataRetentionAction(
+  organizationId: string,
+  enabled: boolean,
+  days: number | null
+): Promise<SecurityActionResponse> {
+  const session = await auth.api.getSession({ headers: await headers() });
+  
+  if (!session?.user) {
+    return { success: false, error: "Sessão expirada. Faça login novamente." };
+  }
+
+  try {
+    // Input Validation
+    const validated = updateDataRetentionSchema.parse({ organizationId, enabled, days });
+    organizationId = validated.organizationId;
+    const finalDays = validated.enabled ? validated.days ?? null : null;
+
+    // Rate Limiting
+    await enforceRateLimit(securityActionRateLimit, session.user.id);
+
+    // 1. Verify Permission
+    const allowed = await can(session.user.id, organizationId, "security:manage");
+    if (!allowed) {
+      return { success: false, error: "Você não tem permissão para gerenciar a segurança desta organização." };
+    }
+
+    // Fetch organization details to get current fields (require2FA, plan, slug) for cache
+    const org = await db.query.organizations.findFirst({
+      where: eq(organizations.id, organizationId),
+    });
+
+    if (!org) {
+      return { success: false, error: "Organização não encontrada." };
+    }
+
+    // 2. Update organization
+    await db.update(organizations)
+      .set({ dataRetentionDays: finalDays })
+      .where(eq(organizations.id, organizationId));
+
+    // Cache write-through
+    const cacheData = { 
+      require2FA: org.require2FA, 
+      id: organizationId, 
+      plan: org.plan 
+    };
+    await redis.set(`org:${organizationId}`, cacheData);
+    l1Cache.set(`org:${organizationId}`, cacheData);
+    if (org.slug) {
+      await redis.set(`org:${org.slug}`, cacheData);
+      l1Cache.set(`org:${org.slug}`, cacheData);
+    }
+
+    // 3. Record Audit Log
+    await recordAuditLog({
+      organizationId,
+      action: finalDays !== null ? "DATA_RETENTION_UPDATED" : "DATA_RETENTION_DISABLED",
+      entityType: "ORGANIZATION",
+      entityId: organizationId,
+      details: finalDays !== null 
+        ? `Atualizou a política de retenção de dados para ${finalDays} dias.` 
+        : "Desativou a política de retenção de dados (retenção indefinita).",
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to update data retention:", error);
+    return { success: false, error: "Falha ao atualizar configuração de retenção de dados." };
+  }
+}
+
+export async function trustDeviceAction() {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      throw new Error("Unauthorized");
+    }
+
+    const userId = session.user.id;
+    const cookieStore = await cookies();
+    const expiry = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 dias
+    const payload = JSON.stringify({ userId, expiry });
+    const encryptedPayload = encrypt(payload);
+
+    cookieStore.set(`trusted-device-${userId}`, encryptedPayload, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 30 * 24 * 60 * 60, // 30 dias
+      path: "/",
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to trust device:", error);
+    return { success: false, error: "Falha ao registrar dispositivo confiável." };
+  }
+}
+
+export async function isDeviceTrustedAction(userId: string): Promise<boolean> {
+  try {
+    const cookieStore = await cookies();
+    const cookie = cookieStore.get(`trusted-device-${userId}`);
+    if (!cookie?.value) return false;
+
+    const decrypted = decrypt(cookie.value);
+    if (!decrypted) return false;
+
+    const data = JSON.parse(decrypted);
+    if (data.userId === userId && data.expiry > Date.now()) {
+      return true;
+    }
+  } catch {
+    return false;
+  }
+  return false;
 }

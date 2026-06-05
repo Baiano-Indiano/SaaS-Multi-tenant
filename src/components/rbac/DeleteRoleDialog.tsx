@@ -14,6 +14,7 @@ import { deleteRoleAction } from "@/app/actions/rbac";
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 interface DeleteRoleDialogProps {
   open: boolean;
@@ -33,6 +34,7 @@ export function DeleteRoleDialog({
   orgSlug,
 }: DeleteRoleDialogProps) {
   const [loading, setLoading] = useState(false);
+  const t = useTranslations("RBAC");
 
   async function handleDelete() {
     const promise = async () => {
@@ -46,9 +48,9 @@ export function DeleteRoleDialog({
     };
 
     toast.promise(promise(), {
-      loading: "Excluindo role...",
-      success: "Role excluída com sucesso.",
-      error: (err) => err instanceof Error ? err.message : "Não foi possível excluir a role.",
+      loading: t("deletingRole"),
+      success: t("roleDeleted"),
+      error: (err) => err instanceof Error ? err.message : t("deleteRoleError"),
     });
   }
 
@@ -60,11 +62,13 @@ export function DeleteRoleDialog({
             <div className="p-2 bg-red-500/10 rounded-full">
               <AlertTriangle className="h-6 w-6" />
             </div>
-            <DialogTitle className="text-xl">Delete Role</DialogTitle>
+            <DialogTitle className="text-xl">{t("deleteRole")}</DialogTitle>
           </div>
           <DialogDescription className="text-zinc-400">
-            Are you sure you want to delete the <span className="text-zinc-100 font-semibold">&quot;{roleName}&quot;</span> role? 
-            This action cannot be undone and may affect users currently assigned to this role.
+            {t.rich("deleteConfirm", {
+              roleName,
+              highlight: (chunks) => <span className="text-zinc-100 font-semibold">{chunks}</span>
+            })}
           </DialogDescription>
         </DialogHeader>
 
@@ -76,7 +80,7 @@ export function DeleteRoleDialog({
             className="text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900"
             disabled={loading}
           >
-            Cancel
+            {t("cancel")}
           </Button>
           <Button
             onClick={handleDelete}
@@ -84,7 +88,7 @@ export function DeleteRoleDialog({
             variant="destructive"
             className="bg-red-600 hover:bg-red-700 text-white min-w-[140px]"
           >
-            Delete Role
+            {t("deleteRole")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -26,6 +26,7 @@ import { Plus, Loader2 } from "lucide-react";
 import { SlackIcon, DiscordIcon } from "@/components/icons";
 import { createConnectorAction } from "@/app/actions/connectors";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 gsap.registerPlugin(useGSAP);
 
@@ -35,6 +36,7 @@ interface CreateConnectorDialogProps {
 }
 
 export function CreateConnectorDialog({ orgId, orgSlug }: CreateConnectorDialogProps) {
+  const t = useTranslations("Settings.integrations");
   const [isOpen, setIsOpen] = React.useState(false);
   const [isPending, setIsPending] = React.useState(false);
   const dialogRef = React.useRef<HTMLDivElement>(null);
@@ -60,11 +62,11 @@ export function CreateConnectorDialog({ orgId, orgSlug }: CreateConnectorDialogP
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Connector created successfully!");
+        toast.success(t("toastSuccess"));
         setIsOpen(false);
       }
     } catch {
-      toast.error("An unexpected error occurred");
+      toast.error(t("toastUnexpectedError"));
     } finally {
       setIsPending(false);
     }
@@ -88,65 +90,65 @@ export function CreateConnectorDialog({ orgId, orgSlug }: CreateConnectorDialogP
         render={
           <Button className="bg-zinc-100 text-zinc-950 hover:bg-zinc-200">
             <Plus className="h-4 w-4 mr-2" />
-            Add Integration
+            {t("addIntegration")}
           </Button>
         }
       />
       <DialogContent ref={dialogRef} className="sm:max-w-[425px] bg-zinc-950 border-zinc-800 text-zinc-100">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold bg-gradient-to-br from-zinc-100 to-zinc-400 bg-clip-text text-transparent">
-            New Integration
+            {t("newIntegration")}
           </DialogTitle>
           <DialogDescription className="text-zinc-400">
-            Connect a new external service to receive rich notifications.
+            {t("dialogDesc")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
           <div className="space-y-4">
             <div className="space-y-2 connector-field">
-              <Label htmlFor="name" className="text-zinc-300">Name</Label>
+              <Label htmlFor="name" className="text-zinc-300">{t("nameLabel")}</Label>
               <Input
                 id="name"
                 name="name"
-                placeholder="e.g. Engineering Slack"
+                placeholder={t("namePlaceholder")}
                 required
                 className="bg-zinc-900/50 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:ring-zinc-700"
               />
             </div>
             <div className="space-y-2 connector-field">
-              <Label htmlFor="type" className="text-zinc-300">Service Type</Label>
+              <Label htmlFor="type" className="text-zinc-300">{t("serviceType")}</Label>
               <Select name="type" defaultValue="slack" required>
                 <SelectTrigger className="bg-zinc-900/50 border-zinc-800 text-zinc-100 focus:ring-zinc-700">
-                  <SelectValue placeholder="Select a service" />
+                  <SelectValue placeholder={t("selectService")} />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
                   <SelectItem value="slack">
                     <div className="flex items-center gap-2">
                       <SlackIcon className="h-4 w-4 text-[#4A154B]" />
-                      <span>Slack</span>
+                      <span>{t("slackLabel")}</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="discord">
                     <div className="flex items-center gap-2">
                       <DiscordIcon className="h-4 w-4 text-[#5865F2]" />
-                      <span>Discord</span>
+                      <span>{t("discordLabel")}</span>
                     </div>
                   </SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2 connector-field">
-              <Label htmlFor="webhookUrl" className="text-zinc-300">Webhook URL</Label>
+              <Label htmlFor="webhookUrl" className="text-zinc-300">{t("webhookUrlLabel")}</Label>
               <Input
                 id="webhookUrl"
                 name="webhookUrl"
-                placeholder="https://hooks.slack.com/services/..."
+                placeholder={t("webhookPlaceholder")}
                 type="url"
                 required
                 className="bg-zinc-900/50 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:ring-zinc-700"
               />
               <p className="text-[10px] text-zinc-500 italic">
-                Your credentials are encrypted and stored securely within your tenant schema.
+                {t("securityNotice")}
               </p>
             </div>
           </div>
@@ -159,10 +161,10 @@ export function CreateConnectorDialog({ orgId, orgSlug }: CreateConnectorDialogP
               {isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating...
+                  {t("creating")}
                 </>
               ) : (
-                "Create Connector"
+                t("createConnector")
               )}
             </Button>
           </DialogFooter>

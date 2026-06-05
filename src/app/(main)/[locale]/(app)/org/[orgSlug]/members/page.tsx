@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { getTenantDb } from "@/lib/db/tenant-db";
 import { MemberList } from "@/components/members/MemberList";
 import { InviteMemberDialog } from "@/components/members/InviteMemberDialog";
+import { RbacPermissionMatrix } from "@/components/members/rbac-permission-matrix";
 import { Users } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
@@ -80,6 +81,8 @@ export default async function MembersPage({
         orgSlug={org.slug!} 
         roles={availableRoles} 
       />
+
+      <RbacPermissionMatrix roles={availableRoles} />
 
       <GsapEntrance delay={0.2}>
         <div className="bg-zinc-950/30 border border-zinc-900 border-dashed rounded-xl p-6 text-center">

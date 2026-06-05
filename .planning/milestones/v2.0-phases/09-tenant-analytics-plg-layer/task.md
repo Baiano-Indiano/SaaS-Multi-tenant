@@ -1,0 +1,5 @@
+- [x] Criar `OverviewChart`
+- [x] Implementar `ActivityFeed` funcional
+- [x] Refatorar `DashboardPage` para usar `DashboardClient`
+- [x] Integrar widgets de cota no `AnalyticsWidgets`
+- [ ] Adicionar suporte a exportação de CSV simples (backlog)

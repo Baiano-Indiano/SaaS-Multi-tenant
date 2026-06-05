@@ -1,0 +1,6 @@
+- [x] Integrate `@gsap/react` and `gsap` in `package.json`
+- [x] Implement GSAP interactions in `button.tsx`
+- [x] Implement staggered entrance in `app-sidebar.tsx`
+- [x] Refine Modal/Dialog transitions with GSAP/Framer Motion
+- [x] Update documentation (`PROJECT.md`, `README.md`, `STACK.md`)
+- [x] Verify accessibility (prefers-reduced-motion)

@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { headers } from "next/headers";
 import { getTenantDb, withAdminTenantDb } from "./db/tenant-db";
 import { auditLogs } from "./db/schema";
@@ -35,14 +36,17 @@ export function sanitizeAuditDetails(details: unknown): unknown {
       return item.map(sanitize);
     }
     if (typeof item === "object" && item !== null) {
-      const sanitized: Record<string, unknown> = {};
+      const sanitized: Record<string, unknown> = Object.create(null);
       for (const [key, value] of Object.entries(item as Record<string, unknown>)) {
+        if (key === "__proto__" || key === "constructor" || key === "prototype") {
+          continue;
+        }
         const lowerKey = key.toLowerCase();
         const isSensitive = SENSITIVE_KEYWORDS.some(keyword => lowerKey.includes(keyword));
         if (isSensitive) {
-          sanitized[key] = "[REDACTED]";
+          Reflect.set(sanitized, key, "[REDACTED]");
         } else {
-          sanitized[key] = sanitize(value);
+          Reflect.set(sanitized, key, sanitize(value));
         }
       }
       return sanitized;
@@ -83,18 +87,20 @@ export async function recordAuditLog(params: {
     // headers() might fail in some contexts (e.g. outside of request)
   }
 
+  logger.info('audit', `➜ recordAuditLog | action: ${params.action} | entity: ${params.entityType} | org: ${params.organizationId}`);
+
   if (!params.actor) {
     try {
       session = await auth.api.getSession({
         headers: headersList || undefined,
       });
     } catch (e) {
-      console.error("Audit Log: Failed to get session:", e);
+      logger.error('audit', '✗ recordAuditLog | session fetch failed', e);
     }
   }
 
   if (!session && !params.actor) {
-    console.warn("Audit Log: No active session or manual actor found. Skipping log.");
+    logger.warn('audit', `⚠ recordAuditLog skipped | no session or actor found | org: ${params.organizationId}`);
     return;
   }
 
@@ -131,6 +137,8 @@ export async function recordAuditLog(params: {
       await getTenantDb(userId!, params.organizationId, insertLog);
     }
 
+    logger.info('audit', `✓ recordAuditLog | action: ${params.action} | actor: ${userId} | org: ${params.organizationId}`);
+
     // Trigger SIEM/Webhook Export
     // Use fire-and-forget (or non-blocking) to avoid slowing down the main action
     const eventPayload = {
@@ -148,11 +156,11 @@ export async function recordAuditLog(params: {
     };
 
     emitEvent(params.organizationId, "audit.log_created", eventPayload).catch(err => 
-      console.error("[Audit SIEM] Failed to emit audit event:", err)
+      logger.error('audit', `✗ SIEM event emission failed | action: ${params.action}`, err)
     );
 
   } catch (error) {
-    console.error("Failed to record audit log:", error);
+    logger.error('audit', `✗ recordAuditLog failed | action: ${params.action} | org: ${params.organizationId}`, error);
   }
 }
 
@@ -163,8 +171,12 @@ export async function recordAuditLog(params: {
  * Should be run within a tenant-isolated transaction.
  */
 export async function cleanupAuditLogs(tx: TenantTransaction) {
+  logger.info('audit', '➜ cleanupAuditLogs | purging records older than 90 days');
+
   const ninetyDaysAgo = new Date();
   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
   await tx.delete(auditLogs).where(lt(auditLogs.createdAt, ninetyDaysAgo));
+
+  logger.info('audit', '✓ cleanupAuditLogs completed');
 }

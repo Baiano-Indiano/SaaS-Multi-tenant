@@ -6,7 +6,10 @@ import { organizations, auditLogs } from "@/lib/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { getTenantDb } from "@/lib/db/tenant-db";
 import { ActivityLogFeed, type AuditLog } from "@/components/settings/ActivityLog";
-import { Activity } from "lucide-react";
+import { Activity, FileDown, FileJson } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 import { GsapEntrance } from "@/components/ui/gsap-entrance";
 import { getTranslations } from "next-intl/server";
@@ -72,6 +75,43 @@ export default async function ActivityPage({
       </GsapEntrance>
 
       <ActivityLogFeed logs={logs as AuditLog[]} />
+
+      <GsapEntrance delay={0.1}>
+        <Card className="bg-zinc-950/40 border-zinc-900 shadow-lg">
+          <CardContent className="p-6">
+            <h4 className="text-md font-semibold text-zinc-200">
+              {t("exportTitle")}
+            </h4>
+            <p className="text-xs text-zinc-400 mt-1 mb-4">
+              {t("exportDescription")}
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href={`/api/org/${orgSlug}/reports?format=pdf`}
+                download
+                className={cn(
+                  buttonVariants({ variant: "outline" }),
+                  "border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 hover:text-zinc-100 text-zinc-300 gap-2 cursor-pointer"
+                )}
+              >
+                <FileDown className="h-4 w-4" />
+                {t("downloadPdf")}
+              </a>
+              <a
+                href={`/api/org/${orgSlug}/reports?format=json`}
+                download
+                className={cn(
+                  buttonVariants({ variant: "outline" }),
+                  "border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 hover:text-zinc-100 text-zinc-300 gap-2 cursor-pointer"
+                )}
+              >
+                <FileJson className="h-4 w-4" />
+                {t("downloadJson")}
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+      </GsapEntrance>
     </div>
   );
 }

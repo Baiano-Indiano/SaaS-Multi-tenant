@@ -1,0 +1,12 @@
+# Snyk policy file
+version: v1.25.0
+exclude:
+  - .next
+  - .vercel
+  - node_modules
+  - playwright-report
+  - test-results
+  - coverage
+  - build
+  - dist
+  - out

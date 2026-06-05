@@ -11,6 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { saveAuditExportConfig } from "@/lib/actions/audit-export";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 interface AuditExportConfig {
   id: string;
@@ -34,6 +35,7 @@ export function AuditLogExportSettings({
   initialConfig 
 }: AuditLogExportSettingsProps) {
   const router = useRouter();
+  const t = useTranslations("Security");
   const [loading, setLoading] = useState(false);
   const [enabled, setEnabled] = useState(initialConfig?.isActive ?? false);
   const [config, setConfig] = useState({
@@ -46,7 +48,7 @@ export function AuditLogExportSettings({
 
   const handleSave = async () => {
     if (!config.bucketName || !config.accessKeyId || !config.secretAccessKey) {
-      toast.error("Please fill in all required fields.");
+      toast.error(t("fillRequiredFields"));
       return;
     }
 
@@ -59,13 +61,13 @@ export function AuditLogExportSettings({
       });
 
       if (result.success) {
-        toast.success("Audit export configuration saved and verified.");
+        toast.success(t("configSaved"));
         router.refresh();
       } else {
-        toast.error(result.error || "Failed to save configuration.");
+        toast.error(result.error || t("configSaveFailed"));
       }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "An unexpected error occurred.";
+      const message = error instanceof Error ? error.message : t("unexpectedError");
       toast.error(message);
     } finally {
       setLoading(false);
@@ -82,9 +84,9 @@ export function AuditLogExportSettings({
                 <Database className="h-5 w-5 text-emerald-500" />
               </div>
               <div>
-                <CardTitle className="text-lg font-bold text-zinc-100">SIEM Audit Log Export (S3)</CardTitle>
+                <CardTitle className="text-lg font-bold text-zinc-100">{t("siemExportTitle")}</CardTitle>
                 <CardDescription className="text-xs text-zinc-500 mt-0.5">
-                  Automated daily batch exports of security events to your infrastructure.
+                  {t("siemExportDesc")}
                 </CardDescription>
               </div>
             </div>
@@ -99,7 +101,7 @@ export function AuditLogExportSettings({
         <CardContent className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="bucket" className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">Bucket Name</Label>
+              <Label htmlFor="bucket" className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">{t("bucketName")}</Label>
               <Input 
                 id="bucket" 
                 placeholder="my-org-audit-logs" 
@@ -110,7 +112,7 @@ export function AuditLogExportSettings({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="region" className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">Region</Label>
+              <Label htmlFor="region" className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">{t("region")}</Label>
               <Input 
                 id="region" 
                 placeholder="us-east-1" 
@@ -121,7 +123,7 @@ export function AuditLogExportSettings({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="endpoint" className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">Endpoint URL (S3-Compatible)</Label>
+              <Label htmlFor="endpoint" className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">{t("endpointUrl")}</Label>
               <Input 
                 id="endpoint" 
                 placeholder="https://s3.amazonaws.com" 
@@ -129,14 +131,14 @@ export function AuditLogExportSettings({
                 value={config.endpoint}
                 onChange={(e) => setConfig({ ...config, endpoint: e.target.value })}
               />
-              <p className="text-[10px] text-zinc-500 italic">Leave blank for AWS S3. Required for Cloudflare R2, MinIO, or DigitalOcean.</p>
+              <p className="text-[10px] text-zinc-500 italic">{t("endpointHelp")}</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="accessKey" className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">Access Key ID</Label>
+              <Label htmlFor="accessKey" className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">{t("accessKeyId")}</Label>
               <Input 
                 id="accessKey" 
-                placeholder={initialConfig?.accessKeyId === "********" ? "Keep current key" : "AKIA..."}
+                placeholder={initialConfig?.accessKeyId === "********" ? t("keepCurrentKey") : "AKIA..."}
                 className="bg-zinc-900/50 border-zinc-800 text-zinc-200 h-10 focus:ring-emerald-500/20"
                 value={config.accessKeyId === "********" ? "" : config.accessKeyId}
                 onChange={(e) => setConfig({ ...config, accessKeyId: e.target.value })}
@@ -144,11 +146,11 @@ export function AuditLogExportSettings({
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="secretKey" className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">Secret Access Key</Label>
+              <Label htmlFor="secretKey" className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">{t("secretAccessKey")}</Label>
               <Input 
                 id="secretKey" 
                 type="password"
-                placeholder={initialConfig?.secretAccessKey === "********" ? "Keep current secret" : "Enter secret key"}
+                placeholder={initialConfig?.secretAccessKey === "********" ? t("keepCurrentSecret") : t("enterSecretKey")}
                 className="bg-zinc-900/50 border-zinc-800 text-zinc-200 h-10 focus:ring-emerald-500/20"
                 value={config.secretAccessKey === "********" ? "" : config.secretAccessKey}
                 onChange={(e) => setConfig({ ...config, secretAccessKey: e.target.value })}
@@ -159,11 +161,16 @@ export function AuditLogExportSettings({
           <div className="pt-4 flex flex-col gap-4">
             <Alert className="bg-emerald-500/5 border-emerald-500/10 text-emerald-400/80 rounded-xl">
               <Shield className="h-4 w-4" />
-              <AlertTitle className="text-xs font-bold uppercase tracking-tight">SIEM Compliance Ready</AlertTitle>
+              <AlertTitle className="text-xs font-bold uppercase tracking-tight">{t("siemComplianceReady")}</AlertTitle>
               <AlertDescription className="text-[11px] leading-relaxed mt-1 opacity-90">
-                Audit logs are exported in a flat JSON structure at <strong>00:00 UTC daily</strong>. 
-                Credentials are encrypted using AES-256-GCM. 
-                Real-time streaming can be configured separately via <a href="./connectivity" className="underline hover:text-emerald-300">Webhooks</a> using the <code>audit.log_created</code> trigger.
+                {t.rich("siemComplianceDesc", {
+                  highlight: (chunks) => <strong>{chunks}</strong>,
+                  webhooksLink: (chunks) => (
+                    <a href="./connectivity" className="underline hover:text-emerald-300">
+                      {chunks}
+                    </a>
+                  ),
+                })}
               </AlertDescription>
             </Alert>
 
@@ -175,12 +182,12 @@ export function AuditLogExportSettings({
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Testing Connection...
+                  {t("testingConnection")}
                 </>
               ) : (
                 <>
                   <Check className="mr-2 h-4 w-4" />
-                  Save & Verify Integration
+                  {t("saveVerify")}
                 </>
               )}
             </Button>
@@ -192,7 +199,7 @@ export function AuditLogExportSettings({
         <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900/30 border border-zinc-900 rounded-lg w-fit">
           <Info className="h-3 w-3 text-zinc-500" />
           <p className="text-[10px] text-zinc-500">
-            Last successful export: <span className="text-zinc-400 font-medium">{new Date(initialConfig.lastExportAt).toLocaleString()}</span>
+            {t("lastExport", { time: new Date(initialConfig.lastExportAt).toLocaleString() })}
           </p>
         </div>
       )}

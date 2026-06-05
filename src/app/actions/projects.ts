@@ -10,6 +10,7 @@ import { PLANS } from "@/lib/billing/plans";
 import { db } from "@/lib/db";
 import { organizations } from "@/lib/db/schema";
 import { requirePermission } from "@/lib/auth/rbac-utils";
+import { logger } from "@/lib/logger";
 
 import { sendNotification } from "@/lib/notifications";
 import { recordAuditLog } from "@/lib/audit";
@@ -23,7 +24,12 @@ export async function createProjectAction(data: {
   orgSlug: string;
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) return { success: false, error: "Sessão expirada. Faça login novamente." };
+  if (!session?.user) {
+    logger.warn('action', 'createProjectAction aborted: Unauthenticated access attempt');
+    return { success: false, error: "Sessão expirada. Faça login novamente." };
+  }
+
+  logger.info('action', `createProjectAction called by User ${session.user.id} in Org ${data.orgId} for project: "${data.name}"`);
 
   try {
     // Input Validation
@@ -37,14 +43,18 @@ export async function createProjectAction(data: {
       where: eq(organizations.id, data.orgId),
     });
 
-    if (!org) return { success: false, error: "Organização não encontrada." };
-    const currentPlan = PLANS[org.plan.toUpperCase() as keyof typeof PLANS] || PLANS.FREE;
+    if (!org) {
+      logger.warn('action', `createProjectAction failed: Org ${data.orgId} not found`);
+      return { success: false, error: "Organização não encontrada." };
+    }
+    const currentPlan = Reflect.get(PLANS, org.plan.toUpperCase()) || PLANS.FREE;
 
     const result = await getTenantDb(session.user.id, data.orgId, async (tenantDb) => {
       // Direct count in tenant schema
       const currentCount = await tenantDb.select({ val: count() }).from(projects);
       
       if (currentCount[0].val >= currentPlan.maxProjects) {
+        logger.warn('action', `createProjectAction aborted: Org ${data.orgId} projects quota exceeded (${currentCount[0].val}/${currentPlan.maxProjects})`);
         return { error: "QUOTA_EXCEEDED" };
       }
 
@@ -89,9 +99,10 @@ export async function createProjectAction(data: {
       actorName: session.user.name || session.user.email,
     });
 
+    logger.info('action', `createProjectAction completed successfully. Project ID: ${result.project.id}`);
     return result;
   } catch (error) {
-    console.error("Failed to create project:", error);
+    logger.error("action", `createProjectAction failed for Org ${data.orgId}`, error);
     return { success: false, error: error instanceof Error ? error.message : "Falha ao criar projeto." };
   }
 }
@@ -101,17 +112,25 @@ export async function createProjectAction(data: {
  */
 export async function getProjectsAction(orgId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) return []; // Return empty list for unauthenticated
+  if (!session?.user) {
+    logger.warn('action', `getProjectsAction aborted: Unauthenticated fetch for Org ${orgId}`);
+    return []; // Return empty list for unauthenticated
+  }
+
+  logger.info('action', `getProjectsAction called by User ${session.user.id} for Org ${orgId}`);
 
   try {
     // RBAC: Verify user has permission to read projects
     await requirePermission(session.user.id, orgId, "projects:read");
 
-    return await getTenantDb(session.user.id, orgId, async (db) => {
+    const result = await getTenantDb(session.user.id, orgId, async (db) => {
       return await db.select().from(projects).orderBy(projects.createdAt);
     }, { mode: 'reader' });
+
+    logger.info('action', `getProjectsAction returned ${result.length} projects for Org ${orgId}`);
+    return result;
   } catch (error) {
-    console.error("Failed to fetch projects:", error);
+    logger.error("action", `getProjectsAction failed for Org ${orgId}`, error);
     return [];
   }
 }
@@ -121,7 +140,12 @@ export async function getProjectsAction(orgId: string) {
  */
 export async function deleteProjectAction(projectId: string, orgId: string, orgSlug: string) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) return { success: false, error: "Sessão expirada. Faça login novamente." };
+  if (!session?.user) {
+    logger.warn('action', 'deleteProjectAction aborted: Unauthenticated request');
+    return { success: false, error: "Sessão expirada. Faça login novamente." };
+  }
+
+  logger.info('action', `deleteProjectAction called by User ${session.user.id} for Project ${projectId} in Org ${orgId}`);
 
   try {
     // Input Validation
@@ -154,9 +178,10 @@ export async function deleteProjectAction(projectId: string, orgId: string, orgS
       actorName: session.user.name || session.user.email,
     });
 
+    logger.info('action', `deleteProjectAction completed successfully for Project ${projectId}`);
     return { success: true };
   } catch (error) {
-    console.error("Failed to delete project:", error);
+    logger.error("action", `deleteProjectAction failed for Project ${projectId}`, error);
     return { success: false, error: error instanceof Error ? error.message : "Falha ao excluir projeto." };
   }
 }
@@ -166,18 +191,26 @@ export async function deleteProjectAction(projectId: string, orgId: string, orgS
  */
 export async function getProjectAction(orgId: string, projectId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) return null;
+  if (!session?.user) {
+    logger.warn('action', `getProjectAction aborted: Unauthenticated fetch for Project ${projectId}`);
+    return null;
+  }
+
+  logger.info('action', `getProjectAction called by User ${session.user.id} for Project ${projectId} in Org ${orgId}`);
 
   try {
     // RBAC: Verify user has permission to read projects
     await requirePermission(session.user.id, orgId, "projects:read");
 
-    return await getTenantDb(session.user.id, orgId, async (db) => {
+    const project = await getTenantDb(session.user.id, orgId, async (db) => {
       const result = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
       return result[0] || null;
     }, { mode: 'reader' });
+
+    logger.info('action', `getProjectAction completed. Found: ${!!project}`);
+    return project;
   } catch (error) {
-    console.error("Failed to fetch project:", error);
+    logger.error("action", `getProjectAction failed for Project ${projectId}`, error);
     return null;
   }
 }
@@ -196,7 +229,12 @@ export async function updateProjectAction(
   }
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) return { success: false, error: "Sessão expirada." };
+  if (!session?.user) {
+    logger.warn('action', `updateProjectAction aborted: Unauthenticated update request for Project ${projectId}`);
+    return { success: false, error: "Sessão expirada." };
+  }
+
+  logger.info('action', `updateProjectAction called by User ${session.user.id} for Project ${projectId} in Org ${orgId}`);
 
   try {
     // Input Validation
@@ -217,7 +255,10 @@ export async function updateProjectAction(
       return result[0];
     });
 
-    if (!updatedProject) return { success: false, error: "Projeto não encontrado." };
+    if (!updatedProject) {
+      logger.warn('action', `updateProjectAction failed: Project ${projectId} not found for update`);
+      return { success: false, error: "Projeto não encontrado." };
+    }
 
     revalidatePath(`/org/${orgSlug}/projects`);
     revalidatePath(`/org/${orgSlug}/projects/${projectId}`);
@@ -238,9 +279,10 @@ export async function updateProjectAction(
       actorName: session.user.name || session.user.email,
     });
 
+    logger.info('action', `updateProjectAction completed successfully for Project ${projectId}`);
     return { success: true, project: updatedProject };
   } catch (error) {
-    console.error("Failed to update project:", error);
+    logger.error("action", `updateProjectAction failed for Project ${projectId}`, error);
     return { success: false, error: error instanceof Error ? error.message : "Falha ao atualizar projeto." };
   }
 }

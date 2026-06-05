@@ -29,6 +29,13 @@
       "when": 1778534808183,
       "tag": "0003_sad_reaper",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1779641169436,
+      "tag": "0004_military_juggernaut",
+      "breakpoints": true
     }
   ]
 }

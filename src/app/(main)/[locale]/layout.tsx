@@ -65,7 +65,7 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={messages}>
           <Suspense fallback={null}>
             <GSAPProgressBar />
-            <CommandMenu />
+            <CommandMenu hideTrigger={true} />
           </Suspense>
           <TooltipProvider>
             <ConfirmProvider>

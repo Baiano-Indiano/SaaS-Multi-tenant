@@ -1,0 +1,7 @@
+- [x] Instrument Member actions (`invite`, `delete`, `update role`)
+- [x] Instrument Project actions (`create`, `delete`, `update`)
+- [x] Instrument RBAC actions (`create role`, `delete role`, `update permissions`)
+- [x] Implement `ActivityLogFeed` with daily grouping
+- [x] Add metadata inspection modal to log entries
+- [x] Implement Vercel Cron cleanup logic (`api/cron/cleanup-logs`)
+- [x] Refine timeline UI with Framer Motion (entrance)

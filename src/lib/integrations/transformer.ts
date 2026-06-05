@@ -165,7 +165,7 @@ function getEventTitle(event: string): string {
     "organization.invitation_accepted": "Member Joined Team",
     "role.updated": "Permissions Changed",
   };
-  return (titles[event] as string) || "System Event";
+  return (Reflect.get(titles, event) as string) || "System Event";
 }
 
 function getEventEmoji(event: string): string {
@@ -177,7 +177,7 @@ function getEventEmoji(event: string): string {
     "organization.invitation_accepted": "🤝",
     "role.updated": "🔐",
   };
-  return (emojis[event] as string) || "🔔";
+  return (Reflect.get(emojis, event) as string) || "🔔";
 }
 
 function getEventDescription(event: string, payload: EventPayload): string {
@@ -208,7 +208,7 @@ function getEventColor(event: string): number {
     "organization.invitation_accepted": 0x10b981, // Green
     "role.updated": 0x8b5cf6, // Purple
   };
-  return (colors[event] as number) || 0x6b7280; // Gray
+  return (Reflect.get(colors, event) as number) || 0x6b7280; // Gray
 }
 
 

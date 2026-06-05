@@ -1,0 +1,5 @@
+- [x] Create Benefits Section
+- [x] Create Pricing Section
+- [x] Create FAQ Section
+- [x] Implement GSAP ScrollTrigger animations
+- [x] Retroactively document phase in GSD format
