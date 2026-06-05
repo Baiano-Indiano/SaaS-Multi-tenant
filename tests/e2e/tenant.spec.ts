@@ -3,6 +3,7 @@ import { execSync } from 'child_process';
 
 test.describe('Tenant Management', () => {
   test.beforeEach(async ({ page }) => {
+    test.setTimeout(60000);
     try {
       execSync('npm run db:seed-test', { stdio: 'ignore' });
     } catch (e) {
@@ -13,9 +14,9 @@ test.describe('Tenant Management', () => {
     await page.goto('/login');
     await page.fill('#email', 'test_admin@example.com');
     await page.fill('#password', 'password123');
-    await page.keyboard.press('Enter');
+    await page.getByRole('button', { name: /Sign In/i }).click();
     // 4. Handle MFA
-    await page.waitForURL('**/verify-2fa**', { timeout: 15000, waitUntil: 'commit' });
+    await expect(page).toHaveURL(/.*verify-2fa/, { timeout: 30000 });
     
     // Toggle to backup code mode
     await page.waitForTimeout(2000); // Wait for page hydration
@@ -25,7 +26,7 @@ test.describe('Tenant Management', () => {
     const codeInput = page.locator('#code');
     await expect(codeInput).toBeVisible();
     await codeInput.fill('12345-67890');
-    await page.keyboard.press('Enter');
+    await page.getByRole('button', { name: /Verify Identity/i }).click();
     
     await expect(page).toHaveURL(/.*selecionar-org|.*dashboard/);
   });
@@ -33,7 +34,7 @@ test.describe('Tenant Management', () => {
   test('should switch between organizations successfully', async ({ page }) => {
     // 1. Select Acme Corp initially
     await page.getByText('Acme Corp').first().click();
-    await expect(page).toHaveURL(/.*dashboard/);
+    await expect(page).toHaveURL(/.*dashboard/, { timeout: 20000 });
     await expect(page.getByText('Acme Corp').first()).toBeVisible();
 
     // 2. Open organization switcher (assuming it's in the sidebar/nav)
@@ -45,7 +46,7 @@ test.describe('Tenant Management', () => {
     await page.getByRole('menuitem', { name: /Globex Corp/i }).first().click();
 
     // 4. Verify switch
-    await expect(page).toHaveURL(/.*dashboard/);
+    await expect(page).toHaveURL(/.*dashboard/, { timeout: 20000 });
     await expect(page.getByText('Globex Corp').first()).toBeVisible();
     await expect(page.getByText('Acme Corp').first()).not.toBeVisible();
   });

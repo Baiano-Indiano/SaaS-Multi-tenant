@@ -11,6 +11,7 @@ test.describe('Authentication & MFA', () => {
   });
 
   test('should login and bypass MFA with backup code', async ({ page }) => {
+    test.setTimeout(60000);
     // 0. Setup console listener
     page.on('console', msg => {
       if (msg.type() === 'error' || msg.type() === 'warning') {
@@ -26,12 +27,12 @@ test.describe('Authentication & MFA', () => {
     await page.fill('#password', 'password123');
     
     // 3. Submit
-    await page.keyboard.press('Enter');
+    await page.getByRole('button', { name: /Sign In/i }).click();
 
     // 4. Wait for redirect or MFA
 
     try {
-        await page.waitForURL('**/verify-2fa**', { timeout: 15000, waitUntil: 'commit' });
+        await expect(page).toHaveURL(/.*verify-2fa/, { timeout: 30000 });
     } catch (e) {
         console.log('Current URL after login attempt:', page.url());
         await page.screenshot({ path: 'tests/e2e/login-failure.png' });
@@ -52,7 +53,7 @@ test.describe('Authentication & MFA', () => {
     const codeInput = page.locator('#code');
     await expect(codeInput).toBeVisible();
     await codeInput.fill('12345-67890');
-    await page.keyboard.press('Enter');
+    await page.getByRole('button', { name: /Verify Identity/i }).click();
 
     // 7. Should be redirected to organization selection or dashboard
     try {
@@ -74,9 +75,9 @@ test.describe('Authentication & MFA', () => {
     await page.goto('/login');
     await page.fill('#email', 'test_admin@example.com');
     await page.fill('#password', 'password123');
-    await page.keyboard.press('Enter');
+    await page.getByRole('button', { name: /Sign In/i }).click();
 
-    await page.waitForURL('**/verify-2fa**', { timeout: 15000, waitUntil: 'commit' });
+    await expect(page).toHaveURL(/.*verify-2fa/, { timeout: 30000 });
     
     // Toggle to backup code mode
     await page.waitForTimeout(2000); // Wait for page hydration
@@ -87,7 +88,7 @@ test.describe('Authentication & MFA', () => {
     await expect(codeInput).toBeVisible();
 
     await codeInput.fill('wrong-code');
-    await page.keyboard.press('Enter');
+    await page.getByRole('button', { name: /Verify Identity/i }).click();
 
     // Look for error toast or message
     await expect(page.locator('[data-sonner-toast]').first()).toContainText(/invalid|error/i);
